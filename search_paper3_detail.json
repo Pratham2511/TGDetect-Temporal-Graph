@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S1389128625007728",
+    "name": "MGDA: A provenance graph-based framework for threat",
+    "snippet": "by M Cui · 2025 · Cited by 5 — MGDA first constructs the provenance graph from audit logs. It then employs a graph representation module to perform both feature and structure reconstruction ... Read more",
+    "host_name": "www.sciencedirect.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://colab.ws/articles/10.1016/j.comnet.2025.111806?locale=ru",
+    "name": "MGDA: A provenance graph-based framework for threat",
+    "snippet": "Jan 1, 2026 — In this paper, we propose MGDA , a self-supervised method for effective and accurate threat detection as well as interpretable attack scenario ... Read more",
+    "host_name": "colab.ws",
+    "rank": 1,
+    "date": "Jan 1, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5349101",
+    "name": "Mgda: A Provenance Graph-Based Framework for Threat",
+    "snippet": "by MJ Cui · Cited by 5 — In this paper, we propose MGDA , a self-supervised method for accurate threat detection and interpretable attack scenario reconstruction. MGDA ... Read more",
+    "host_name": "papers.ssrn.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "http://arxiv.org/list/cs/2024-05?skip=8675&show=2000",
+    "name": "Computer Science May 2024",
+    "snippet": "Title: MGDA Converges under Generalized Smoothness, Provably. Qi Zhang ... Title: An Image Quality Evaluation and Masking Algorithm Based On Pre-trained Deep ... Read more\nTitle: MGDA Converges under Generalized Smoothness, Provably. Qi Zhang, Peiyao Xiao, Shaofeng Zou, Kaiyi Ji. Subjects: Machine Learning (cs.LG); Optimization ... Read more",
+    "host_name": "arxiv.org",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "http://repository.psa.edu.my/xmlui/bitstream/handle/123456789/4851/13.%20Embedded%20Machine%20Learning%20for%20Cyber-Physical%2C%20IoT%2C%20and%20Edge%20Computing.pdf?sequence=1&isAllowed=y",
+    "name": "Embedded Machine Learning for Cyber-Physical, IoT, and Edge",
+    "snippet": "... algorithm ( MGDA ) [55], which learns multiple tasks through optimizing a collection of (possibly conflicting) objectives. For tasks i = 1 ...k with ...\n... ( MGDA ) [55], which learns multiple tasks through optimizing a collection of (possibly conflicting) objectives. For tasks i = 1 ...k with respective losses li ...",
+    "host_name": "repository.psa.edu.my",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://link.springer.com/article/10.1007/s10462-026-11532-7",
+    "name": "Graph neural networks for anomaly detection: a systematic",
+    "snippet": "by F Ares-Robledo · 2026 · Cited by 8 — ... anomaly detection in cybersecurity . Our ... temporal graph neural network based network intrusion detection for near-earth remote sensing.\nby F Ares-Robledo · 2026 · Cited by 8 — ... anomaly detection in cybersecurity . Our ... temporal graph neural network based network intrusion detection for near-earth remote sensing. Read more",
+    "host_name": "link.springer.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2501.02981v2",
+    "name": "Detecting APT Attacks through Spatial-Temporal Graph",
+    "snippet": "Jan 7, 2025 — In this paper, we present a novel IDS designed to detect APTs using a Spatio- Temporal Graph Neural Network Autoencoder.\nJan 7, 2025 — In this paper, we present a novel IDS designed to detect APTs using a Spatio- Temporal Graph Neural Network Autoencoder. Read more",
+    "host_name": "arxiv.org",
+    "rank": 1,
+    "date": "Jan 7, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/379704418_Practical_Cyber_Attack_Detection_with_Continuous_Temporal_Graph_in_Dynamic_Network_System",
+    "name": "Practical Cyber Attack Detection With Continuous",
+    "snippet": "In order to overcome this problem, a cyber anomaly detection system based on the Continuous Temporal Graph neural network was presented [69] . ... Temporal ...\nIn order to overcome this problem, a cyber anomaly detection system based on the Continuous Temporal Graph neural network was presented [69] . ... Temporal ... Read more",
+    "host_name": "www.researchgate.net",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2076-3417/16/4/1906",
+    "name": "A Comprehensive Review on Graph-Based Anomaly",
+    "snippet": "by N Dilini · 2026 · Cited by 5 — Spatial- temporal graph neural network for traffic forecasting: An overview and open research issues. Appl. Intell. 2022, 52, 2763–2774. [Google Scholar] ...\nby N Dilini · 2026 · Cited by 5 — Spatial- temporal graph neural network for traffic forecasting: An overview and open research issues. Appl. Intell. 2022, 52, 2763–2774. [Google Scholar] ... Read more",
+    "host_name": "www.mdpi.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dl.acm.org/doi/full/10.1145/3588771",
+    "name": "Euler: Detecting Network Lateral Movement via Scalable",
+    "snippet": "by IJ King · 2023 · Cited by 183 — Activity-based temporal anomaly detection in enterprise- cyber security ... TATKC: A Temporal Graph Neural Network for Fast Approximate Temporal Katz Centrality ...",
+    "host_name": "dl.acm.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.techscience.com/cmc/v86n1/64431/html",
+    "name": "Detecting Anomalies in FinTech: A Graph Neural Network",
+    "snippet": "For instance, CaT-GNN (Causal Temporal Graph Neural Network ) [75] is designed to model both causal and temporal dependencies among financial transactions. By ...",
+    "host_name": "www.techscience.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/abs/pii/S0306437924000875",
+    "name": "Contrastive learning enhanced by graph neural networks",
+    "snippet": "by X Wang · 2024 · Cited by 6 — A systematic literature review of spatio- temporal graph neural network models for time series forecasting and classification. 2026, Neural Networks. Show ...",
+    "host_name": "www.sciencedirect.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://journals.riverpublishers.com/index.php/JCSANDM/article/download/27185/21851/112379",
+    "name": "Temporal and Topological Enhanced Graph Neural",
+    "snippet": "by M Gao · 2025 · Cited by 7 — In this paper, we propose a temporal graph neural network designed for anomalous traffic detection . Our model leverages PageRank to encode the positional ...",
+    "host_name": "journals.riverpublishers.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/397087674_A_Survey_of_Heterogeneous_Graph_Neural_Networks_for_Cybersecurity_Anomaly_Detection",
+    "name": "A Survey of Heterogeneous Graph Neural Networks for",
+    "snippet": "May 4, 2026 — In this paper, we propose StrGNN, an end-to-end structural temporal Graph Neural Network model for detecting anomalous edges in dynamic graphs.",
+    "host_name": "www.researchgate.net",
+    "rank": 8,
+    "date": "May 4, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S1389128626006109",
+    "name": "Graph Neural Networks and Graph Autoencoders for",
+    "snippet": "by E Yagmur · 2026 — ... Temporal Graph Neural Network for Network Security , in: 2025 IEEE European Symposium on Security and Privacy Workshops (EuroS&PW), IEEE, 2025, ... Read more",
+    "host_name": "www.sciencedirect.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

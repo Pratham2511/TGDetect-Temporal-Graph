@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://arxiv.org/html/2501.02981v2",
+    "name": "Detecting APT Attacks through Spatial-Temporal Graph",
+    "snippet": "Jan 7, 2025 — A review of provenance graph based apt attack detection :applications and developments. 2022 7th IEEE International Conference on Data ... Read more",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "Jan 7, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/abs/pii/S0957417424027441",
+    "name": "A dynamic provenance graph-based detector for advanced",
+    "snippet": "by L Wang · 2025 · Cited by 24 — A dynamic provenance graph -based detector for APTs (CGL-AD) is proposed. · Integration of temporal graph learning and data stream frequency estimation technique. Read more",
+    "host_name": "www.sciencedirect.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/387767270_CONTINUUM_Detecting_APT_Attacks_through_Spatial-Temporal_Graph_Neural_Networks",
+    "name": "(PDF) CONTINUUM: Detecting APT Attacks through Spatial",
+    "snippet": "Jan 7, 2025 — ... Provenance Graph Modeling and Feature Enhancement for Power System APT Detection . Article. Full-text available. Oct 2025 . Xuan Zhang · Haohui Su ... Read more",
+    "host_name": "www.researchgate.net",
+    "rank": 2,
+    "date": "Jan 7, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://colab.ws/articles/10.1016/j.comnet.2025.111806?locale=ru",
+    "name": "MGDA: A provenance graph-based framework for threat",
+    "snippet": "Jan 1, 2026 — Provenance graph analysis has become an important method for APT detection due to its ability to capture detailed causal relationships among ... Read more",
+    "host_name": "colab.ws",
+    "rank": 3,
+    "date": "Jan 1, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.usenix.org/system/files/usenixsecurity24-jia-zian.pdf",
+    "name": "MAGIC: Detecting Advanced Persistent Threats via Masked",
+    "snippet": "by Z Jia · 2024 · Cited by 203 — Figure 1: The provenance graph of a real-world APT at- tack, exploiting the Pine Backdoor vulnerability. All attack- irrelevant entities and interactions ... Read more",
+    "host_name": "www.usenix.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://papers.ssrn.com/sol3/Delivery.cfm/8d59c663-a57f-4841-b804-40137d5c1de1-MECA.pdf?abstractid=6826531&mirid=1",
+    "name": "From APT Reports to Interactive Attack Investigation: Intent-",
+    "snippet": "... 2024 . FLASH: A comprehensive approach to intrusion detection via provenance graph representation learning, in: 2024 IEEE Symposium on Security and. Privacy ...",
+    "host_name": "papers.ssrn.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2076-3417/16/4/1906",
+    "name": "A Comprehensive Review on Graph-Based Anomaly",
+    "snippet": "by N Dilini · 2026 · Cited by 5 — Network logs graph , provenance graph , Novel attention-based GNN approach ... provenance graph representation for anomaly detection in computer systems. Read more\nby N Dilini · 2026 · Cited by 5 — ... detection via provenance graph representation learning. In Proceedings of ... Spatial- temporal graph neural network for traffic forecasting: An overview and open ... Read more",
+    "host_name": "www.mdpi.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.computer.org/csdl/journal/tq/2026/02/11288059/2ckf34IiwHC",
+    "name": "Warning-Graph: An Early Warning Framework for APT",
+    "snippet": "APT -KGL first constructs a provenance graph from system logs and applies heterogeneous graph neural networks for representation learning, while DeepAG directly ... Read more",
+    "host_name": "www.computer.org",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S1389128625007728",
+    "name": "MGDA: A provenance graph-based framework for threat",
+    "snippet": "by M Cui · 2025 · Cited by 5 — Provenance graph analysis has become an important method for APT detection due to its ability to capture detailed causal relationships among system entities. Read more",
+    "host_name": "www.sciencedirect.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/pdf/2501.02981",
+    "name": "Detecting APT Attacks through Spatial-Temporal Graph",
+    "snippet": "by AAM Bahar · 2025 · Cited by 18 — An example of an APT attack's provenance graph is illustrated in Figure 1. Figure 1: Provenance graph of an APT attack (Hassan et al., 2020). Read more",
+    "host_name": "arxiv.org",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

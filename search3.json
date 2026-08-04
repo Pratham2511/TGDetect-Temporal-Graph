@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S1389128625007728",
+    "name": "MGDA: A provenance graph-based framework for threat",
+    "snippet": "by M Cui · 2025 · Cited by 5 — MGDA leverages multi-view masked graph representation learning and outlier detection to identify malicious entities from provenance graphs . It then applies ... Read more",
+    "host_name": "www.sciencedirect.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2501.02981v2",
+    "name": "Detecting APT Attacks through Spatial-Temporal Graph",
+    "snippet": "Jan 7, 2025 — In this paper, we present a novel IDS designed to detect APTs using a Spatio- Temporal Graph Neural Network Autoencoder. Read more",
+    "host_name": "arxiv.org",
+    "rank": 1,
+    "date": "Jan 7, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.ndss-symposium.org/wp-content/uploads/wosoc2024-4-paper.pdf",
+    "name": "A Comparative Analysis of Difficulty Between Log and",
+    "snippet": "by M Jansen · Cited by 3 — Additionally, when investigating cyber attacks, converting sys- tem logs into a provenance graph may aid in the analyst's interpretation of the attack, ... Read more 10 pages",
+    "host_name": "www.ndss-symposium.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pure.bit.edu.cn/en/publications/a-novel-malware-detection-method-based-on-audit-logs-and-graph-ne",
+    "name": "A novel malware detection method based on audit logs",
+    "snippet": "by Y Zhen · 2025 · Cited by 13 — To address this problem, we propose a novel malware detection method based on audit logs and graph neural networks . This method first performs ... Read more",
+    "host_name": "pure.bit.edu.cn",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/368269787_AttackMiner_A_Graph_Neural_Network_Based_Approach_for_Attack_Detection_from_Audit_Logs",
+    "name": "AttackMiner: A Graph Neural Network Based Approach for",
+    "snippet": "In this paper, we present AttackMiner, an attack detection framework that combines contextual information from audit logs .",
+    "host_name": "www.researchgate.net",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://papers.ssrn.com/sol3/Delivery.cfm/039c94e7-c3b8-4ee9-8a18-78e6843d4244-MECA.pdf?abstractid=5397852&mirid=1&type=2",
+    "name": "OMNISEC: LLM-Driven Provenance-based Intrusion Detection",
+    "snippet": "Recently, Provenance -based Intrusion Detection Systems (PIDSes) have been widely used for endpoint threat analysis. These studies can be broadly categorized ...",
+    "host_name": "papers.ssrn.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/NUS-Curiosity/provcon",
+    "name": "NUS-Curiosity/provcon",
+    "snippet": "This repository contains the provenance graph constructed using ProvCon presented at WOSOC'25. Using cyberattack information from CTI reports, provenance graph ...",
+    "host_name": "github.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://eureka.patsnap.com/report-graph-neural-networks-for-network-security-an-analysis",
+    "name": "Graph Neural Networks for Network Security: An Analysis",
+    "snippet": "Apr 17, 2026 — Discover how GNNs revolutionize threat detection with enhanced accuracy and reduced false positives through contextual analysis.",
+    "host_name": "eureka.patsnap.com",
+    "rank": 7,
+    "date": "Apr 17, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2078-2489/16/6/470",
+    "name": "Systematic Review of Graph Neural Network for Malicious",
+    "snippet": "by SM Alshehri · 2025 · Cited by 25 — This paper presents a systematic literature review (SLR) of selected academic works that utilized GNN-based models for cyberattack detection . Read more\nby SM Alshehri · 2025 · Cited by 25 — Uses audit logs from monitored systems to build temporal graphs, allowing detect advanced persistent threats.",
+    "host_name": "www.mdpi.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://link.springer.com/article/10.1007/s10791-026-10347-y",
+    "name": "Adaptive temporal graph neural networks for detecting",
+    "snippet": "by TN Suharsono · 2026 — This paper presents the problem of detecting complex, coordinated cyber - attacks at multiple intervals across enterprise networks .",
+    "host_name": "link.springer.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]
