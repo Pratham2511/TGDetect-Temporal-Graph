@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/8858/11603880/11505042.pdf",
+    "name": "Accurate and Scalable Detection and Investigation of",
+    "snippet": "by Q Liu · 2026 · Cited by 14 — by transforming audit logs into provenance graphs, providing causal relationships among system entities, such as processes and network sockets.",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/6514899/11413910.pdf",
+    "name": "Cyber Physical Systems Security",
+    "snippet": "by K Ramya · 2026 · Cited by 3 — This survey provides a unified, end-to-end examination of CPS security by consolidating advances in privacy-preserving computation, hardware- ...",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/6514899/11411776.pdf",
+    "name": "Lightweight WebAssembly-Based Intrusion Detection for",
+    "snippet": "by J Weber · 2026 · Cited by 2 — This article has been accepted for publication in IEEE Access. contains IEEE 802.11 network traces to assess intrusion detection in Wi-Fi environments. This ...",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/9882533/10070384/10979487.pdf",
+    "name": "AI-Powered System for an Efficient and Effective Cyber",
+    "snippet": "by MAM Farzaan · 2025 · Cited by 43 — The proposed system includes three main components; a network traffic classifier, a web intrusion detection system (WIDS) and a malware analysis system. Cyber ...",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/6514899/11184805.pdf",
+    "name": "Lightweight and Explainable LLM-Based APT Detection at",
+    "snippet": "by SB Melhem · 2025 · Cited by 6 — Provenance Logs: System-level audit logs are generated with SPADE and AuditD, and provide semantic trace- ability of processes and file accesses to enable ...",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/8782661/11343983/11300785.pdf",
+    "name": "A Survey on Security and Privacy in Federated Learning-",
+    "snippet": "by H Rezaei · 2025 · Cited by 8 — This paper examines how FL can enhance IDS for IoT and 5G networks, with an emphasis on privacy and security concerns.",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/10820123/11075748.pdf",
+    "name": "A Comprehensive Survey of Explainable Artificial",
+    "snippet": "by KS Alketbi · 2025 · Cited by 47 — Unlike traditional intrusion detection datasets focused on external network attacks, CERT captures realistic insider threat scenarios in ...",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/10820123/11301692.pdf",
+    "name": "Intrusion Detection Systems for In-Vehicle Networks",
+    "snippet": "by JA Khan · 2025 · Cited by 5 — ABSTRACT In-vehicle networks (IVNs) connect numerous sensors, processors, and Electronic Control. Units (ECUs) to enable real-time ...",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6488907/11456203/11343792.pdf",
+    "name": "A Unified AI-PureChain Framework for Verifiable Intrusion",
+    "snippet": "by H Ibrahim · 2026 · Cited by 8 — This article introduces a unified AI-PureChain intrusion prevention framework that tightly integrates deep learning-based threat detection with ...",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/10820123/11222578.pdf",
+    "name": "Cross-Domain Opportunities in Cyber Threat Intelligence",
+    "snippet": "by S Barbieri · 2025 · Cited by 2 — To address these issues, research explores the integration of AI techniques to design advanced intrusion detection and prevention systems.",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

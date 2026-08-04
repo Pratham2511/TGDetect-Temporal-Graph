@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/10820123/11215731.pdf",
+    "name": "A Survey on the Applications of Deep Learning in Network",
+    "snippet": "by FM Anis · 2025 · Cited by 22 — A self- attention GAN that crafts flow -feature perturbations on CICIDS2017 reduces the F1 and detection rates of several black-box IDSs, ... Read more 17 pages",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/11323511/11329029.pdf",
+    "name": "Explainable AI-Driven Intrusion Detection System for DoS",
+    "snippet": "by S Ghosh · 2026 · Cited by 6 — The residual connections strengthen the gra- dient flow , thus making it possible to have deeper networks without the performance drop. The ... Read more 25 pages",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/10820123/11131165.pdf",
+    "name": "GAT-APG: Graph Attention Network-Based Attack Path",
+    "snippet": "by MG Song · 2025 · Cited by 2 — extensions and their attack scenarios coverage,'' IEEE Access , vol. ... Walker,. ''SPGNN-API: A transferable graph neural network for attack paths. Read more 14 pages",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/9739/5451756/10729241.pdf",
+    "name": "Reinforcement-Learning-Based Intrusion Detection in",
+    "snippet": "by H Kheddar · 2024 · Cited by 136 — Carro, “ Network intrusion detection based on extended RBF neural network with offline reinforcement learning,” IEEE Access , vol. 9, pp. 153153–153170, 2021 ... Read more 49 pages",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/8782661/11343983/11456054.pdf",
+    "name": "Scalable and Generalizable Cross-Domain Invariant",
+    "snippet": "by GT Francis · 2026 — The CICIDS2017 [38] dataset covers critical shortcomings in previous ID datasets by providing modernized attack coverage (Brute Force file ... Read more 26 pages",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/8784355/11300375/11396006.pdf",
+    "name": "A Spatio-Temporal Graph Learning Approach",
+    "snippet": "by M Al Amin · 2026 — intrusion detection system for in-vehicle network by graph neural network ... intrusion detection system for in-vehicle network ,'' IEEE Access , ... Read more 15 pages",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/8782661/11343983/11471676.pdf",
+    "name": "Machine Learning to Secure Wheels",
+    "snippet": "by AH Lone · 2026 · Cited by 1 — 108–116. [272] Intrusion Detection Evaluation Dataset ( CIC-IDS2017 ), 2025 . ... Aydin, ''Misbehavior detection with spatio- temporal graph neural ... Read more",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/10820123/11129045.pdf",
+    "name": "GMM Selector-Based Anomaly Detection Model for Networks",
+    "snippet": "by X Guo · 2025 · Cited by 2 — intrusion detection : CIC-IDS2017 , UNSW-NB15, and NSL- ... Jensen, ''Adversarial graph neural network for multivariate time series anomaly ... Read more",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/6514899/11215731.pdf",
+    "name": "A Survey on the Applications of Deep Learning in Network",
+    "snippet": "by FM Anis · 2025 · Cited by 22 — A self- attention GAN that crafts flow - feature perturbations on CICIDS2017 reduces the F1 and de- tection rates of several black-box IDSs, revealing blind spots. Read more 18 pages",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/10820123/11248818.pdf",
+    "name": "CryptojackGuard: A Multi-Modal Framework for Proactive",
+    "snippet": "by WS Alorainy · 2025 · Cited by 2 — INDEX TERMS Cryptojacking detection , cybersecurity, large language models, graph neural networks , ... structural anomalies in network flow graphs. Read more",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

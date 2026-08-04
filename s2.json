@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://link.springer.com/article/10.1007/s10791-026-10347-y",
+    "name": "Adaptive temporal graph neural networks for detecting",
+    "snippet": "by TN Suharsono · 2026 — ... detection that combines graph structure with temporal sequence modelling over audit logs . ... temporal dependencies in structured system logs .\nby TN Suharsono · 2026 — This paper presents the problem of detecting complex, coordinated cyber - attacks at multiple intervals across enterprise networks.",
+    "host_name": "link.springer.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S111001682501110X",
+    "name": "A novel approach for real-time anomaly detection in",
+    "snippet": "by M Ozdem · 2025 · Cited by 12 — Real-time anomalies are identified by analyzing live network flows with an interpretable hybrid model that captures temporal dependencies and graph relations.\nby M Ozdem · 2025 · Cited by 12 — This research presents a novel anomaly detection model based on Temporal Graph Networks supported by Explainable Artificial Intelligence in real-time network ...",
+    "host_name": "www.sciencedirect.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/jwwthu/GNN-Communication-Networks",
+    "name": "jwwthu/GNN-Communication-Networks",
+    "snippet": "5 days ago — Applying self-supervised learning to network intrusion detection for network flows with graph neural network[J]. Computer Networks, 2024 : 110495 ...",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "Jul 30, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2602.05594v2",
+    "name": "Deep Learning for Contextualized NetFlow-Based Network",
+    "snippet": "Feb 13, 2026 — ... detection by explicitly capturing dependencies across chronologically ordered network flows . ... ( system logs , authentication events). Few ...",
+    "host_name": "arxiv.org",
+    "rank": 3,
+    "date": "Feb 13, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2079-9292/14/14/2756",
+    "name": "EL-GNN: A Continual-Learning-Based Graph Neural",
+    "snippet": "by TT Nguyen · 2025 · Cited by 22 — These features capture essential characteristics of network flows , such as packet inter-arrival time, flow duration, protocol-specific behaviors, and ...",
+    "host_name": "www.mdpi.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ais.khpi.edu.ua/article/view/366179",
+    "name": "DEEP LEARNING-BASED INTRUSION DETECTION IN",
+    "snippet": "by V Chelak · 2026 — ( 2024 ), \"A Proactive Model for Intrusion Detection Using Image Representation of Network Flows \", IEEE Access , vol. 12, pp. 160653–160666 ...",
+    "host_name": "ais.khpi.edu.ua",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.nature.com/articles/s41598-025-88054-9",
+    "name": "Graph attention and Kolmogorov–Arnold network based",
+    "snippet": "by Y Wu · 2025 · Cited by 47 — ... access to system logs for detecting and responding to security threats. ... detection for network flows with graph neural network. Comput ...",
+    "host_name": "www.nature.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.ndss-symposium.org/wp-content/uploads/2026-s93-paper.pdf",
+    "name": "Cross-silo Intrusion Detection on Network Log Graphs with",
+    "snippet": "by J Xu · Cited by 2 — Though FL has been used to train a model to detect intrusions with system logs collected ... Meng, “Depcomm: Graph summarization on system audit logs for attack ...",
+    "host_name": "www.ndss-symposium.org",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.techscience.com/cmc/v82n2/59498/html",
+    "name": "TB-Graph: Enhancing Encrypted Malicious Traffic",
+    "snippet": "The differences between categories of network flows are manifested in the variations of their bursts and their combinations [25]. (2) Compared to a complete ...",
+    "host_name": "www.techscience.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel7/6287639/10005208/10123384.pdf",
+    "name": "Graph Neural Networks for Intrusion Detection: A Survey",
+    "snippet": "by T Bilot · 2023 · Cited by 314 — Our analysis reveals that GNNs are particularly efficient in cybersecurity , since they can learn effective representations without requiring ... 26 pages",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

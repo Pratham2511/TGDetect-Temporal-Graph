@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/8858/11603880/11505042.pdf",
+    "name": "Accurate and Scalable Detection and Investigation of",
+    "snippet": "by Q Liu · 2026 · Cited by 14 — by transforming audit logs into provenance graphs ... LIU et al.: ACCURATE AND SCALABLE DETECTION AND INVESTIGATION OF CYBER PERSISTENCE THREATS. Read more 18 pages\nby Q Liu · 2026 · Cited by 14 — by transforming audit logs into provenance graphs , providing causal relationships among system entities, such as processes and network ... 18 pages",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dblp.org/pid/184/8086",
+    "name": "Wajih Ul Hassan",
+    "snippet": "Accurate and Scalable Detection and Investigation of Cyber Persistence Threats. IEEE Trans. Dependable Secur. Comput. 23(4): 8967-8984 ( 2026 ). [c26]. view. Read more",
+    "host_name": "dblp.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S0167404825002676",
+    "name": "Attack structure matters: Causality-preserving metrics for",
+    "snippet": "by M Suarez-Roman · 2025 · Cited by 3 — Those provenance graphs are obtained based on audit logs ... Cyber persistence detector (CPD): Accurate and scalable detection and investigation of cyber ... Read more",
+    "host_name": "www.sciencedirect.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/scientific-contributions/Wajih-Ul-Hassan-2118519711",
+    "name": "Wajih Ul Hassan's research works | University of Virginia,",
+    "snippet": "Accurate and Scalable Detection and Investigation of Cyber Persistence Threats ... Related empirical evidence from the audit - log and provenance literature ... Read more",
+    "host_name": "www.researchgate.net",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dartlab.org/assets/pdf/mirage.pdf",
+    "name": "A Decentralized Approach to System Intrusion Detection",
+    "snippet": "by J Zhang — These systems transform system logs into provenance graphs and apply ma- ... Accurate and scalable detection and investigation of cyber persistence threats. Read more",
+    "host_name": "dartlab.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]
