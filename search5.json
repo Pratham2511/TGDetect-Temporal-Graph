@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://arxiv.org/html/2501.02981v2",
+    "name": "Detecting APT Attacks through Spatial-Temporal Graph",
+    "snippet": "Jan 7, 2025 — In this paper, we present a novel IDS designed to detect APTs using a Spatio- Temporal Graph Neural Network Autoencoder.",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "Jan 7, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S1389128625007728",
+    "name": "MGDA: A provenance graph-based framework for threat",
+    "snippet": "by M Cui · 2025 · Cited by 5 — Provenance graph analysis has become an important method for APT detection due to its ability to capture detailed causal relationships among system entities.",
+    "host_name": "www.sciencedirect.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2076-3417/15/16/8833",
+    "name": "Provenance Graph-Based Deep Learning Framework for",
+    "snippet": "by T Wang · 2025 · Cited by 3 — To effectively detect APT attacks, we propose a heterogeneous graph neural networks threat detection model based on the provenance graph .",
+    "host_name": "www.mdpi.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://eprints.gla.ac.uk/352431/2/352431.pdf",
+    "name": "Distributed Temporal Graph Learning with Provenance for",
+    "snippet": "by Z Tan · 2025 · Cited by 1 — Current work on APT detection primarily relies on provenance -based frameworks, where system behaviors are represented as dynamic graphs [9] composed of entities.",
+    "host_name": "eprints.gla.ac.uk",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://research-information.bris.ac.uk/en/publications/spatial-temporal-graph-neural-network-for-the-detection-of-contai",
+    "name": "Spatial-Temporal Graph Neural Network for the Detection",
+    "snippet": "by Y Guo · 2024 · Cited by 3 — In this paper, a new Temporal Graph Neural Network (GNN) -based model was designed to detect anomalies of IoT applications in a container environment.",
+    "host_name": "research-information.bris.ac.uk",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.themoonlight.io/en/review/continuum-detecting-apt-attacks-through-spatial-temporal-graph-neural-networks",
+    "name": "Detecting APT Attacks through Spatial-Temporal Graph",
+    "snippet": "The paper titled \"CONTINUUM: Detecting APT Attacks through Spatial- Temporal Graph Neural Networks \" presents a sophisticated approach to enhancing intrusion ...",
+    "host_name": "www.themoonlight.io",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.semanticscholar.org/paper/Graph-Neural-Networks-for-Advanced-Persistent-Tumkur-Pushpa/bd537b722557b40f526942a375790e1d3ceec7dd",
+    "name": "Graph Neural Networks for Advanced Persistent Threat",
+    "snippet": "An unsupervised APT detection framework using Graph Neural Networks (GNNs), modeling network data as dynamic, heterogeneous graphs to capture intricate ...",
+    "host_name": "www.semanticscholar.org",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dl.acm.org/doi/10.1145/3588771",
+    "name": "Euler: Detecting Network Lateral Movement via Scalable",
+    "snippet": "When network host logs are abstracted into discrete temporal graphs , the problem can be reframed as anomalous edge detection in an evolving network .",
+    "host_name": "dl.acm.org",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10935277",
+    "name": "Graph Attention Network and Informer for Multivariate Time",
+    "snippet": "by M Zhao · 2024 · Cited by 39 — This paper proposes an anomaly detection scheme based on Graph Attention Network (GAT) and Informer. GAT learns sequential characteristics effectively.",
+    "host_name": "pmc.ncbi.nlm.nih.gov",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/abs/pii/S2214212626001468",
+    "name": "An APT detection method based on provenance graph",
+    "snippet": "The proposed method achieves high accuracy and low false alarms on five APT datasets. Temporal Graph Network (TGN ) effectively detecting hidden patterns and ...",
+    "host_name": "www.sciencedirect.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

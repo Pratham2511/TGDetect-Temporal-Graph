@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://arxiv.org/html/2501.02981v2",
+    "name": "Detecting APT Attacks through Spatial-Temporal Graph",
+    "snippet": "Jan 7, 2025 — In this paper, we present a novel IDS designed to detect APTs using a Spatio- Temporal Graph Neural Network Autoencoder.\nJan 7, 2025 — This dual perspective of spatial and temporal information significantly improves the accuracy and effectiveness of APT detection . Report issue ... Read more\nJan 7, 2025 — In this paper, we present a novel IDS designed to detect APTs using a Spatio- Temporal Graph Neural Network Autoencoder. Read more",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "Jan 7, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/387767270_CONTINUUM_Detecting_APT_Attacks_through_Spatial-Temporal_Graph_Neural_Networks",
+    "name": "(PDF) CONTINUUM: Detecting APT Attacks through Spatial",
+    "snippet": "Jan 7, 2025 — CONTINUUM: Detecting APT Attacks through Spatial- Temporal Graph Neural Networks . January 2025 . DOI ... Networks for APT detection , reducing ...\nJan 7, 2025 — In the context of APT detection , dataset splitting plays a critical role in facilitating the temporal analysis of events. Each row in APT ... Read more\nJan 7, 2025 — In this paper, we present a novel IDS designed to detect APTs using a Spatio- Temporal Graph Neural Network Autoencoder.",
+    "host_name": "www.researchgate.net",
+    "rank": 1,
+    "date": "Jan 7, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/abs/pii/S0957417424027441",
+    "name": "A dynamic provenance graph-based detector for advanced",
+    "snippet": "by L Wang · 2025 · Cited by 24 — Specifically, CGL-AD employs a temporal graph network architecture to encode ... The existing Provenance -based APT detection approaches can be ...\nby L Wang · 2025 · Cited by 24 — The existing Provenance -based APT detection approaches can be categorized into rule-based, statistical-based, and deep learning-based methods. We summarize ... Read more\nby L Wang · 2025 · Cited by 24 — CGL-AD can fully capture temporal and structural information in provenance graphs . CGL-AD detects APTs with high accuracy and low false positives.",
+    "host_name": "www.sciencedirect.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://eprints.gla.ac.uk/352431/2/352431.pdf",
+    "name": "Distributed Temporal Graph Learning with Provenance for",
+    "snippet": "by Z Tan · 2025 · Cited by 1 — Tan, Zhuoran, Anagnostopoulos, Christos and Singer, Jeremy ( 2025 ). Distributed Temporal Graph Learning with Provenance for APT Detection in. Supply Chains. In ... 4 pages\nby Z Tan · 2025 · Cited by 1 — Current work on APT detection primarily relies on provenance -based frameworks, where system behaviors are represented as dynamic graphs [9] composed of entities. Read more",
+    "host_name": "eprints.gla.ac.uk",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/6514899/11184805.pdf",
+    "name": "Lightweight and Explainable LLM-Based APT Detection at",
+    "snippet": "by SB Melhem · 2025 · Cited by 6 — based APT detection in 6G networks . II. RELATED WORK ... Li, ''Practical cyber attack detection with continuous temporal graph in dynamic network system,''.",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://research-repository.rmit.edu.au/ndownloader/files/57389299/1",
+    "name": "A survey of cyber threat attribution: Challenges, techniques",
+    "snippet": "by N Prasad · 2025 · Cited by 44 — Dynamic Temporal Graph Neural Networks (DT-GNNs) further enhance ... Bon- APT: Detection , attribution, and explainabil- ity of APT malware ...",
+    "host_name": "research-repository.rmit.edu.au",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2079-9292/14/21/4163",
+    "name": "The Role of Graph Neural Networks, Transformers, and",
+    "snippet": "by TP Doremure Gamage · 2025 · Cited by 17 — ... APT Detection ... Mohanraj, S.K.; Sivakrishna, A.M. Spatio- Temporal Graph Neural Networks for Enhanced Insider Threat Detection in Organizational Security .",
+    "host_name": "www.mdpi.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dl.acm.org/doi/10.1016/j.cosrev.2026.100978",
+    "name": "Graph intelligence for IoT and CPS security",
+    "snippet": "6 days ago — ( 2025 ): CONTINUUM: detecting APT attacks through spatial- temporal graph neural networks . ... APT detection in software defined networking ...",
+    "host_name": "dl.acm.org",
+    "rank": 7,
+    "date": "Jul 29, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://pure.tudelft.nl/ws/portalfiles/portal/243507425/Final_Doctoral_Thesis_APresekal.pdf",
+    "name": "Delft University of Technology Document Version",
+    "snippet": "May 21, 2025 — APT detection , correlation, and prediction. Control center and ... temporal graph convolutional network for traffic prediction. IEEE ...",
+    "host_name": "pure.tudelft.nl",
+    "rank": 8,
+    "date": "May 21, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/abs/pii/S2214212626001468",
+    "name": "An APT detection method based on provenance graph",
+    "snippet": "Conclusion. This paper proposes a provenance graph learning-based APT detection method that leverages the TGN-KAN network to mine the temporal evolution ... Read more",
+    "host_name": "www.sciencedirect.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

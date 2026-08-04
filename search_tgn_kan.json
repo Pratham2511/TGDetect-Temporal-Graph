@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://www.sciencedirect.com/science/article/abs/pii/S2214212626001468",
+    "name": "An APT detection method based on provenance graph",
+    "snippet": "To address this, this paper proposes an APT detection method based on provenance graph ... TKnet employs Temporal Graph Network ( TGN ) to capture long-term ... Read more\nThen, the temporal and structural relationships in the provenance graph are learned through the TGN - KAN architecture to detect abnormal system events.",
+    "host_name": "www.sciencedirect.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2501.02981v2",
+    "name": "Detecting APT Attacks through Spatial-Temporal Graph",
+    "snippet": "Jan 7, 2025 — In this paper, we present a novel IDS designed to detect APTs using a Spatio- Temporal Graph Neural Network Autoencoder.",
+    "host_name": "arxiv.org",
+    "rank": 1,
+    "date": "Jan 7, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://pure.bit.edu.cn/en/publications/a-dynamic-provenance-graph-based-detector-for-advanced-persistent",
+    "name": "A dynamic provenance graph-based detector for advanced",
+    "snippet": "by L Wang · 2025 · Cited by 24 — CGL-AD, APT Detector . CGL-AD leverages temporal graph learning to capture subtle temporal changes and overall structural transformations over ...",
+    "host_name": "pure.bit.edu.cn",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.semanticscholar.org/paper/Advanced-persistent-threat-detection-via-mining-in-Xu-Zhao/96cb7bfda3c56cbb377d231dfc7e17f1f0d30c5a",
+    "name": "Advanced persistent threat detection via mining long-term",
+    "snippet": "This work proposes a novel end-to-end APT detection framework named Long-Term Feature Association Provenance Graph Detector (LT-ProveGD), which encodes ...",
+    "host_name": "www.semanticscholar.org",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/hwwzrzr/APT-KGL",
+    "name": "APT-KGL: An Intelligent APT Detection",
+    "snippet": "This paper proposes APT -KGL, an intelligent APT detection system based on provenance data and graph neural networks.",
+    "host_name": "github.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]
