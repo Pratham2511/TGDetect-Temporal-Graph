@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://ui.adsabs.harvard.edu/abs/2025IEEEA..1347383G/abstract",
+    "name": "GAT-APG: Graph Attention Network-Based Attack Path",
+    "snippet": "by M Geun Song · 2025 · Cited by 2 — This study proposes GAT-APG , a reinforcement learning framework that combines Graph Attention Networks with policy gradient methods to generate adaptive attack ...",
+    "host_name": "ui.adsabs.harvard.edu",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/10820123/11131165.pdf",
+    "name": "GAT-APG: Graph Attention Network-Based Attack Path",
+    "snippet": "by MG Song · 2025 · Cited by 2 — This study proposes GAT-APG, a reinforcement learning framework that combines. Graph Attention Networks with policy gradient methods to generate ... 14 pages\nby MG Song · 2025 · Cited by 2 — Research in attack graphs and attack path generation focuses on modeling and visualizing attack sequences to enhance threat detection and ... 14 pages",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/394806748_GAT-APG_Graph_Attention_Network-Based_Attack_Path_Generation_for_Security_Simulation",
+    "name": "(PDF) GAT-APG: Graph Attention Network-Based Attack",
+    "snippet": "Mar 20, 2026 — This study proposes GAT-APG , a reinforcement learning framework that combines Graph Attention Networks with policy gradient methods to generate ...",
+    "host_name": "www.researchgate.net",
+    "rank": 2,
+    "date": "Mar 20, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.semanticscholar.org/paper/A-Reinforcement-Learning-Approach-for-Attack-Graph-Yousefi-Mtetwa/699dddb5d1061480ad101895d6b1d757cf1df46f",
+    "name": "A Reinforcement Learning Approach for Attack Graph",
+    "snippet": "GAT-APG: Graph Attention Network-Based Attack Path Generation for Security Simulation · Min Geun SongJaewoong ChoiHuy Kang Kim. Computer Science, Engineering.",
+    "host_name": "www.semanticscholar.org",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://library.kab.ac.ug/Record/doaj-art-80f278e06f6b4b85ba262a95f2db067b",
+    "name": "I‑GAT: Interpretable Graph Attention Networks for Ligand",
+    "snippet": "GAT-APG: Graph Attention Network-Based Attack Path Generation for Security Simulation by: Min Geun Song, et al.",
+    "host_name": "library.kab.ac.ug",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

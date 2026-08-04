@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://www.sciopen.com/article/10.32604/cmc.2026.074930",
+    "name": "Graph Neural Networks with Multi-Head Attention and",
+    "snippet": "by SD Azeez · 2026 · Cited by 4 — GNNs can be particularly applied to SDN environments, where flow logs ... GRAN: a SDN intrusion detection model based on graph attention network ... Read more",
+    "host_name": "www.sciopen.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S1389128626006109",
+    "name": "Graph Neural Networks and Graph Autoencoders for",
+    "snippet": "by E Yagmur · 2026 — ... flow logs ) into a graph structure. Researchers use ... Xu, Dynamic Residual Graph Attention Network for Network Intrusion Detection ... Read more",
+    "host_name": "www.sciencedirect.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.preprints.org/manuscript/202601.1466",
+    "name": "A Comprehensive Review on Graph-Based Anomaly",
+    "snippet": "by N Dilini · 2026 · Cited by 5 — IDSs generate substantial anomalous flow logs , requiring ... Temporal network embedding using graph attention network. Complex ... Read more",
+    "host_name": "www.preprints.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2076-3417/16/4/1906",
+    "name": "A Comprehensive Review on Graph-Based Anomaly",
+    "snippet": "by N Dilini · 2026 · Cited by 5 — IDSs generate substantial anomalous flow logs , requiring significant ... Temporal network embedding using graph attention network. Complex Intell ... Read more",
+    "host_name": "www.mdpi.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/11185073/11316540/11316556.pdf",
+    "name": "Deep anomaly detection of temporal heterogeneous data",
+    "snippet": "by J Gui · 2025 · Cited by 8 — Our survey expands be- yond IoT to include network traffic, logs , cloud and ... temporal patterns and a graph attention network. (GAT) to model ... Read more 26 pages",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

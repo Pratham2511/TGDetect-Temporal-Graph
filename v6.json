@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://www.researchgate.net/publication/369408461_Deepro_Provenance-based_APT_Campaigns_Detection_via_GNN",
+    "name": "Provenance-based APT Campaigns Detection via GNN",
+    "snippet": "Yan et al. 2022) MAGNNs were used in DEEPRO (N.Yan et al. 2022) as shown inFigure 3.11. DEEPRO employs a three-metapaths MAGNN to extract relationships between ...\nDeepro [12] applies provenance-based GNN detection for campaigns , offering strong detection capabilities yet not fine-grained actor attribution.",
+    "host_name": "www.researchgate.net",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dl.acm.org/doi/10.1016/j.cose.2024.104159",
+    "name": "Provenance-based APT campaigns detection via masked",
+    "snippet": "by J Ren · 2025 · Cited by 19 — Yan Na, et al., Deepro: Provenance-based APT campaigns detection via GNN, in: 2022 IEEE International Conference on Trust, Security and Privacy in Computing ...",
+    "host_name": "dl.acm.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2076-3417/15/11/5872",
+    "name": "APT Detection via Hypergraph Attention Network with",
+    "snippet": "by Q Song · 2025 · Cited by 6 — Deepro: Provenance-based APT campaigns detection via GNN. In Proceedings of the 2022 IEEE International Conference on Trust, Security and Privacy in ...\nby Q Song · 2025 · Cited by 6 — Deepro: Provenance-based APT campaigns detection via GNN . In Proceedings of the 2022 IEEE International Conference on Trust, Security and Privacy in ... Read more",
+    "host_name": "www.mdpi.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2501.02981v2",
+    "name": "Detecting APT Attacks through Spatial-Temporal Graph",
+    "snippet": "... 2022. Deepro: Provenance-based apt campaigns detection via gnn, in: 2022 IEEE International Conference on Trust, Security and Privacy in ...\nJan 7, 2025 — In this paper, we present a novel IDS designed to detect APTs using a Spatio-Temporal Graph Neural Network Autoencoder. Read more",
+    "host_name": "arxiv.org",
+    "rank": 3,
+    "date": "Jan 7, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.computer.org/csdl/proceedings-article/nana/2025/147200a296/2ckdQ021cWI",
+    "name": "A Semantic Provenance Graph-Based Detection Method",
+    "snippet": "Yan et al. presented Deepro, which utilizes Graph Neural Networks (GNNs) to autonomously learn attack patterns from provenance graphs and reconstruct attack ...",
+    "host_name": "www.computer.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]
