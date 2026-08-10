@@ -1029,6 +1029,12 @@ body {
 </html>"""
 
 async def render():
+    from PIL import Image
+    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.utils import ImageReader
+    from io import BytesIO
+
     with open(HTML_PATH, 'w') as f:
         f.write(html_content)
     print(f"HTML written to {HTML_PATH}")
@@ -1042,7 +1048,7 @@ async def render():
         await page.goto(f'file://{HTML_PATH}', wait_until='networkidle')
         await page.wait_for_timeout(2000)
 
-        # Auto-resize to fit content
+        # Auto-resize viewport to fit full content
         root = page.locator('#root')
         bbox = await root.bounding_box()
         if bbox:
@@ -1051,40 +1057,165 @@ async def render():
             await page.set_viewport_size({'width': fit_w, 'height': fit_h})
             await page.wait_for_timeout(500)
 
-        # Screenshot PNG
+        # Screenshot full diagram as one tall PNG (high quality)
         await root.screenshot(path=OUTPUT_PNG)
         print(f"PNG saved: {OUTPUT_PNG}")
 
-        # PDF with proper header and footer
-        header_html = '''
-        <table style="width:100%; font-size:9px; font-family:Inter,Helvetica,Arial,sans-serif; color:#9CA3AF; padding:0 4px; border-collapse:collapse;">
-          <tr>
-            <td style="text-align:left; color:#6B7280; font-weight:600; width:50%;">TGDetect &mdash; Heterogeneous Continuous-Time TGNN Architecture</td>
-            <td style="text-align:right; color:#9CA3AF; width:50%;">In-Depth Architecture Study</td>
-          </tr>
-        </table>
-        <div style="border-bottom:1px solid #E5E7EB; margin-top:4px;"></div>
-        '''
-        footer_html = '''
-        <div style="border-top:1px solid #E5E7EB; margin-bottom:4px;"></div>
-        <table style="width:100%; font-size:9px; font-family:Inter,Helvetica,Arial,sans-serif; color:#9CA3AF; padding:0 4px; border-collapse:collapse;">
-          <tr>
-            <td style="text-align:left; width:50%;">Poster B16 &nbsp;|&nbsp; Final Year Project</td>
-            <td style="text-align:right; width:50%;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></td>
-          </tr>
-        </table>
-        '''
-        await page.pdf(
-            path=OUTPUT_PDF,
-            print_background=True,
-            display_header_footer=True,
-            header_template=header_html,
-            footer_template=footer_html,
-            margin={'top': '56px', 'bottom': '52px', 'left': '46px', 'right': '46px'},
-            format='Letter'
-        )
-        print(f"PDF saved: {OUTPUT_PDF}")
-
         await browser.close()
+
+    # ---- Build PDF by slicing the full PNG into letter-size pages ----
+    DPI = 150
+    PAGE_W_PX = int(612 * DPI / 72)    # 1275
+    PAGE_H_PX = int(792 * DPI / 72)    # 1650
+    MARGIN_TOP_PX = 88                  # header area
+    MARGIN_BOT_PX = 78                  # footer area
+    SIDE_MARGIN_PX = 54                # side margins
+    CONTENT_H_PX = PAGE_H_PX - MARGIN_TOP_PX - MARGIN_BOT_PX
+
+    img = Image.open(OUTPUT_PNG)
+    img_w, img_h = img.size
+    print(f"Full image: {img_w}x{img_h}px")
+
+    # Scale image so width fills page content area
+    target_w = PAGE_W_PX - 2 * SIDE_MARGIN_PX
+    scale = target_w / img_w
+    scaled_w = int(img_w * scale)
+    scaled_h = int(img_h * scale)
+    print(f"Scaled to: {scaled_w}x{scaled_h}px (scale={scale:.4f})")
+
+    img_scaled = img.resize((scaled_w, scaled_h), Image.LANCZOS)
+
+    # Smart page-break finder
+    gray = img_scaled.convert('L')
+
+    def find_deepest_gap(gray_img, w, h, search_start, search_end, step=2):
+        """Find the y-position with the most consecutive white rows."""
+        best_y = search_start
+        best_run = 0
+        run_start = None
+        for y in range(search_start, min(search_end, h), step):
+            row = [gray_img.getpixel((x, y)) for x in range(0, w, 6)]
+            mean_b = sum(row) / len(row)
+            if mean_b > 250:
+                if run_start is None:
+                    run_start = y
+            else:
+                if run_start is not None:
+                    run_len = y - run_start
+                    if run_len > best_run:
+                        best_run = run_len
+                        best_y = (run_start + y) // 2
+                    run_start = None
+        return best_y, best_run
+
+    # Find gap between Layer 5 and Layer 6 (roughly in the 60-80% range of the image)
+    gap56_y, gap56_run = find_deepest_gap(gray, scaled_w, scaled_h, 
+                                           int(scaled_h * 0.55), int(scaled_h * 0.85))
+    print(f"Layer 5-6 gap: y={gap56_y}, run={gap56_run}px")
+
+    # Find gap between Layer 3 and Layer 4 (roughly 30-55% range)
+    gap34_y, gap34_run = find_deepest_gap(gray, scaled_w, scaled_h,
+                                           int(scaled_h * 0.30), int(scaled_h * 0.55))
+    print(f"Layer 3-4 gap: y={gap34_y}, run={gap34_run}px")
+
+    # Build cuts using these specific layer transition gaps
+    cuts = []
+    # First cut: at the Layer 3-4 gap
+    if gap34_y > CONTENT_H_PX * 0.5:
+        cuts.append(gap34_y)
+    
+    # Second cut: at the Layer 5-6 gap
+    if cuts and gap56_y - cuts[-1] > CONTENT_H_PX * 0.5:
+        cuts.append(gap56_y)
+    elif gap56_y > CONTENT_H_PX * 0.5:
+        cuts.append(gap56_y)
+
+    num_pages = len(cuts) + 1
+    print(f"Smart cuts: {cuts}")
+    print(f"Total pages: {num_pages}")
+
+    # Build PDF
+    pdf_w, pdf_h = letter  # 612 x 792 pts
+    c = canvas.Canvas(OUTPUT_PDF, pagesize=letter)
+    c.setTitle('TGDetect - In-Depth Temporal GNN Architecture Study')
+    c.setAuthor('TGDetect Research Team')
+    c.setSubject('Heterogeneous Continuous-Time TGNN for Multi-Step Cyberattack Detection')
+
+    for page_num in range(num_pages):
+        y_start = 0 if page_num == 0 else cuts[page_num - 1]
+        y_end = min(y_start + CONTENT_H_PX, scaled_h) if page_num < num_pages - 1 else scaled_h
+        crop_h = y_end - y_start
+        if crop_h <= 0:
+            continue
+
+        # Crop slice
+        slice_img = img_scaled.crop((0, y_start, scaled_w, y_end))
+        
+        # For the last page: find where actual content starts (skip internal white gaps)
+        # by scanning from top until we find a row that has non-white pixels in the center
+        trim_top = 0
+        if page_num == num_pages - 1:
+            gray_slice = slice_img.convert('L')
+            center_start = scaled_w // 4
+            center_end = 3 * scaled_w // 4
+            for row_y in range(0, min(gray_slice.height, 500), 2):
+                center_pixels = [gray_slice.getpixel((x, row_y)) for x in range(center_start, center_end, 3)]
+                if any(p < 240 for p in center_pixels):  # found non-white content in center
+                    trim_top = max(0, row_y - 10)  # small padding above content
+                    break
+            if trim_top > 0:
+                slice_img = slice_img.crop((0, trim_top, scaled_w, y_end - y_start))
+        
+        buf = BytesIO()
+        slice_img.save(buf, format='PNG', optimize=True)
+        buf.seek(0)
+
+        # White background
+        c.setFillColorRGB(1, 1, 1)
+        c.rect(0, 0, pdf_w, pdf_h, fill=1, stroke=0)
+
+        # Draw image (ReportLab: origin bottom-left)
+        actual_w, actual_h = slice_img.size
+        img_pts_w = actual_w * 72.0 / DPI
+        img_pts_h = actual_h * 72.0 / DPI
+        x_pts = SIDE_MARGIN_PX * 72.0 / DPI
+        y_pts = MARGIN_BOT_PX * 72.0 / DPI  # default: just above footer
+
+        # For the last page: vertically center content between header and footer
+        HEADER_CLEARANCE = 48  # pts from page top to start of content area
+        FOOTER_CLEARANCE = 48  # pts from page bottom to end of content area
+        content_area_h = pdf_h - HEADER_CLEARANCE - FOOTER_CLEARANCE  # available content height in pts
+
+        if page_num == num_pages - 1 and img_pts_h < content_area_h:
+            # Center: place image so its top is at equal distance from header as bottom is from footer
+            top_offset = (content_area_h - img_pts_h) / 2.0
+            y_pts = FOOTER_CLEARANCE + top_offset  # distance from page bottom
+
+        c.drawImage(ImageReader(buf), x_pts, y_pts, width=img_pts_w, height=img_pts_h, preserveAspectRatio=False)
+
+        # ---- Header ----
+        c.setStrokeColorRGB(0.78, 0.80, 0.86)  # darker gray line
+        c.setLineWidth(0.8)
+        c.line(46, pdf_h - 40, pdf_w - 46, pdf_h - 40)
+        c.setFillColorRGB(0.42, 0.41, 0.46)
+        c.setFont('Helvetica-Bold', 8.5)
+        c.drawString(46, pdf_h - 34, 'TGDetect \u2014 Heterogeneous Continuous-Time TGNN Architecture')
+        c.setFillColorRGB(0.55, 0.60, 0.65)
+        c.setFont('Helvetica', 8)
+        c.drawRightString(pdf_w - 46, pdf_h - 34, 'In-Depth Architecture Study')
+
+        # ---- Footer ----
+        c.setStrokeColorRGB(0.78, 0.80, 0.86)
+        c.setLineWidth(0.8)
+        c.line(46, 38, pdf_w - 46, 38)
+        c.setFillColorRGB(0.55, 0.60, 0.65)
+        c.setFont('Helvetica', 8)
+        c.drawString(46, 24, 'Poster B16  |  Final Year Project')
+        c.drawRightString(pdf_w - 46, 24, f'Page {page_num + 1} of {num_pages}')
+
+        c.showPage()
+
+    c.save()
+    print(f"PDF saved: {OUTPUT_PDF}")
 
 asyncio.run(render())
