@@ -52,13 +52,14 @@ body {
   width: fit-content;
   min-width: 1400px;
   margin: 0 auto;
-  padding: 48px 50px;
+  padding: 0 16px 20px 16px;
 }
 
 /* Title Block */
 .arch-title {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 28px;
+  padding-top: 8px;
 }
 .arch-title h1 {
   font-size: 26px;
@@ -84,8 +85,8 @@ body {
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: 14px;
-  padding: 22px 28px 20px;
-  margin-bottom: 20px;
+  padding: 20px 26px 18px;
+  margin-bottom: 14px;
   position: relative;
 }
 .arch-layer .layer-tag {
@@ -402,6 +403,28 @@ body {
   font-weight: 700;
   color: var(--purple-dark);
   margin-bottom: 4px;
+}
+
+/* PDF Page Rules */
+@page {
+  size: letter;
+  margin: 56px 46px 52px 46px;
+}
+.arch-layer {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.arrow-row {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.arch-legend {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.arch-title {
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 /* Feedback loop annotation */
@@ -1032,8 +1055,34 @@ async def render():
         await root.screenshot(path=OUTPUT_PNG)
         print(f"PNG saved: {OUTPUT_PNG}")
 
-        # PDF
-        await page.pdf(path=OUTPUT_PDF, print_background=True, margin={'top': '0', 'bottom': '0', 'left': '0', 'right': '0'})
+        # PDF with proper header and footer
+        header_html = '''
+        <table style="width:100%; font-size:9px; font-family:Inter,Helvetica,Arial,sans-serif; color:#9CA3AF; padding:0 4px; border-collapse:collapse;">
+          <tr>
+            <td style="text-align:left; color:#6B7280; font-weight:600; width:50%;">TGDetect &mdash; Heterogeneous Continuous-Time TGNN Architecture</td>
+            <td style="text-align:right; color:#9CA3AF; width:50%;">In-Depth Architecture Study</td>
+          </tr>
+        </table>
+        <div style="border-bottom:1px solid #E5E7EB; margin-top:4px;"></div>
+        '''
+        footer_html = '''
+        <div style="border-top:1px solid #E5E7EB; margin-bottom:4px;"></div>
+        <table style="width:100%; font-size:9px; font-family:Inter,Helvetica,Arial,sans-serif; color:#9CA3AF; padding:0 4px; border-collapse:collapse;">
+          <tr>
+            <td style="text-align:left; width:50%;">Poster B16 &nbsp;|&nbsp; Final Year Project</td>
+            <td style="text-align:right; width:50%;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></td>
+          </tr>
+        </table>
+        '''
+        await page.pdf(
+            path=OUTPUT_PDF,
+            print_background=True,
+            display_header_footer=True,
+            header_template=header_html,
+            footer_template=footer_html,
+            margin={'top': '56px', 'bottom': '52px', 'left': '46px', 'right': '46px'},
+            format='Letter'
+        )
         print(f"PDF saved: {OUTPUT_PDF}")
 
         await browser.close()
