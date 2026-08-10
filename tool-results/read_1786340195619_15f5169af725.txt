@@ -1,0 +1,993 @@
+     1→<!DOCTYPE html>
+     2→<html lang="en">
+     3→<head>
+     4→<meta charset="UTF-8">
+     5→<style>
+     6→* { margin: 0; padding: 0; box-sizing: border-box; }
+     7→
+     8→:root {
+     9→  --text: #1F2937;
+    10→  --text-sub: #4B5563;
+    11→  --text-muted: #9CA3AF;
+    12→  --bg: #FFFFFF;
+    13→  --surface: #F9FAFB;
+    14→  --border: #E5E7EB;
+    15→  --border-light: #F3F4F6;
+    16→  --blue: #3B82F6;
+    17→  --blue-dark: #1E40AF;
+    18→  --cyan: #06B6D4;
+    19→  --purple: #8B5CF6;
+    20→  --purple-dark: #5B21B6;
+    21→  --amber: #F59E0B;
+    22→  --amber-dark: #92400E;
+    23→  --green: #10B981;
+    24→  --green-dark: #065F46;
+    25→  --red: #EF4444;
+    26→  --teal: #14B8A6;
+    27→  --connector: #94A3B8;
+    28→  --connector-light: #CBD5E1;
+    29→}
+    30→
+    31→body {
+    32→  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    33→  background: var(--bg);
+    34→  color: var(--text);
+    35→  -webkit-font-smoothing: antialiased;
+    36→}
+    37→
+    38→#root {
+    39→  width: fit-content;
+    40→  min-width: 1400px;
+    41→  margin: 0 auto;
+    42→  padding: 48px 50px;
+    43→}
+    44→
+    45→/* Title Block */
+    46→.arch-title {
+    47→  text-align: center;
+    48→  margin-bottom: 40px;
+    49→}
+    50→.arch-title h1 {
+    51→  font-size: 26px;
+    52→  font-weight: 800;
+    53→  color: var(--text);
+    54→  letter-spacing: -0.5px;
+    55→  margin-bottom: 8px;
+    56→}
+    57→.arch-title h1 span {
+    58→  color: var(--blue-dark);
+    59→}
+    60→.arch-title .subtitle {
+    61→  font-size: 14px;
+    62→  color: var(--text-sub);
+    63→  font-weight: 400;
+    64→  max-width: 800px;
+    65→  margin: 0 auto;
+    66→  line-height: 1.5;
+    67→}
+    68→
+    69→/* Layer Container */
+    70→.arch-layer {
+    71→  background: var(--surface);
+    72→  border: 1.5px solid var(--border);
+    73→  border-radius: 14px;
+    74→  padding: 22px 28px 20px;
+    75→  margin-bottom: 20px;
+    76→  position: relative;
+    77→}
+    78→.arch-layer .layer-tag {
+    79→  position: absolute;
+    80→  top: -11px;
+    81→  left: 20px;
+    82→  background: var(--bg);
+    83→  padding: 2px 12px;
+    84→  font-size: 12px;
+    85→  font-weight: 700;
+    86→  letter-spacing: 1px;
+    87→  text-transform: uppercase;
+    88→  border-radius: 4px;
+    89→  color: var(--text-sub);
+    90→  border: 1.5px solid var(--border);
+    91→}
+    92→
+    93→/* Phase group inside layers */
+    94→.phase-group {
+    95→  background: var(--bg);
+    96→  border: 1px solid var(--border-light);
+    97→  border-radius: 10px;
+    98→  padding: 16px 20px 14px;
+    99→  margin-bottom: 12px;
+   100→}
+   101→.phase-group:last-child { margin-bottom: 0; }
+   102→
+   103→.phase-title {
+   104→  font-size: 14px;
+   105→  font-weight: 700;
+   106→  margin-bottom: 10px;
+   107→  padding: 7px 14px;
+   108→  border-radius: 6px;
+   109→  display: flex;
+   110→  align-items: center;
+   111→  gap: 8px;
+   112→}
+   113→
+   114→/* Color schemes for phases - same-hue blue-gray progression */
+   115→.phase-blue .phase-title { background: #EFF6FF; color: #1E40AF; border-left: 3px solid #3B82F6; }
+   116→.phase-cyan .phase-title { background: #ECFEFF; color: #0E7490; border-left: 3px solid #06B6D4; }
+   117→.phase-purple .phase-title { background: #F5F3FF; color: #5B21B6; border-left: 3px solid #8B5CF6; }
+   118→.phase-amber .phase-title { background: #FFFBEB; color: #92400E; border-left: 3px solid #F59E0B; }
+   119→.phase-green .phase-title { background: #ECFDF5; color: #065F46; border-left: 3px solid #10B981; }
+   120→.phase-teal .phase-title { background: #F0FDFA; color: #115E59; border-left: 3px solid #14B8A6; }
+   121→.phase-red .phase-title { background: #FEF2F2; color: #991B1B; border-left: 3px solid #EF4444; }
+   122→
+   123→/* Component boxes */
+   124→.comp-row {
+   125→  display: flex;
+   126→  gap: 10px;
+   127→  flex-wrap: wrap;
+   128→  padding-left: 12px;
+   129→}
+   130→.comp-box {
+   131→  background: var(--surface);
+   132→  border: 1.5px solid var(--border);
+   133→  border-radius: 8px;
+   134→  padding: 10px 16px;
+   135→  min-width: 140px;
+   136→  flex: 0 1 auto;
+   137→}
+   138→.comp-box .comp-name {
+   139→  font-size: 13px;
+   140→  font-weight: 700;
+   141→  color: var(--text);
+   142→  margin-bottom: 3px;
+   143→}
+   144→.comp-box .comp-desc {
+   145→  font-size: 11px;
+   146→  color: var(--text-sub);
+   147→  line-height: 1.45;
+   148→}
+   149→.comp-box.highlight {
+   150→  border-color: var(--blue);
+   151→  background: #EFF6FF;
+   152→}
+   153→.comp-box.highlight .comp-name {
+   154→  color: var(--blue-dark);
+   155→}
+   156→
+   157→/* Small inline tags */
+   158→.tag {
+   159→  display: inline-block;
+   160→  font-size: 10px;
+   161→  font-weight: 600;
+   162→  padding: 2px 8px;
+   163→  border-radius: 10px;
+   164→  margin-right: 4px;
+   165→  margin-top: 4px;
+   166→}
+   167→.tag-blue { background: #DBEAFE; color: #1E40AF; }
+   168→.tag-purple { background: #EDE9FE; color: #5B21B6; }
+   169→.tag-cyan { background: #CFFAFE; color: #0E7490; }
+   170→.tag-amber { background: #FEF3C7; color: #92400E; }
+   171→.tag-green { background: #D1FAE5; color: #065F46; }
+   172→.tag-teal { background: #CCFBF1; color: #115E59; }
+   173→.tag-red { background: #FEE2E2; color: #991B1B; }
+   174→.tag-gray { background: #F3F4F6; color: #4B5563; }
+   175→
+   176→/* Detail description row */
+   177→.detail-row {
+   178→  display: flex;
+   179→  gap: 16px;
+   180→  padding-left: 12px;
+   181→  margin-top: 10px;
+   182→  flex-wrap: wrap;
+   183→}
+   184→.detail-item {
+   185→  font-size: 11.5px;
+   186→  color: var(--text-sub);
+   187→  line-height: 1.5;
+   188→  max-width: 420px;
+   189→}
+   190→.detail-item strong {
+   191→  color: var(--text);
+   192→  font-weight: 600;
+   193→}
+   194→
+   195→/* Data flow arrows between layers */
+   196→.arrow-row {
+   197→  text-align: center;
+   198→  margin: 4px 0;
+   199→  position: relative;
+   200→}
+   201→.arrow-row svg {
+   202→  display: inline-block;
+   203→}
+   204→
+   205→/* Objective tag */
+   206→.obj-tag {
+   207→  display: inline-block;
+   208→  font-size: 10px;
+   209→  font-weight: 700;
+   210→  padding: 3px 10px;
+   211→  border-radius: 4px;
+   212→  letter-spacing: 0.5px;
+   213→  margin-bottom: 8px;
+   214→}
+   215→.obj-1 { background: #DBEAFE; color: #1E40AF; border: 1px solid #93C5FD; }
+   216→.obj-2 { background: #EDE9FE; color: #5B21B6; border: 1px solid #C4B5FD; }
+   217→.obj-3 { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
+   218→.obj-4 { background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
+   219→
+   220→/* Log source pill */
+   221→.log-pills {
+   222→  display: flex;
+   223→  gap: 8px;
+   224→  flex-wrap: wrap;
+   225→  padding-left: 12px;
+   226→}
+   227→.log-pill {
+   228→  display: flex;
+   229→  align-items: center;
+   230→  gap: 6px;
+   231→  background: var(--surface);
+   232→  border: 1.5px solid var(--border);
+   233→  border-radius: 20px;
+   234→  padding: 6px 14px 6px 10px;
+   235→  font-size: 12px;
+   236→  font-weight: 500;
+   237→  color: var(--text);
+   238→}
+   239→.log-pill .pill-dot {
+   240→  width: 8px;
+   241→  height: 8px;
+   242→  border-radius: 50%;
+   243→}
+   244→.dot-auth { background: #3B82F6; }
+   245→.dot-audit { background: #8B5CF6; }
+   246→.dot-netflow { background: #06B6D4; }
+   247→.dot-dns { background: #F59E0B; }
+   248→.dot-cloud { background: #10B981; }
+   249→
+   250→/* Math notation */
+   251→.math {
+   252→  font-family: 'Cambria Math', 'Times New Roman', serif;
+   253→  font-style: italic;
+   254→  font-size: 12px;
+   255→  color: var(--purple-dark);
+   256→}
+   257→
+   258→/* Two-column detail */
+   259→.two-col {
+   260→  display: flex;
+   261→  gap: 24px;
+   262→  padding-left: 12px;
+   263→  flex-wrap: wrap;
+   264→}
+   265→.two-col > * {
+   266→  flex: 1;
+   267→  min-width: 280px;
+   268→}
+   269→
+   270→/* Sub-section headers */
+   271→.sub-header {
+   272→  font-size: 12px;
+   273→  font-weight: 700;
+   274→  color: var(--text-sub);
+   275→  margin: 10px 0 6px 12px;
+   276→  text-transform: uppercase;
+   277→  letter-spacing: 0.8px;
+   278→}
+   279→
+   280→/* Legend */
+   281→.arch-legend {
+   282→  display: flex;
+   283→  gap: 20px;
+   284→  flex-wrap: wrap;
+   285→  margin-top: 28px;
+   286→  padding: 16px 24px;
+   287→  background: var(--surface);
+   288→  border: 1px solid var(--border);
+   289→  border-radius: 10px;
+   290→}
+   291→.legend-item {
+   292→  display: flex;
+   293→  align-items: center;
+   294→  gap: 8px;
+   295→  font-size: 12px;
+   296→  color: var(--text-sub);
+   297→}
+   298→.legend-dot {
+   299→  width: 14px;
+   300→  height: 14px;
+   301→  border-radius: 4px;
+   302→  border: 1.5px solid;
+   303→}
+   304→
+   305→/* Horizontal data flow */
+   306→.hflow {
+   307→  display: flex;
+   308→  align-items: center;
+   309→  gap: 0;
+   310→  padding-left: 12px;
+   311→  margin-top: 8px;
+   312→}
+   313→.hflow-node {
+   314→  background: var(--bg);
+   315→  border: 1.5px solid var(--border);
+   316→  border-radius: 6px;
+   317→  padding: 7px 12px;
+   318→  font-size: 12px;
+   319→  font-weight: 600;
+   320→  color: var(--text);
+   321→  white-space: nowrap;
+   322→}
+   323→.hflow-arrow {
+   324→  font-size: 16px;
+   325→  color: var(--connector);
+   326→  padding: 0 6px;
+   327→  font-weight: 700;
+   328→}
+   329→
+   330→/* Nested component group */
+   331→.nested-group {
+   332→  border: 1.5px dashed var(--border);
+   333→  border-radius: 8px;
+   334→  padding: 12px 14px;
+   335→  margin: 8px 0 0 12px;
+   336→  position: relative;
+   337→}
+   338→.nested-group .nested-label {
+   339→  position: absolute;
+   340→  top: -9px;
+   341→  left: 10px;
+   342→  background: var(--bg);
+   343→  padding: 0 6px;
+   344→  font-size: 10px;
+   345→  font-weight: 600;
+   346→  color: var(--text-muted);
+   347→  letter-spacing: 0.5px;
+   348→  text-transform: uppercase;
+   349→}
+   350→.nested-row {
+   351→  display: flex;
+   352→  gap: 8px;
+   353→  flex-wrap: wrap;
+   354→}
+   355→.nested-box {
+   356→  background: var(--surface);
+   357→  border: 1px solid var(--border-light);
+   358→  border-radius: 6px;
+   359→  padding: 8px 12px;
+   360→  font-size: 11.5px;
+   361→}
+   362→.nested-box .nb-title {
+   363→  font-weight: 700;
+   364→  color: var(--text);
+   365→  margin-bottom: 2px;
+   366→}
+   367→.nested-box .nb-desc {
+   368→  color: var(--text-sub);
+   369→  font-size: 10.5px;
+   370→  line-height: 1.4;
+   371→}
+   372→
+   373→/* Inline formula block */
+   374→.formula-block {
+   375→  background: #F9FAFB;
+   376→  border: 1px solid var(--border);
+   377→  border-left: 3px solid var(--purple);
+   378→  border-radius: 0 6px 6px 0;
+   379→  padding: 10px 16px;
+   380→  margin: 8px 0 0 12px;
+   381→  font-family: 'Cambria Math', 'Times New Roman', serif;
+   382→  font-size: 13px;
+   383→  color: var(--text);
+   384→  line-height: 1.6;
+   385→}
+   386→.formula-block .formula-label {
+   387→  font-family: 'Inter', sans-serif;
+   388→  font-size: 11px;
+   389→  font-weight: 700;
+   390→  color: var(--purple-dark);
+   391→  margin-bottom: 4px;
+   392→}
+   393→
+   394→/* Feedback loop annotation */
+   395→.feedback-loop {
+   396→  display: flex;
+   397→  align-items: center;
+   398→  gap: 8px;
+   399→  padding: 8px 16px;
+   400→  background: #FFF7ED;
+   401→  border: 1.5px dashed #F59E0B;
+   402→  border-radius: 8px;
+   403→  margin: 8px 0 0 12px;
+   404→  font-size: 12px;
+   405→  color: var(--amber-dark);
+   406→  font-weight: 500;
+   407→}
+   408→.feedback-loop .fl-arrow {
+   409→  font-size: 14px;
+   410→  color: #F59E0B;
+   411→}
+   412→</style>
+   413→</head>
+   414→<body>
+   415→<div id="root">
+   416→
+   417→<div class="arch-title">
+   418→  <h1><span>TGDetect</span> &mdash; Heterogeneous Continuous-Time TGNN Architecture</h1>
+   419→  <div class="subtitle">In-Depth Architecture Study &middot; Multi-Step Cyberattack Detection Framework<br>Aligned with Objectives O1&ndash;O4</div>
+   420→</div>
+   421→
+   422→<!-- ============================================================ -->
+   423→<!-- LAYER 1: MULTI-SOURCE DATA INGESTION (Objective 1) -->
+   424→<!-- ============================================================ -->
+   425→<div class="arch-layer">
+   426→  <div class="layer-tag">Layer 1 &mdash; Multi-Source Data Ingestion &amp; Preprocessing</div>
+   427→  <span class="obj-tag obj-1">OBJ 1</span>
+   428→
+   429→  <div class="phase-group phase-blue">
+   430→    <div class="phase-title">1.1 Heterogeneous Log Source Collection</div>
+   431→    <div class="log-pills">
+   432→      <div class="log-pill"><span class="pill-dot dot-auth"></span>Authentication Logs</div>
+   433→      <div class="log-pill"><span class="pill-dot dot-audit"></span>System Audit Logs</div>
+   434→      <div class="log-pill"><span class="pill-dot dot-netflow"></span>Network Flow Data</div>
+   435→      <div class="log-pill"><span class="pill-dot dot-dns"></span>DNS Query Logs</div>
+   436→      <div class="log-pill"><span class="pill-dot dot-cloud"></span>Cloud API Logs</div>
+   437→    </div>
+   438→    <div class="detail-row">
+   439→      <div class="detail-item"><strong>Entity Types:</strong> Users, Processes, Files, IP Addresses, Domains, Ports, Cloud Resources, Registry Keys</div>
+   440→      <div class="detail-item"><strong>Event Types:</strong> Process Creation, File Read/Write, Network Connection, DNS Resolution, Authentication, Privilege Escalation, API Call</div>
+   441→    </div>
+   442→  </div>
+   443→
+   444→  <div class="phase-group phase-blue">
+   445→    <div class="phase-title">1.2 Temporal Normalization &amp; Entity Resolution</div>
+   446→    <div class="two-col">
+   447→      <div>
+   448→        <div class="sub-header">Normalization Pipeline</div>
+   449→        <div class="hflow">
+   450→          <div class="hflow-node">Raw Timestamps</div>
+   451→          <div class="hflow-arrow">&rarr;</div>
+   452→          <div class="hflow-node">UTC Standardization</div>
+   453→          <div class="hflow-arrow">&rarr;</div>
+   454→          <div class="hflow-node">Continuous-Time</div>
+   455→          <div class="hflow-arrow">&rarr;</div>
+   456→          <div class="hflow-node"><span class="math">t &isin; &#8477;<sup>+</sup></span></div>
+   457→        </div>
+   458→        <div class="detail-item" style="margin-top:8px;"><strong>Entity Resolution:</strong> Deduplication via hashing (SHA-256 of entity attributes). Cross-source identity linking (e.g., PID-to-User mapping, IP-to-Domain correlation).</div>
+   459→      </div>
+   460→      <div>
+   461→        <div class="sub-header">Schema Unification</div>
+   462→        <div class="comp-row">
+   463→          <div class="comp-box">
+   464→            <div class="comp-name">Unified Event Schema</div>
+   465→            <div class="comp-desc"><span class="math">(src, dst, action, t, attrs)</span></div>
+   466→          </div>
+   467→        </div>
+   468→        <div class="detail-item" style="margin-top:8px;"><strong>Feature Extraction:</strong> Categorical encoding of action types, numerical features from event attributes, temporal features from timestamp deltas.</div>
+   469→      </div>
+   470→    </div>
+   471→  </div>
+   472→</div>
+   473→
+   474→<!-- Arrow -->
+   475→<div class="arrow-row">
+   476→  <svg width="40" height="28" viewBox="0 0 40 28"><path d="M20 2 L20 20 M14 14 L20 20 L26 14" stroke="#94A3B8" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+   477→</div>
+   478→
+   479→<!-- ============================================================ -->
+   480→<!-- LAYER 2: TEMPORAL GRAPH CONSTRUCTION (Objective 1) -->
+   481→<!-- ============================================================ -->
+   482→<div class="arch-layer">
+   483→  <div class="layer-tag">Layer 2 &mdash; Heterogeneous Temporal Graph Construction</div>
+   484→  <span class="obj-tag obj-1">OBJ 1</span>
+   485→
+   486→  <div class="phase-group phase-cyan">
+   487→    <div class="phase-title">2.1 Graph Schema Definition</div>
+   488→    <div class="two-col">
+   489→      <div>
+   490→        <div class="comp-row">
+   491→          <div class="comp-box highlight">
+   492→            <div class="comp-name">Nodes (Entities)</div>
+   493→            <div class="comp-desc">Each unique entity becomes a node with type-specific initial feature vector. <span class="tag tag-blue">Heterogeneous</span></div>
+   494→          </div>
+   495→          <div class="comp-box highlight">
+   496→            <div class="comp-name">Edges (Interactions)</div>
+   497→            <div class="comp-desc">Each event becomes a directed, timestamped edge connecting source to destination entity.</div>
+   498→          </div>
+   499→        </div>
+   500→      </div>
+   501→      <div>
+   502→        <div class="comp-row">
+   503→          <div class="comp-box">
+   504→            <div class="comp-name">Node Features</div>
+   505→            <div class="comp-desc"><span class="math">h<sub>v</sub><sup>(0)</sup></span> &mdash; Type-specific initial embedding. Dimension: <span class="math">d</span></div>
+   506→          </div>
+   507→          <div class="comp-box">
+   508→            <div class="comp-name">Edge Features</div>
+   509→            <div class="comp-desc"><span class="math">e<sub>uv</sub></span> &mdash; Action type encoding + attribute vector. Includes timestamp <span class="math">t<sub>uv</sub></span></div>
+   510→          </div>
+   511→        </div>
+   512→      </div>
+   513→    </div>
+   514→    <div class="formula-block">
+   515→      <div class="formula-label">Formal Graph Definition</div>
+   516→      <span class="math">G<sub>t</sub> = (V, E, T, A)</span> where <span class="math">V</span> = set of heterogeneous nodes, <span class="math">E</span> = set of directed edges, <span class="math">T : E &rarr; &#8477;<sup>+</sup></span> assigns continuous timestamps, <span class="math">A : E &rarr; &#8477;<sup>k</sup></span> assigns edge feature vectors.
+   517→    </div>
+   518→  </div>
+   519→
+   520→  <div class="phase-group phase-cyan">
+   521→    <div class="phase-title">2.2 Continuous-Time Temporal Graph Construction</div>
+   522→    <div class="two-col">
+   523→      <div>
+   524→        <div class="sub-header">Edge Temporal Ordering</div>
+   525→        <div class="detail-item">Events are indexed as a chronologically sorted sequence. Each new event <span class="math">e<sub>i</sub> = (u, v, t<sub>i</sub>, a<sub>i</sub>)</span> is appended to the temporal edge list, maintaining the invariant <span class="math">t<sub>1</sub> &le; t<sub>2</sub> &le; ... &le; t<sub>n</sub></span>.</div>
+   526→        <div class="detail-item" style="margin-top:6px;"><strong>Sliding Window:</strong> A configurable temporal window <span class="math">&Delta;W</span> retains only recent edges for online inference, preventing unbounded memory growth.</div>
+   527→      </div>
+   528→      <div>
+   529→        <div class="sub-header">Graph Storage</div>
+   530→        <div class="comp-row">
+   531→          <div class="comp-box">
+   532→            <div class="comp-name">In-Memory Graph</div>
+   533→            <div class="comp-desc">CSR format adjacency + timestamp array for fast temporal neighborhood queries.</div>
+   534→          </div>
+   535→          <div class="comp-box">
+   536→            <div class="comp-name">Persistent Storage</div>
+   537→            <div class="comp-desc">Neo4j / NetworkX serialization for full provenance graph persistence.</div>
+   538→          </div>
+   539→        </div>
+   540→      </div>
+   541→    </div>
+   542→  </div>
+   543→</div>
+   544→
+   545→<!-- Arrow -->
+   546→<div class="arrow-row">
+   547→  <svg width="40" height="28" viewBox="0 0 40 28"><path d="M20 2 L20 20 M14 14 L20 20 L26 14" stroke="#94A3B8" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+   548→</div>
+   549→
+   550→<!-- ============================================================ -->
+   551→<!-- LAYER 3: TGNN CORE (Objective 1) -->
+   552→<!-- ============================================================ -->
+   553→<div class="arch-layer">
+   554→  <div class="layer-tag">Layer 3 &mdash; Heterogeneous Continuous-Time TGNN Core Engine</div>
+   555→  <span class="obj-tag obj-1">OBJ 1</span>
+   556→
+   557→  <div class="phase-group phase-purple">
+   558→    <div class="phase-title">3.1 Continuous-Time Time Encoding Module</div>
+   559→    <div class="two-col">
+   560→      <div>
+   561→        <div class="comp-row">
+   562→          <div class="comp-box highlight">
+   563→            <div class="comp-name">Sinusoidal Time Encoding</div>
+   564→            <div class="comp-desc">Projects scalar timestamps into high-dimensional space preserving temporal proximity relationships.</div>
+   565→          </div>
+   566→          <div class="comp-box">
+   567→            <div class="comp-name">Time Decay Function</div>
+   568→            <div class="comp-desc">Exponential decay weights recent interactions higher than distant ones.</div>
+   569→          </div>
+   570→        </div>
+   571→      </div>
+   572→      <div>
+   573→        <div class="formula-block" style="margin-left:0;">
+   574→          <div class="formula-label">Sinusoidal Time Encoding</div>
+   575→          <span class="math">TE(t) = [sin(&omega;<sub>1</sub>t), cos(&omega;<sub>1</sub>t), ..., sin(&omega;<sub>d/2</sub>t), cos(&omega;<sub>d/2</sub>t)]</span><br>
+   576→          where <span class="math">&omega;<sub>k</sub> = 1 / 10000<sup>2k/d</sup></span> (positional encoding frequencies)
+   577→        </div>
+   578→      </div>
+   579→    </div>
+   580→    <div class="formula-block">
+   581→      <div class="formula-label">Temporal Attention Weight</div>
+   582→      <span class="math">&alpha;<sub>uv</sub><sup>(t)</sup> = exp(-&sigma; &middot; |t - t<sub>uv</sub>|) &middot; softmax(W<sub>a</sub> &middot; [h<sub>u</sub> &#9650; h<sub>v</sub> &#9650; TE(t<sub>uv</sub>)])</span> &mdash; Combines temporal recency with learned attention over node states and time embeddings.
+   583→    </div>
+   584→  </div>
+   585→
+   586→  <div class="phase-group phase-purple">
+   587→    <div class="phase-title">3.2 Neighborhood Message Passing (Temporal Attention)</div>
+   588→    <div class="two-col">
+   589→      <div>
+   590→        <div class="hflow">
+   591→          <div class="hflow-node">Source Node <span class="math">h<sub>u</sub></span></div>
+   592→          <div class="hflow-arrow">&rarr;</div>
+   593→          <div class="hflow-node">Linear Transform <span class="math">W<sub>&phi;</sub></span></div>
+   594→          <div class="hflow-arrow">&rarr;</div>
+   595→          <div class="hflow-node">Temporal Attention <span class="math">&alpha;</span></div>
+   596→          <div class="hflow-arrow">&rarr;</div>
+   597→          <div class="hflow-node">Weighted Aggregate <span class="math">&Sigma;</span></div>
+   598→          <div class="hflow-arrow">&rarr;</div>
+   599→          <div class="hflow-node">Message <span class="math">m<sub>v</sub></span></div>
+   600→        </div>
+   601→        <div class="detail-item" style="margin-top:8px;"><strong>Multi-Head Attention:</strong> <span class="math">K</span> independent attention heads compute parallel message representations, concatenated and projected: <span class="math">m<sub>v</sub> = ||<sub>k=1</sub><sup>K</sup> W<sub>k</sub> &middot; Attn<sub>k</sub>(N<sub>t</sub>(v))</span></div>
+   602→      </div>
+   603→      <div>
+   604→        <div class="formula-block" style="margin-left:0;">
+   605→          <div class="formula-label">Message Computation</div>
+   606→          <span class="math">m<sub>v</sub><sup>(l)</sup>(t) = &Sigma;<sub>u&isin;N<sub>t</sub>(v)</sub> &alpha;<sub>uv</sub><sup>(l)</sup>(t) &middot; &phi;(h<sub>u</sub><sup>(l)</sup>, e<sub>uv</sub>, TE(t<sub>uv</sub>))</span><br><br>
+   607→          <span class="math">N<sub>t</sub>(v)</span> = temporal neighborhood of <span class="math">v</span> at time <span class="math">t</span> (all edges <span class="math">(u,v,t') : t' &le; t</span>)
+   608→        </div>
+   609→      </div>
+   610→    </div>
+   611→  </div>
+   612→
+   613→  <div class="phase-group phase-purple">
+   614→    <div class="phase-title">3.3 Temporal Aggregation Module</div>
+   615→    <div class="comp-row">
+   616→      <div class="comp-box">
+   617→        <div class="comp-name">Temporal Attention Pooling</div>
+   618→        <div class="comp-desc">Attention-weighted aggregation over all timestamps in the neighborhood window. Learns which time steps matter most for the current classification.</div>
+   619→      </div>
+   620→      <div class="comp-box">
+   621→        <div class="comp-name">Sliding Window Aggregation</div>
+   622→        <div class="comp-desc">Aggregates messages within a configurable time window <span class="math">&Delta;W</span>, enabling efficient online processing without recomputing full history.</div>
+   623→      </div>
+   624→      <div class="comp-box">
+   625→        <div class="comp-name">RNN/GRU Temporal Encoder</div>
+   626→        <div class="comp-desc">Sequentially processes chronologically ordered messages through a GRU cell, capturing temporal dynamics and event ordering effects.</div>
+   627→      </div>
+   628→    </div>
+   629→    <div class="formula-block">
+   630→      <div class="formula-label">Node State Update</div>
+   631→      <span class="math">h<sub>v</sub><sup>(l+1)</sup>(t) = GRU(h<sub>v</sub><sup>(l)</sup>(t), AGG({m<sub>v</sub><sup>(l)</sup>(t<sub>i</sub>) : t<sub>i</sub> &isin; [t - &Delta;W, t]}))</span> &mdash; Updates node embedding by aggregating temporally-weighted messages from neighbors.
+   632→    </div>
+   633→  </div>
+   634→
+   635→  <div class="phase-group phase-purple">
+   636→    <div class="phase-title">3.4 Persistent Entity Memory Module</div>
+   637→    <div class="two-col">
+   638→      <div>
+   639→        <div class="comp-row">
+   640→          <div class="comp-box highlight">
+   641→            <div class="comp-name">Entity Memory Bank</div>
+   642→            <div class="comp-desc">Per-node trainable memory matrix <span class="math">M<sub>v</sub> &isin; &#8477;<sup>m&times;d</sup></span> that persists across timesteps.</div>
+   643→          </div>
+   644→          <div class="comp-box">
+   645→            <div class="comp-name">Memory Read/Write Gates</div>
+   646→            <div class="comp-desc">Learned gates control which information is read from and written to memory at each event.</div>
+   647→          </div>
+   648→        </div>
+   649→        <div class="detail-item" style="margin-top:8px;"><strong>Purpose:</strong> Captures long-term behavioral patterns for each entity (e.g., "User X typically accesses these files every morning"). Enables detection of deviations from established baselines.</div>
+   650→      </div>
+   651→      <div>
+   652→        <div class="formula-block" style="margin-left:0;">
+   653→          <div class="formula-label">Memory Update Mechanism</div>
+   654→          <span class="math">r<sub>v</sub><sup>(t)</sup> = &sigma;(W<sub>r</sub> &middot; [h<sub>v</sub><sup>(l)</sup>(t) || m<sub>v</sub><sup>(old)</sup>])</span> &mdash; Read gate<br>
+   655→          <span class="math">w<sub>v</sub><sup>(t)</sup> = &sigma;(W<sub>w</sub> &middot; [h<sub>v</sub><sup>(l)</sup>(t) || m<sub>v</sub><sup>(old)</sup>])</span> &mdash; Write gate<br>
+   656→          <span class="math">m<sub>v</sub><sup>(new)</sup> = r<sub>v</sub> &odot; m<sub>v</sub><sup>(old)</sup> + w<sub>v</sub> &odot; h<sub>v</sub><sup>(l)</sup>(t)</span> &mdash; Memory update
+   657→        </div>
+   658→      </div>
+   659→    </div>
+   660→  </div>
+   661→
+   662→  <div class="phase-group phase-purple">
+   663→    <div class="phase-title">3.5 Heterogeneous Type-Aware Processing</div>
+   664→    <div class="comp-row">
+   665→      <div class="comp-box">
+   666→        <div class="comp-name">Type-Specific Projection</div>
+   667→        <div class="comp-desc">Separate linear projections <span class="math">W<sub>&tau;</sub></span> for each node/edge type <span class="math">&tau;</span>, enabling type-aware feature transformation.</div>
+   668→      </div>
+   669→      <div class="comp-box">
+   670→        <div class="comp-name">Type Embedding</div>
+   671→        <div class="comp-desc">Learnable type embeddings <span class="math">e<sub>&tau;</sub></span> concatenated to node features, providing structural type information to the model.</div>
+   672→      </div>
+   673→      <div class="comp-box">
+   674→        <div class="comp-name">Cross-Type Attention</div>
+   675→        <div class="comp-desc">Attention mechanism that modulates message strength based on source-target type pair, capturing cross-type interaction significance.</div>
+   676→      </div>
+   677→    </div>
+   678→    <div class="formula-block">
+   679→      <div class="formula-label">Type-Aware Message Function</div>
+   680→      <span class="math">&phi;<sub>&tau;(u),&tau;(v),&tau;(e)</sub>(h<sub>u</sub>, e<sub>uv</sub>, TE(t)) = W<sub>&tau;(v)</sub> &middot; MLP([W<sub>&tau;(u)</sub>h<sub>u</sub> || W<sub>&tau;(e)</sub>e<sub>uv</sub> || TE(t<sub>uv</sub>) || e<sub>&tau;(u)</sub> || e<sub>&tau;(v)</sub>])</span>
+   681→    </div>
+   682→  </div>
+   683→
+   684→  <div class="phase-group phase-purple">
+   685→    <div class="phase-title">3.6 Classification Head</div>
+   686→    <div class="hflow">
+   687→      <div class="hflow-node">Final Embedding <span class="math">h<sub>v</sub><sup>(L)</sup>(t)</span></div>
+   688→      <div class="hflow-arrow">&rarr;</div>
+   689→      <div class="hflow-node">MLP Decoder</div>
+   690→      <div class="hflow-arrow">&rarr;</div>
+   691→      <div class="hflow-node">Softmax / Sigmoid</div>
+   692→      <div class="hflow-arrow">&rarr;</div>
+   693→      <div class="hflow-node" style="border-color:#EF4444; color:#991B1B;">Attack Label <span class="math">y&#770;</span></div>
+   694→    </div>
+   695→    <div class="detail-row">
+   696→      <div class="detail-item"><strong>Binary Classification:</strong> <span class="math">y&#770; = &sigma;(W<sub>out</sub> &middot; h<sub>v</sub><sup>(L)</sup>(t) + b)</span> &mdash; Malicious vs. Benign event prediction.</div>
+   697→      <div class="detail-item"><strong>Multi-Class:</strong> APT, LotL, Zero-day, Benign &mdash; Cross-type attack categorization with hierarchical classification.</div>
+   698→      <div class="detail-item"><strong>Output:</strong> Event-level classification with confidence score, plus node-level anomaly scores for graph-wide detection.</div>
+   699→    </div>
+   700→  </div>
+   701→</div>
+   702→
+   703→<!-- Arrow -->
+   704→<div class="arrow-row">
+   705→  <svg width="40" height="28" viewBox="0 0 40 28"><path d="M20 2 L20 20 M14 14 L20 20 L26 14" stroke="#94A3B8" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+   706→</div>
+   707→
+   708→<!-- ============================================================ -->
+   709→<!-- LAYER 4: CONCEPT DRIFT ADAPTATION (Objective 2) -->
+   710→<!-- ============================================================ -->
+   711→<div class="arch-layer">
+   712→  <div class="layer-tag">Layer 4 &mdash; Online Concept Drift Adaptation</div>
+   713→  <span class="obj-tag obj-2">OBJ 2</span>
+   714→
+   715→  <div class="phase-group phase-amber">
+   716→    <div class="phase-title">4.1 Drift Detection Engine</div>
+   717→    <div class="two-col">
+   718→      <div>
+   719→        <div class="comp-row">
+   720→          <div class="comp-box highlight">
+   721→            <div class="comp-name">Statistical Drift Detector</div>
+   722→            <div class="comp-desc">ADWIN (Adaptive Windowing) or Page-Hinkley test monitors prediction error distribution for significant changes.</div>
+   723→          </div>
+   724→          <div class="comp-box">
+   725→            <div class="comp-name">Feature Distribution Monitor</div>
+   726→            <div class="comp-desc">KL divergence / KS test compares incoming feature distributions against reference window statistics.</div>
+   727→          </div>
+   728→        </div>
+   729→      </div>
+   730→      <div>
+   731→        <div class="formula-block" style="margin-left:0;">
+   732→          <div class="formula-label">Drift Detection Condition</div>
+   733→          <span class="math">H<sub>0</sub>: D(P<sub>ref</sub>, P<sub>new</sub>) &le; &epsilon;</span> (null hypothesis: no drift)<br>
+   734→          <span class="math">H<sub>1</sub>: D(P<sub>ref</sub>, P<sub>new</sub>) &gt; &epsilon;</span> (drift detected)<br><br>
+   735→          When <span class="math">H<sub>1</sub></span> accepted &rarr; trigger adaptation pipeline.
+   736→        </div>
+   737→      </div>
+   738→    </div>
+   739→  </div>
+   740→
+   741→  <div class="phase-group phase-amber">
+   742→    <div class="phase-title">4.2 Incremental Model Adaptation</div>
+   743→    <div class="hflow">
+   744→      <div class="hflow-node">Drift Signal</div>
+   745→      <div class="hflow-arrow">&rarr;</div>
+   746→      <div class="hflow-node">Buffer Recent Labeled Data</div>
+   747→      <div class="hflow-arrow">&rarr;</div>
+   748→      <div class="hflow-node">Selective Replay</div>
+   749→      <div class="hflow-arrow">&rarr;</div>
+   750→      <div class="hflow-node">Fine-Tune TGNN</div>
+   751→      <div class="hflow-arrow">&rarr;</div>
+   752→      <div class="hflow-node">EWC Regularization</div>
+   753→      <div class="hflow-arrow">&rarr;</div>
+   754→      <div class="hflow-node">Updated Model</div>
+   755→    </div>
+   756→    <div class="two-col">
+   757→      <div>
+   758→        <div class="sub-header">Elastic Weight Consolidation (EWC)</div>
+   759→        <div class="detail-item"><strong>Prevents Catastrophic Forgetting:</strong> Computes Fisher Information Matrix <span class="math">F</span> on old data. Adds penalty <span class="math">&lambda; &Sigma;<sub>i</sub> F<sub>i</sub>(&theta;<sub>i</sub> - &theta;<sub>i</sub><sup>*</sup>)<sup>2</sup></span> to loss, constraining important parameters from changing too much.</div>
+   760→      </div>
+   761→      <div>
+   762→        <div class="sub-header">Experience Replay Buffer</div>
+   763→        <div class="detail-item"><strong>Maintains Old Knowledge:</strong> Reservoir-sampled buffer of representative past events interleaved with new data during fine-tuning. Buffer size <span class="math">B</span> with FIFO replacement.</div>
+   764→      </div>
+   765→    </div>
+   766→    <div class="feedback-loop">
+   767→      <span class="fl-arrow">&circlearrow;</span>
+   768→      Continuous Feedback Loop: Detection Accuracy Monitor &rarr; Drift Detection &rarr; Model Update &rarr; Accuracy Re-evaluation &rarr; (repeat)
+   769→    </div>
+   770→  </div>
+   771→</div>
+   772→
+   773→<!-- Arrow -->
+   774→<div class="arrow-row">
+   775→  <svg width="40" height="28" viewBox="0 0 40 28"><path d="M20 2 L20 20 M14 14 L20 20 L26 14" stroke="#94A3B8" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+   776→</div>
+   777→
+   778→<!-- ============================================================ -->
+   779→<!-- LAYER 5: ATTACK BACKTRACKING ENGINE (Objective 3) -->
+   780→<!-- ============================================================ -->
+   781→<div class="arch-layer">
+   782→  <div class="layer-tag">Layer 5 &mdash; Attack Backtracking &amp; Path Reconstruction Engine</div>
+   783→  <span class="obj-tag obj-3">OBJ 3</span>
+   784→
+   785→  <div class="phase-group phase-teal">
+   786→    <div class="phase-title">5.1 Alert-Triggered Backtracking</div>
+   787→    <div class="hflow">
+   788→      <div class="hflow-node">Detection Alert <span class="math">y&#770;<sub>v</sub>(t)</span></div>
+   789→      <div class="hflow-arrow">&rarr;</div>
+   790→      <div class="hflow-node">Identify Alert Node</div>
+   791→      <div class="hflow-arrow">&rarr;</div>
+   792→      <div class="hflow-node">Reverse BFS/DFS</div>
+   793→      <div class="hflow-arrow">&rarr;</div>
+   794→      <div class="hflow-node">Temporal Path Scoring</div>
+   795→      <div class="hflow-arrow">&rarr;</div>
+   796→      <div class="hflow-node">Attack Chain</div>
+   797→    </div>
+   798→    <div class="two-col">
+   799→      <div>
+   800→        <div class="comp-row">
+   801→          <div class="comp-box highlight">
+   802→            <div class="comp-name">Temporal Subgraph Extraction</div>
+   803→            <div class="comp-desc">Extracts the connected temporal subgraph <span class="math">G'<sub>t</sub></span> rooted at the alert node, traversing backward through temporal edges.</div>
+   804→          </div>
+   805→          <div class="comp-box">
+   806→            <div class="comp-name">Attention-Based Path Ranking</div>
+   807→            <div class="comp-desc">Uses TGNN attention weights <span class="math">&alpha;<sub>uv</sub></span> to rank edges by contribution to the malicious classification.</div>
+   808→          </div>
+   809→        </div>
+   810→      </div>
+   811→      <div>
+   812→        <div class="formula-block" style="margin-left:0;">
+   813→          <div class="formula-label">Path Significance Score</div>
+   814→          <span class="math">S(path) = &Sigma;<sub>e<sub>i</sub>&isin;path</sub> &alpha;<sub>e<sub>i</sub></sub> &middot; P(malicious|e<sub>i</sub>)</span><br>
+   815→          <span class="math">&times; temporal_coherence(path)</span><br><br>
+   816→          Paths with <span class="math">S(path) &gt; threshold &tau;</span> are included in the reconstructed attack chain.
+   817→        </div>
+   818→      </div>
+   819→    </div>
+   820→  </div>
+   821→
+   822→  <div class="phase-group phase-teal">
+   823→    <div class="phase-title">5.2 Multi-Step Attack Scenario Reconstruction</div>
+   824→    <div class="comp-row">
+   825→      <div class="comp-box">
+   826→        <div class="comp-name">Initial Compromise Identification</div>
+   827→        <div class="comp-desc">Finds the earliest node in the attack chain &mdash; the point of initial entry (e.g., phishing email, exploited vulnerability).</div>
+   828→      </div>
+   829→      <div class="comp-box">
+   830→        <div class="comp-name">Lateral Movement Tracing</div>
+   831→        <div class="comp-desc">Traces the attacker's movement across the network: which machines were compromised, what credentials were used, what data was accessed.</div>
+   832→      </div>
+   833→      <div class="comp-box">
+   834→        <div class="comp-name">Impact Assessment</div>
+   835→        <div class="comp-desc">Identifies all affected entities (files, credentials, machines) and the blast radius of the attack for IR prioritization.</div>
+   836→      </div>
+   837→    </div>
+   838→    <div class="detail-row">
+   839→      <div class="detail-item"><strong>Output Format:</strong> Chronologically ordered attack timeline with entities, actions, timestamps, and confidence scores for each step in the chain.</div>
+   840→      <div class="detail-item"><strong>Visualization:</strong> Interactive temporal graph visualization (pyvis/Plotly) highlighting the attack path in red, normal activity in gray.</div>
+   841→    </div>
+   842→  </div>
+   843→</div>
+   844→
+   845→<!-- Arrow -->
+   846→<div class="arrow-row">
+   847→  <svg width="40" height="28" viewBox="0 0 40 28"><path d="M20 2 L20 20 M14 14 L20 20 L26 14" stroke="#94A3B8" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+   848→</div>
+   849→
+   850→<!-- ============================================================ -->
+   851→<!-- LAYER 6: TEMPORAL EXPLAINABILITY (Objective 4) -->
+   852→<!-- ============================================================ -->
+   853→<div class="arch-layer">
+   854→  <div class="layer-tag">Layer 6 &mdash; Temporal Explainability via MITRE ATT&amp;CK Mapping</div>
+   855→  <span class="obj-tag obj-4">OBJ 4</span>
+   856→
+   857→  <div class="phase-group phase-green">
+   858→    <div class="phase-title">6.1 Attention Weight Extraction &amp; Temporal Mapping</div>
+   859→    <div class="hflow">
+   860→      <div class="hflow-node">TGNN Attention Weights <span class="math">{&alpha;<sub>uv</sub>}</span></div>
+   861→      <div class="hflow-arrow">&rarr;</div>
+   862→      <div class="hflow-node">Top-K Edge Selection</div>
+   863→      <div class="hflow-arrow">&rarr;</div>
+   864→      <div class="hflow-node">Temporal Ordering</div>
+   865→      <div class="hflow-arrow">&rarr;</div>
+   866→      <div class="hflow-node">Behavioral Pattern Extraction</div>
+   867→    </div>
+   868→    <div class="detail-row">
+   869→      <div class="detail-item"><strong>Attention Aggregation:</strong> Per-edge attention scores are aggregated per entity pair and time window to identify the most influential interactions contributing to the classification.</div>
+   870→      <div class="detail-item"><strong>Temporal Pattern:</strong> Extracts <strong>when</strong> (timestamp progression), <strong>how</strong> (action sequence), and <strong>why</strong> (attention-weighted significance) each event contributed.</div>
+   871→    </div>
+   872→  </div>
+   873→
+   874→  <div class="phase-group phase-green">
+   875→    <div class="phase-title">6.2 MITRE ATT&amp;CK Framework Mapping</div>
+   876→    <div class="two-col">
+   877→      <div>
+   878→        <div class="comp-row">
+   879→          <div class="comp-box highlight">
+   880→            <div class="comp-name">Tactic-Level Mapping</div>
+   881→            <div class="comp-desc">Maps detected behavior sequences to MITRE ATT&amp;CK tactics (Initial Access, Execution, Persistence, Privilege Escalation, Lateral Movement, Exfiltration).</div>
+   882→          </div>
+   883→          <div class="comp-box">
+   884→            <div class="comp-name">Technique-Level Mapping</div>
+   885→            <div class="comp-desc">Fine-grained mapping to specific techniques (e.g., T1059.001 &mdash; PowerShell, T1003 &mdash; OS Credential Dumping).</div>
+   886→          </div>
+   887→        </div>
+   888→        <div class="detail-item" style="margin-top:8px;"><strong>Mapping Algorithm:</strong> Rule-based + embedding similarity. Each detected action type is matched against the MITRE ATT&amp;CK technique database using action-type taxonomy and behavioral features.</div>
+   889→      </div>
+   890→      <div>
+   891→        <div class="sub-header">Output Annotations</div>
+   892→        <div class="comp-row">
+   893→          <div class="comp-box">
+   894→            <div class="comp-name">Tactic Tag</div>
+   895→            <div class="comp-desc"><span class="tag tag-green">TA0001</span> Initial Access</div>
+   896→          </div>
+   897→          <div class="comp-box">
+   898→            <div class="comp-name">Technique Tag</div>
+   899→            <div class="comp-desc"><span class="tag tag-amber">T1566.001</span> Spearphishing Attachment</div>
+   900→          </div>
+   901→        </div>
+   902→      </div>
+   903→    </div>
+   904→  </div>
+   905→
+   906→  <div class="phase-group phase-green">
+   907→    <div class="phase-title">6.3 LLM-Generated Natural Language Explanation</div>
+   908→    <div class="hflow">
+   909→      <div class="hflow-node">Attack Path + ATT&amp;CK Mapping</div>
+   910→      <div class="hflow-arrow">&rarr;</div>
+   911→      <div class="hflow-node">Structured Prompt Builder</div>
+   912→      <div class="hflow-arrow">&rarr;</div>
+   913→      <div class="hflow-node">LLM (GPT / Local Model)</div>
+   914→      <div class="hflow-arrow">&rarr;</div>
+   915→      <div class="hflow-node" style="border-color:#10B981; color:#065F46;">Human-Readable Narrative</div>
+   916→    </div>
+   917→    <div class="two-col">
+   918→      <div>
+   919→        <div class="sub-header">Prompt Template</div>
+   920→        <div class="detail-item">"Given the following temporal attack sequence: [chronological events with timestamps, entities, actions, ATT&amp;CK technique IDs, and attention scores], generate a security analyst report explaining what was detected, when each step occurred, how the attacker progressed, and why each action was classified as malicious."</div>
+   921→      </div>
+   922→      <div>
+   923→        <div class="sub-header">Explanation Dimensions</div>
+   924→        <div class="comp-row">
+   925→          <div class="comp-box">
+   926→            <div class="comp-name"><span class="tag tag-blue">WHAT</span></div>
+   927→            <div class="comp-desc">The detected attack type and affected entities.</div>
+   928→          </div>
+   929→          <div class="comp-box">
+   930→            <div class="comp-name"><span class="tag tag-amber">WHEN</span></div>
+   931→            <div class="comp-desc">Temporal progression and timeline of the attack.</div>
+   932→          </div>
+   933→          <div class="comp-box">
+   934→            <div class="comp-name"><span class="tag tag-purple">HOW</span></div>
+   935→            <div class="comp-desc">Attack techniques used, mapped to ATT&amp;CK.</div>
+   936→          </div>
+   937→          <div class="comp-box">
+   938→            <div class="comp-name"><span class="tag tag-red">WHY</span></div>
+   939→            <div class="comp-desc">Model reasoning via attention weight attribution.</div>
+   940→          </div>
+   941→        </div>
+   942→      </div>
+   943→    </div>
+   944→  </div>
+   945→</div>
+   946→
+   947→<!-- ============================================================ -->
+   948→<!-- LAYER 7: INFERENCE / DEPLOYMENT -->
+   949→<!-- ============================================================ -->
+   950→<div class="arrow-row" style="margin-bottom:0;">
+   951→  <svg width="40" height="28" viewBox="0 0 40 28"><path d="M20 2 L20 20 M14 14 L20 20 L26 14" stroke="#94A3B8" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+   952→</div>
+   953→
+   954→<div class="arch-layer" style="margin-bottom:0;">
+   955→  <div class="layer-tag">Layer 7 &mdash; Online Inference &amp; Deployment</div>
+   956→
+   957→  <div class="phase-group phase-teal">
+   958→    <div class="phase-title">7.1 Real-Time Event Stream Processing</div>
+   959→    <div class="hflow">
+   960→      <div class="hflow-node">Live Log Stream</div>
+   961→      <div class="hflow-arrow">&rarr;</div>
+   962→      <div class="hflow-node">Event Parser</div>
+   963→      <div class="hflow-arrow">&rarr;</div>
+   964→      <div class="hflow-node">Graph Update</div>
+   965→      <div class="hflow-arrow">&rarr;</div>
+   966→      <div class="hflow-node">TGNN Inference</div>
+   967→      <div class="hflow-arrow">&rarr;</div>
+   968→      <div class="hflow-node">Alert + Explanation</div>
+   969→    </div>
+   970→    <div class="detail-row">
+   971→      <div class="detail-item"><strong>Latency Target:</strong> End-to-end processing &le; 500ms per event from log ingestion to alert generation.</div>
+   972→      <div class="detail-item"><strong>API Layer:</strong> FastAPI REST endpoints for event submission, alert querying, and explanation retrieval.</div>
+   973→      <div class="detail-item"><strong>Dashboard:</strong> Streamlit + Plotly + pyvis for real-time temporal graph visualization, alert monitoring, and attack path exploration.</div>
+   974→    </div>
+   975→  </div>
+   976→</div>
+   977→
+   978→<!-- ============================================================ -->
+   979→<!-- LEGEND -->
+   980→<!-- ============================================================ -->
+   981→<div class="arch-legend">
+   982→  <div class="legend-item"><div class="legend-dot" style="border-color:#3B82F6;background:#EFF6FF;"></div>Data Ingestion (OBJ 1)</div>
+   983→  <div class="legend-item"><div class="legend-dot" style="border-color:#06B6D4;background:#ECFEFF;"></div>Graph Construction (OBJ 1)</div>
+   984→  <div class="legend-item"><div class="legend-dot" style="border-color:#8B5CF6;background:#F5F3FF;"></div>TGNN Core (OBJ 1)</div>
+   985→  <div class="legend-item"><div class="legend-dot" style="border-color:#F59E0B;background:#FFFBEB;"></div>Concept Drift (OBJ 2)</div>
+   986→  <div class="legend-item"><div class="legend-dot" style="border-color:#14B8A6;background:#F0FDFA;"></div>Attack Backtracking (OBJ 3)</div>
+   987→  <div class="legend-item"><div class="legend-dot" style="border-color:#10B981;background:#ECFDF5;"></div>Explainability (OBJ 4)</div>
+   988→  <div class="legend-item"><div class="legend-dot" style="border-color:#94A3B8;background:#F9FAFB;"></div>General / Infrastructure</div>
+   989→</div>
+   990→
+   991→</div>
+   992→</body>
+   993→</html>

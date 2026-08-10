@@ -39,13 +39,14 @@ body {
   width: fit-content;
   min-width: 1400px;
   margin: 0 auto;
-  padding: 48px 50px;
+  padding: 0 16px 20px 16px;
 }
 
 /* Title Block */
 .arch-title {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 28px;
+  padding-top: 8px;
 }
 .arch-title h1 {
   font-size: 26px;
@@ -71,8 +72,8 @@ body {
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: 14px;
-  padding: 22px 28px 20px;
-  margin-bottom: 20px;
+  padding: 20px 26px 18px;
+  margin-bottom: 14px;
   position: relative;
 }
 .arch-layer .layer-tag {
@@ -389,6 +390,28 @@ body {
   font-weight: 700;
   color: var(--purple-dark);
   margin-bottom: 4px;
+}
+
+/* PDF Page Rules */
+@page {
+  size: letter;
+  margin: 56px 46px 52px 46px;
+}
+.arch-layer {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.arrow-row {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.arch-legend {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.arch-title {
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 /* Feedback loop annotation */
