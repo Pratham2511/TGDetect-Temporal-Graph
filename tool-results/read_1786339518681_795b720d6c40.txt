@@ -1,0 +1,802 @@
+     1→# Playwright + CSS Rendering Engine
+     2→
+     3→> **⚠️ Before writing any code, read [`_rules.md`](references/_rules.md) — three non-negotiable rules on overlap, hierarchy, and color.**
+     4→
+     5→**Core principle: Content-driven, not template-driven. Analyze content structure first, then decide layout, then render.**
+     6→
+     7→Applicable to: flowcharts, infographics, KPI cards, data posters — any visualization requiring full CSS power (gradients, shadows, rounded corners, Grid/Flexbox layout).
+     8→
+     9→---
+    10→
+    11→## Step 1: Content Analysis
+    12→
+    13→When you receive a flowchart/infographic requirement, **don't write HTML/CSS first**. Analyze the content structure.
+    14→
+    15→### 1.1 Flowchart Content Analysis
+    16→
+    17→```
+    18→Input: "Honey production process", 8 steps, linear without branches
+    19→    ↓
+    20→{
+    21→  "type": "flowchart",
+    22→  "nodes": [
+    23→    { "id": "1", "label": "花粉采集", "desc": "蜜蜂从花朵采集花蜜" },
+    24→    { "id": "2", "label": "酿造", "desc": "蜜蜂在蜂巢中反复吞吐" },
+    25→    ...
+    26→  ],
+    27→  "edges": [["1","2"], ["2","3"], ...],
+    28→  "nodeTypes": { "start": ["1"], "end": ["8"], "decision": [], "normal": ["2","3","4","5","6","7"] }
+    29→}
+    30→```
+    31→
+    32→### 1.2 Key Metrics
+    33→
+    34→| Metric | Calculation | Affects |
+    35→|------|---------|---------|
+    36→| `nodeCount` | Total node count | Mermaid vs CSS flowchart |
+    37→| `maxTextLen` | Longest text char count | Node width |
+    38→| `hasDecision` | Has decision branches | Layout complexity |
+    39→| `hasBranch` | Has parallel/branches | Column count |
+    40→| `parallelCount` | Max parallel branches | Column count |
+    41→| `phaseCount` | Phase/group count | Need for phased containers |
+    42→| `hasRoles` | Has roles/swimlanes | Need for dual-panel |
+    43→| `isLinear` | Linear without branches | Can use snake layout |
+    44→
+    45→### 1.3 Infographic Content Analysis
+    46→
+    47→Infographics (KPI cards, data posters) are simpler to analyze:
+    48→- How many data metrics? → Determines grid columns
+    49→- Any trend data? → Need for sparklines
+    50→- Title area? → Need for hero header
+    51→- Comparison data? → Need for bar chart
+    52→
+    53→---
+    54→
+    55→## Step 2: Layout Decision
+    56→
+    57→### 2.1 Flowchart Layout Decision Tree
+    58→
+    59→```
+    60→⚠️ DEFAULT RULE: When user asks "generate/create XXX 流程图" without specifying format,
+    61→   DEFAULT to Layout C (Phased Vertical). Almost all real-world processes have phases.
+    62→
+    63→User specified Mermaid/markdown?
+    64→  └─ Yes → Follow user choice (Format Constraint Rule)
+    65→  └─ No →
+    66→      nodeCount ≤ 6 AND no phases AND maxTextLen ≤ 8 (CJK)?
+    67→        └─ Yes → Mermaid (minimal flowchart)
+    68→        └─ No →
+    69→            phaseCount > 0 OR nodeCount ≥ 5?
+    70→              └─ Yes → ⭐ Layout C: CSS Phased Vertical flowchart (DEFAULT)
+    71→              └─ No →
+    72→                  hasRoles?
+    73→                    └─ Yes → Layout D: CSS Dual-panel/Swimlane flowchart
+    74→                    └─ No → Layout C: CSS Phased Vertical flowchart (fallback also uses C)
+    75→```
+    76→
+    77→**⚠️ Layout A (Grid) and Layout B (Snake) are only for very special scenarios (e.g., flat comparison, unordered parallel items). Flowcharts default to Layout C.**
+    78→
+    79→### 🚫 Flowchart Anti-Patterns (FORBIDDEN)
+    80→
+    81→| ❌ Bad Pattern | ✅ Correct Pattern |
+    82→|---|---|
+    83→| Phase titles (一、二、三...) as isolated left-side text labels | Phase titles as colored title bars, wrapped inside group cards |
+    84→| All nodes flat-laid in Grid without group containers | Each phase wrapped in a `.phase-group` card containing its steps |
+    85→| Role labels scattered above nodes | Role info displayed uniformly at the top of the flowchart, or as phase card labels |
+    86→| Nodes connected with loose diverging lines | Phases connected with arrows (↓), steps within phases use numbering |
+    87→| Inconsistent node sizes, uneven spacing, misaligned | Same-phase nodes share uniform style, overall alignment consistent |
+    88→| Using Layout A Grid for a phased flowchart | Has phases → must use Layout C |
+    89→
+    90→### 2.2 Canvas Size Calculation
+    91→
+    92→```python
+    93→def calc_flowchart_canvas(node_count, max_text_len, parallel_count, has_roles, layout):
+    94→    node_width = max(180, max_text_len * 16)  # ~16px per CJK char (including padding)
+    95→    
+    96→    if layout == 'snake':
+    97→        cols = min(4, node_count)
+    98→        rows = (node_count + cols - 1) // cols
+    99→        width = cols * (node_width + 60) + 120   # 60=gap, 120=padding
+   100→        height = rows * 120 + 200                 # 120=row height
+   101→    elif layout == 'dual-panel':
+   102→        width = max(1600, node_width * 2 + 400)   # left panel + right flow
+   103→        height = node_count * 100 + 200
+   104→    elif layout == 'phased-vertical':
+   105→        width = max(800, node_width + 200)
+   106→        height = node_count * 80 + 200
+   107→    else:  # grid
+   108→        cols = max(parallel_count, 2)
+   109→        width = cols * (node_width + 60) + 120
+   110→        rows = (node_count + cols - 1) // cols
+   111→        height = rows * 120 + 200
+   112→    
+   113→    return max(width, 800), max(height, 600)
+   114→```
+   115→
+   116→### 2.3 Color Decision
+   117→
+   118→**Iron rule: Node background = low-saturation light color, border = high-saturation color. Large high-saturation areas = children's drawing.**
+   119→
+   120→**⚠️ Text contrast iron rule: Dark/accent background nodes must use light text (white or near-white) for title and description.**
+   121→Light background → dark text (`#1F2937`), dark background → light text (`#FFFFFF` or `#FFF7ED`).
+   122→Common mistake: Endpoint/highlight node switched to dark background, but description text remains dark gray, making it completely unreadable.
+   123→
+   124→```
+   125→Node type → color:
+   126→  Start/end  → bg: #EFF6FF, border: #3B82F6 (blue), text: #1E40AF
+   127→  Normal step  → bg: #F8FAFC, border: #94A3B8 (gray-blue), text: #374151  or colored by phase
+   128→  Decision node  → bg: #FFF7ED, border: #F59E0B (amber), text: #92400E
+   129→  Success/pass → bg: #F0FDF4, border: #10B981 (green), text: #065F46
+   130→  End/failure → bg: #F5F3FF, border: #8B5CF6 (purple), text: #5B21B6
+   131→  Emphasis/endpoint (dark bg) → bg: #92400E, border: #F59E0B, text: #FFFFFF, desc: #FFF7ED
+   132→
+   133→Max 3-4 background colors for nodes in the same flowchart.
+   134→Overall chart background = white #FFFFFF.
+   135→```
+   136→
+   137→**Phase bar colors**: Same-hue gradient (blue-gray family), **never use different hues per phase**.
+   138→
+   139→```css
+   140→/* ✅ Same-hue blue-gray progression */
+   141→.phase-1 { background: #F0F4F8; border-left: 4px solid #64748B; }
+   142→.phase-2 { background: #E8EDF2; border-left: 4px solid #5B7A99; }
+   143→
+   144→/* ❌ Different hue per phase (rainbow effect) */
+   145→.phase-1 { background: #EFF6FF; border-left: 4px solid #3B82F6; }  /* blue */
+   146→.phase-2 { background: #F0FDF4; border-left: 4px solid #10B981; }  /* green */
+   147→.phase-3 { background: #FFF7ED; border-left: 4px solid #F59E0B; }  /* amber */
+   148→```
+   149→
+   150→---
+   151→
+   152→## Step 3: Rendering
+   153→
+   154→### 3.1 Playwright Screenshot (Universal)
+   155→
+   156→```python
+   157→import asyncio
+   158→from playwright.async_api import async_playwright
+   159→
+   160→async def html_to_image(html_path, output_path, selector='#root',
+   161→                        width=1200, height=None, scale=2):
+   162→    """HTML → PNG/PDF
+   163→    
+   164→    scale: 2 (default crisp), 1.5 (large canvas 3000px+), 3 (print).
+   165→    Width must accommodate ALL content. After first render, auto-resize viewport to fit.
+   166→    """
+   167→    async with async_playwright() as p:
+   168→        browser = await p.chromium.launch(headless=True)
+   169→        page = await browser.new_page(
+   170→            viewport={'width': width, 'height': height or 800},
+   171→            device_scale_factor=scale
+   172→        )
+   173→        await page.goto(f'file://{html_path}', wait_until='networkidle')
+   174→        await page.wait_for_timeout(500)
+   175→        
+   176→        if output_path.endswith('.pdf'):
+   177→            await page.pdf(path=output_path, print_background=True)
+   178→        else:
+   179→            el = page.locator(selector)
+   180→            bbox = await el.bounding_box()
+   181→            if bbox:
+   182→                fit_w = max(width, int(bbox['width'] + 100))
+   183→                fit_h = int(bbox['height'] + 100)
+   184→                await page.set_viewport_size({'width': fit_w, 'height': fit_h})
+   185→                await page.wait_for_timeout(200)
+   186→            await el.screenshot(path=output_path)
+   187→        
+   188→        await browser.close()
+   189→        import os
+   190→        print(f'✅ {output_path} ({os.path.getsize(output_path)/1024:.0f}KB)')
+   191→```
+   192→
+   193→### 3.2 HTML Universal Shell
+   194→
+   195→```html
+   196→<!DOCTYPE html>
+   197→<html lang="zh">
+   198→<head>
+   199→<meta charset="UTF-8">
+   200→<style>
+   201→  * { margin: 0; padding: 0; box-sizing: border-box; }
+   202→  
+   203→  :root {
+   204→    --text: #111827;
+   205→    --text-sub: #6B7280;
+   206→    --text-muted: #9CA3AF;
+   207→    --bg: #FFFFFF;
+   208→    --surface: #F9FAFB;
+   209→    --border: #E5E7EB;
+   210→    --blue: #3B82F6;
+   211→    --cyan: #06B6D4;
+   212→    --purple: #8B5CF6;
+   213→    --amber: #F59E0B;
+   214→    --red: #EF4444;
+   215→    --green: #10B981;
+   216→    --positive: #22C55E;
+   217→    --negative: #EF4444;
+   218→    --connector: #94A3B8;
+   219→  }
+   220→  
+   221→  body {
+   222→    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'SimHei', system-ui, sans-serif;
+   223→    background: var(--bg);
+   224→    color: var(--text);
+   225→    -webkit-font-smoothing: antialiased;
+   226→  }
+   227→  
+   228→  #root { width: fit-content; min-width: 800px; margin: 0 auto; padding: 48px 40px; }
+   229→</style>
+   230→</head>
+   231→<body>
+   232→<div id="root">
+   233→  <!-- Content -->
+   234→</div>
+   235→</body>
+   236→</html>
+   237→```
+   238→
+   239→### 3.3 CSS Variables: Node Color System
+   240→
+   241→```css
+   242→:root {
+   243→  /* Node types — low-saturation background + high-saturation border */
+   244→  --node-bg: #EFF6FF;       --node-border: #3B82F6;         /* Normal step (blue) */
+   245→  --node-decision-bg: #FFF7ED; --node-decision-border: #F59E0B; /* Decision (amber) */
+   246→  --node-success-bg: #F0FDF4;  --node-success-border: #10B981;  /* Success (green) */
+   247→  --node-end-bg: #F5F3FF;     --node-end-border: #8B5CF6;      /* End (purple) */
+   248→  --group-bg: #F8FAFC;        --group-border: #E2E8F0;         /* Group container */
+   249→}
+   250→```
+   251→
+   252→---
+   253→
+   254→## Layout A: CSS Grid Flowchart (Universal, Most Common)
+   255→
+   256→For: Flowcharts with branches/decisions, >10 nodes or long CJK text.
+   257→
+   258→### Core CSS
+   259→
+   260→```css
+   261→.flow-title {
+   262→  font-size: 22px; font-weight: 700; color: var(--text);
+   263→  text-align: center; margin-bottom: 40px;
+   264→}
+   265→.flow-subtitle {
+   266→  font-size: 14px; color: var(--text-sub);
+   267→  text-align: center; margin-top: 8px;
+   268→}
+   269→
+   270→/* Grid container */
+   271→.flow-grid {
+   272→  display: grid;
+   273→  grid-template-columns: repeat(auto-fit, minmax(180px, 220px));
+   274→  gap: 40px 60px;
+   275→  justify-content: center;
+   276→  position: relative;
+   277→}
+   278→
+   279→/* Node */
+   280→.flow-node {
+   281→  background: var(--node-bg); border: 2px solid var(--node-border);
+   282→  border-radius: 10px; padding: 16px 20px;
+   283→  text-align: center; position: relative; z-index: 1;
+   284→  min-height: 56px; display: flex; flex-direction: column;
+   285→  justify-content: center; align-items: center;
+   286→  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+   287→  max-width: 260px;            /* Prevent single node from being too wide and crowding parallel nodes */
+   288→  word-break: break-word;       /* Force line break for overly long text */
+   289→  white-space: normal;          /* Allow line breaks (override possible nowrap) */
+   290→}
+   291→.flow-node .node-title { font-size: 15px; font-weight: 600; line-height: 1.4; }
+   292→.flow-node .node-desc { font-size: 12px; color: var(--text-sub); margin-top: 4px; }
+   293→
+   294→/* Node variants */
+   295→.flow-node.start { border-radius: 24px; }
+   296→.flow-node.decision { background: var(--node-decision-bg); border-color: var(--node-decision-border); }
+   297→.flow-node.success { background: var(--node-success-bg); border-color: var(--node-success-border); }
+   298→.flow-node.end { background: var(--node-end-bg); border-color: var(--node-end-border); }
+   299→
+   300→/* Group box */
+   301→.flow-group {
+   302→  background: var(--group-bg); border: 1.5px dashed var(--group-border);
+   303→  border-radius: 12px; padding: 24px 20px 20px; position: relative;
+   304→}
+   305→.flow-group .group-label {
+   306→  position: absolute; top: -10px; left: 16px;
+   307→  background: var(--bg); padding: 0 8px;
+   308→  font-size: 12px; font-weight: 600; color: var(--text-sub);
+   309→}
+   310→
+   311→/* ─── Parallel branch constraints (prevent overlap when multiple nodes in same row) ─── */
+   312→/* 
+   313→  ⚠️ Parallel branch iron rules:
+   314→  1. Gap between parallel nodes in same row ≥ 40px (guaranteed by .flow-grid gap)
+   315→  2. Each node max-width: 260px + word-break: break-word (set in .flow-node)
+   316→  3. If parallel nodes > 3 → switch to vertical branch layout (don't force-squeeze into one row)
+   317→  4. Text over 15 CJK characters → must line-break, don't expand node width
+   318→  5. When using flex instead of manual grid-column for parallel areas, add flex-wrap: wrap as fallback
+   319→*/
+   320→.parallel-group {
+   321→  display: flex; gap: 40px; justify-content: center;
+   322→  flex-wrap: wrap;  /* Fallback: auto-wrap when exceeding width */
+   323→}
+   324→.parallel-group .flow-node {
+   325→  flex: 0 1 220px;  /* Max 220px, can shrink, won't grow infinitely */
+   326→}
+   327→
+   328→/* SVG connector layer */
+   329→.flow-connectors {
+   330→  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+   331→  pointer-events: none; z-index: 0;
+   332→}
+   333→.flow-connectors line, .flow-connectors path {
+   334→  stroke: var(--connector); stroke-width: 2; fill: none;
+   335→  marker-end: url(#arrowhead);
+   336→}
+   337→.connector-label {
+   338→  font-size: 12px; fill: var(--text-sub); text-anchor: middle;
+   339→  font-family: -apple-system, 'PingFang SC', 'SimHei', sans-serif;
+   340→}
+   341→
+   342→/* Legend — must be independent container, not inside flow-grid */
+   343→.flow-legend {
+   344→  display: flex; gap: 24px; justify-content: center;
+   345→  margin-top: 40px; padding: 16px 24px;
+   346→  background: #F9FAFB; border-radius: 8px; border: 1px solid #E5E7EB;
+   347→}
+   348→.legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4B5563; }
+   349→.legend-dot { width: 12px; height: 12px; border-radius: 3px; border: 2px solid; }
+   350→```
+   351→
+   352→### Auto Connector Script
+   353→
+   354→```javascript
+   355→// connections = [['sourceID', 'targetID', 'label'], ...]
+   356→function drawConnectors(connections) {
+   357→  const svg = document.getElementById('connectorSvg');
+   358→  const container = svg.parentElement;
+   359→  const cRect = container.getBoundingClientRect();
+   360→  
+   361→  svg.setAttribute('width', cRect.width);
+   362→  svg.setAttribute('height', cRect.height);
+   363→  svg.setAttribute('viewBox', `0 0 ${cRect.width} ${cRect.height}`);
+   364→  
+   365→  // Clear old connectors (keep defs)
+   366→  svg.querySelectorAll('line, path, text.connector-label').forEach(el => el.remove());
+   367→  
+   368→  connections.forEach(([fromId, toId, label]) => {
+   369→    const fromEl = document.querySelector(`[data-id="${fromId}"]`);
+   370→    const toEl = document.querySelector(`[data-id="${toId}"]`);
+   371→    if (!fromEl || !toEl) return;
+   372→    
+   373→    const f = fromEl.getBoundingClientRect();
+   374→    const t = toEl.getBoundingClientRect();
+   375→    const x1 = f.left + f.width/2 - cRect.left;
+   376→    const y1 = f.bottom - cRect.top;
+   377→    const x2 = t.left + t.width/2 - cRect.left;
+   378→    const y2 = t.top - cRect.top;
+   379→    
+   380→    if (Math.abs(x1 - x2) < 10) {
+   381→      // Same column → straight line
+   382→      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+   383→      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+   384→      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+   385→      svg.appendChild(line);
+   386→    } else {
+   387→      // Different column → bent line
+   388→      const midY = (y1 + y2) / 2;
+   389→      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+   390→      path.setAttribute('d', `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2}`);
+   391→      svg.appendChild(path);
+   392→    }
+   393→    
+   394→    if (label) {
+   395→      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+   396→      text.setAttribute('x', (x1 + x2) / 2);
+   397→      text.setAttribute('y', (y1 + y2) / 2 - 6);
+   398→      text.setAttribute('class', 'connector-label');
+   399→      text.textContent = label;
+   400→      svg.appendChild(text);
+   401→    }
+   402→  });
+   403→}
+   404→
+   405→// SVG defs (arrow definitions)
+   406→function ensureArrowDef(svg) {
+   407→  if (svg.querySelector('#arrowhead')) return;
+   408→  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+   409→  defs.innerHTML = '<marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#94A3B8" /></marker>';
+   410→  svg.appendChild(defs);
+   411→}
+   412→```
+   413→
+   414→### HTML Structure Example
+   415→
+   416→```html
+   417→<div id="root">
+   418→  <div class="flow-title">流程图标题</div>
+   419→  
+   420→  <div style="position: relative;">
+   421→    <svg class="flow-connectors" id="connectorSvg"></svg>
+   422→    <div class="flow-grid" id="flowGrid">
+   423→      <div class="flow-node start" data-id="start" style="grid-column: 2;">
+   424→        <div class="node-title">开始</div>
+   425→      </div>
+   426→      <div class="flow-node" data-id="step1" style="grid-column: 1;">
+   427→        <div class="node-title">步骤一</div>
+   428→        <div class="node-desc">详细说明</div>
+   429→      </div>
+   430→      <div class="flow-node decision" data-id="decide" style="grid-column: 2;">
+   431→        <div class="node-title">判断条件？</div>
+   432→      </div>
+   433→      <div class="flow-node end" data-id="end" style="grid-column: 2;">
+   434→        <div class="node-title">结束</div>
+   435→      </div>
+   436→    </div>
+   437→  </div>
+   438→  
+   439→  <div class="flow-legend">
+   440→    <div class="legend-item"><div class="legend-dot" style="border-color:#3B82F6;background:#EFF6FF;"></div>步骤</div>
+   441→    <div class="legend-item"><div class="legend-dot" style="border-color:#F59E0B;background:#FFF7ED;"></div>判断</div>
+   442→  </div>
+   443→</div>
+   444→
+   445→<script>
+   446→  const connections = [
+   447→    ['start', 'step1', ''], ['step1', 'decide', ''],
+   448→    ['decide', 'end', '通过']
+   449→  ];
+   450→  window.addEventListener('load', () => {
+   451→    ensureArrowDef(document.getElementById('connectorSvg'));
+   452→    setTimeout(() => drawConnectors(connections), 100);
+   453→  });
+   454→</script>
+   455→```
+   456→
+   457→---
+   458→
+   459→## Layout B: Snake Flowchart (>4 Linear Steps)
+   460→
+   461→For: Linear non-branching processes with many steps (5-20).
+   462→
+   463→### Key Rules
+   464→
+   465→- Max 4 nodes per row
+   466→- First row left→right, second row right→left (snake pattern)
+   467→- End-of-row to next-row turn connectors use bend lines, with ≥60px clearance at turns
+   468→- Node positions in grid are auto-calculated by JS (no manual grid-column)
+   469→
+   470→### Snake Layout Generation Script
+   471→
+   472→```javascript
+   473→function layoutSnake(nodeIds, cols) {
+   474→  cols = cols || 4;
+   475→  nodeIds.forEach((id, i) => {
+   476→    const row = Math.floor(i / cols);
+   477→    const colInRow = i % cols;
+   478→    const col = row % 2 === 0 ? colInRow + 1 : cols - colInRow; // Even rows L→R, odd rows R→L
+   479→    const el = document.querySelector(`[data-id="${id}"]`);
+   480→    if (el) {
+   481→      el.style.gridRow = row + 1;
+   482→      el.style.gridColumn = col;
+   483→    }
+   484→  });
+   485→}
+   486→```
+   487→
+   488→---
+   489→
+   490→## Layout C: Phased Vertical Flowchart (⭐ DEFAULT for all flowcharts)
+   491→
+   492→**This is the DEFAULT layout for flowcharts.** When the user asks for any flowchart without specifying format, use this layout.
+   493→
+   494→For: Any process with phases/stages, which is nearly ALL real-world processes (manufacturing, legal, project management, business operations, etc.). Also the safe fallback when unsure.
+   495→
+   496→**Why this is the default:** Layout C produces consistently professional, readable results. Even if the process has only 2 "phases", the card-based grouping still looks clean. In contrast, Layout A (Grid) without proper grouping produces scattered, unreadable results.
+   497→
+   498→### Key Design
+   499→
+   500→**Phase titles vs sub-steps must have clear visual distinction**:
+   501→- Phase titles: colored background, font-size ≥ 16px, font-weight: 700
+   502→- Sub-steps: white/light gray background, font-size 14-15px, font-weight: 400-500
+   503→
+   504→**No arrows between sub-steps**. Arrows only connect phase-to-phase. Sub-steps use indent + numbering for sequence.
+   505→
+   506→### Phase Connector Direction Rule
+   507→Phase-to-phase connector arrows MUST match the logical flow direction. If the flow goes top → bottom, arrows point ↓. If bottom → top, arrows point ↑. If left → right, arrows point →. **Never draw arrows opposing the flow direction.**
+   508→
+   509→### Additional CSS
+   510→
+   511→```css
+   512→.phase-group {
+   513→  background: #F8FAFC; border-radius: 12px; padding: 20px 24px;
+   514→  margin-bottom: 24px;
+   515→}
+   516→.phase-title {
+   517→  font-size: 16px; font-weight: 700; padding: 10px 16px;
+   518→  border-radius: 8px; margin-bottom: 16px;
+   519→}
+   520→.phase-steps { display: flex; flex-direction: column; gap: 8px; padding-left: 12px; }
+   521→.phase-step {
+   522→  font-size: 14px; font-weight: 400; color: var(--text);
+   523→  padding: 8px 14px; background: white; border-radius: 6px;
+   524→  border: 1px solid var(--border);
+   525→}
+   526→.phase-step .step-num {
+   527→  display: inline-block; width: 22px; height: 22px; line-height: 22px;
+   528→  text-align: center; border-radius: 50%; font-size: 12px; font-weight: 600;
+   529→  margin-right: 8px;
+   530→}
+   531→
+   532→/* Phase colors — same-hue blue-gray gradient (low saturation, easy on the eyes)
+   533→   All phases share the blue-gray color family, distinguished by brightness progression.
+   534→   🚫 FORBIDDEN: Different hue per phase (blue→green→amber→purple) — becomes rainbow with many phases.
+   535→   ✅ CORRECT: Progress within same hue family (light→dark), or pure grayscale + single-color accent.
+   536→   
+   537→   Two schemes provided below; model selects based on phase count:
+   538→   - ≤4 phases: Scheme A (blue-gray progression)
+   539→   - 5-7 phases: Scheme B (neutral gray base + blue accent progression)
+   540→   - >7 phases: all use same gray base, distinguish only by numbering
+   541→*/
+   542→
+   543→/* Scheme A: Blue-gray progression (≤4 phases) */
+   544→.phase-1 .phase-title { background: #F0F4F8; color: #334155; border-left: 4px solid #64748B; }
+   545→.phase-1 .step-num { background: #E2E8F0; color: #475569; }
+   546→.phase-2 .phase-title { background: #E8EDF2; color: #1E3A5F; border-left: 4px solid #5B7A99; }
+   547→.phase-2 .step-num { background: #DBEAFE; color: #1E3A5F; }
+   548→.phase-3 .phase-title { background: #E0E7EF; color: #1E3050; border-left: 4px solid #4A6B8A; }
+   549→.phase-3 .step-num { background: #D0D9E4; color: #1E3050; }
+   550→.phase-4 .phase-title { background: #D8E0EA; color: #172540; border-left: 4px solid #3A5C7A; }
+   551→.phase-4 .step-num { background: #C7D2E0; color: #172540; }
+   552→
+   553→/* Scheme B: Neutral gray base + blue accent progression (5-7 phases) */
+   554→/*
+   555→.phase-1 .phase-title { background: #F8FAFC; color: #334155; border-left: 4px solid #94A3B8; }
+   556→.phase-1 .step-num { background: #F1F5F9; color: #475569; }
+   557→.phase-2 .phase-title { background: #F1F5F9; color: #334155; border-left: 4px solid #7B8FA3; }
+   558→.phase-2 .step-num { background: #E2E8F0; color: #475569; }
+   559→.phase-3 .phase-title { background: #E8EDF3; color: #2D4156; border-left: 4px solid #6B809A; }
+   560→.phase-3 .step-num { background: #DBEAFE; color: #2D4156; }
+   561→.phase-4 .phase-title { background: #E2E8F0; color: #283C52; border-left: 4px solid #5B7590; }
+   562→.phase-4 .step-num { background: #D0D9E4; color: #283C52; }
+   563→.phase-5 .phase-title { background: #DAE1EB; color: #23364D; border-left: 4px solid #4B6A87; }
+   564→.phase-5 .step-num { background: #C7D2E0; color: #23364D; }
+   565→.phase-6 .phase-title { background: #D2DAE5; color: #1E3048; border-left: 4px solid #3B5F7D; }
+   566→.phase-6 .step-num { background: #BFC9D8; color: #1E3048; }
+   567→.phase-7 .phase-title { background: #CAD3E0; color: #192A3E; border-left: 4px solid #2B5473; }
+   568→.phase-7 .step-num { background: #B7C2D2; color: #192A3E; }
+   569→*/
+   570→```
+   571→
+   572→### HTML Structure
+   573→
+   574→```html
+   575→<div id="root">
+   576→  <div class="flow-title">项目流程</div>
+   577→  
+   578→  <div class="phase-group phase-1">
+   579→    <div class="phase-title">第一阶段：需求分析</div>
+   580→    <div class="phase-steps">
+   581→      <div class="phase-step"><span class="step-num">1</span>需求收集与整理</div>
+   582→      <div class="phase-step"><span class="step-num">2</span>可行性评估</div>
+   583→      <div class="phase-step"><span class="step-num">3</span>需求优先级排序</div>
+   584→    </div>
+   585→  </div>
+   586→  
+   587→  <!-- Phase-to-phase arrow (use SVG or simple centered down arrow) -->
+   588→  <div style="text-align:center; color:#94A3B8; font-size:24px; margin: 8px 0;">↓</div>
+   589→  
+   590→  <div class="phase-group phase-2">
+   591→    <div class="phase-title">第二阶段：设计开发</div>
+   592→    <div class="phase-steps">
+   593→      <div class="phase-step"><span class="step-num">4</span>UI/UX 设计</div>
+   594→      <div class="phase-step"><span class="step-num">5</span>前后端开发</div>
+   595→    </div>
+   596→  </div>
+   597→</div>
+   598→```
+   599→
+   600→---
+   601→
+   602→## Layout D: Dual-Panel / Swimlane Flowchart
+   603→
+   604→For: Processes involving multiple roles or departments.
+   605→
+   606→### Key Rules
+   607→
+   608→- Canvas width ≥ 1600px
+   609→- Left panel for role/swimlane labels, right panel for flow nodes
+   610→- Role labels font-size ≥ 12px, solid background, right edge ≥ 40px from canvas
+   611→- `overflow: hidden` is forbidden
+   612→
+   613→### Additional CSS
+   614→
+   615→```css
+   616→.dual-layout { display: flex; gap: 40px; }
+   617→.role-panel {
+   618→  flex-shrink: 0; width: 160px;
+   619→  display: flex; flex-direction: column; gap: 12px;
+   620→}
+   621→.role-tag {
+   622→  font-size: 13px; font-weight: 600; padding: 8px 12px;
+   623→  border-radius: 6px; text-align: center;
+   624→}
+   625→.flow-panel { flex: 1; min-width: 0; }
+   626→```
+   627→
+   628→---
+   629→
+   630→## Infographic Templates
+   631→
+   632→The following templates are for non-flowchart information visualization.
+   633→
+   634→### Template: KPI Dashboard Cards
+   635→
+   636→```css
+   637→.kpi-grid {
+   638→  display: grid; grid-template-columns: repeat(4, 1fr);
+   639→  gap: 20px; margin-bottom: 32px;
+   640→}
+   641→.kpi-card {
+   642→  background: var(--surface); border: 1px solid var(--border);
+   643→  border-radius: 12px; padding: 24px; text-align: center;
+   644→}
+   645→.kpi-label { font-size: 13px; color: var(--text-sub); margin-bottom: 8px; }
+   646→.kpi-value { font-size: 32px; font-weight: 700; }
+   647→.kpi-change { font-size: 14px; font-weight: 600; margin-top: 8px; }
+   648→.kpi-change.up { color: var(--positive); }
+   649→.kpi-change.down { color: var(--negative); }
+   650→```
+   651→
+   652→### Template: CSS Bar Chart (Pure CSS, No JS)
+   653→
+   654→```css
+   655→.bar-chart {
+   656→  display: flex; align-items: flex-end; gap: 16px;
+   657→  height: 300px; padding: 0 20px; border-bottom: 1px solid var(--border);
+   658→}
+   659→.bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+   660→.bar { width: 100%; max-width: 60px; border-radius: 6px 6px 0 0; background: var(--border); }
+   661→.bar.highlight { background: var(--blue); }
+   662→.bar-label { font-size: 12px; color: var(--text-sub); }
+   663→.bar-value { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+   664→```
+   665→
+   666→### Template: Gradient Background Infographic Header
+   667→
+   668→```css
+   669→.hero-header {
+   670→  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+   671→  border-radius: 16px; padding: 48px; color: white; margin-bottom: 32px;
+   672→}
+   673→.hero-header h1 { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+   674→.hero-header p { font-size: 15px; color: #94A3B8; max-width: 600px; line-height: 1.6; }
+   675→.hero-badge {
+   676→  display: inline-block; background: rgba(59,130,246,0.15);
+   677→  color: #60A5FA; font-size: 12px; font-weight: 600;
+   678→  padding: 4px 12px; border-radius: 20px; margin-bottom: 16px;
+   679→}
+   680→```
+   681→
+   682→### Template: Data Card + Mini Sparkline
+   683→
+   684→```html
+   685→<div class="metric-card">
+   686→  <div class="metric-info">
+   687→    <div class="metric-title">月活用户</div>
+   688→    <div class="metric-value">34,521</div>
+   689→    <div class="metric-change" style="color: var(--positive)">↑ +18.2%</div>
+   690→  </div>
+   691→  <div class="metric-sparkline">
+   692→    <svg width="120" height="40" viewBox="0 0 120 40">
+   693→      <polyline fill="none" stroke="var(--blue)" stroke-width="2"
+   694→        points="0,35 15,30 30,25 45,28 60,20 75,15 90,12 105,8 120,5" />
+   695→    </svg>
+   696→  </div>
+   697→</div>
+   698→```
+   699→
+   700→```css
+   701→.metric-card {
+   702→  background: white; border: 1px solid var(--border);
+   703→  border-radius: 16px; padding: 28px;
+   704→  display: flex; justify-content: space-between; align-items: center;
+   705→}
+   706→.metric-title { font-size: 13px; color: var(--text-sub); }
+   707→.metric-value { font-size: 36px; font-weight: 700; margin: 4px 0; }
+   708→.metric-change { font-size: 14px; font-weight: 600; }
+   709→```
+   710→
+   711→---
+   712→
+   713→## Advanced Connector Rules
+   714→
+   715→### Many-to-One Convergence
+   716→
+   717→When multiple lines converge into one node, use the "merge first, then enter" pattern:
+   718→
+   719→```
+   720→[A] ──┐
+   721→[B] ──┤── → [目标]
+   722→[C] ──┘
+   723→```
+   724→
+   725→Implementation: Source lines reach a relay x-coordinate, merge into one vertical line, then a single line enters the target.
+   726→
+   727→### Cross-Layer Connector Avoidance
+   728→
+   729→If other nodes block the path between two nodes, **do not draw a straight line through them**.
+   730→
+   731→Priority:
+   732→1. **Redesign hierarchy** (best) — Most cross-layer lines indicate hierarchy design issues; connect adjacent layers only
+   733→2. **Detour line** — Route around middle nodes via canvas edge (offset 40px right)
+   734→3. **Thread through gap** — If middle-layer node gap ≥ 40px, route through the gap
+   735→
+   736→### Connector Alignment
+   737→
+   738→- Multiple lines from the same node start at a consistent position on the node border
+   739→- Use only one connector style per chart (right-angle/curved/straight), no mixing
+   740→- Connector label positions must be consistent (all above line or all centered)
+   741→
+   742→---
+   743→
+   744→## Font Size Rules
+   745→
+   746→| Element | Recommended | Minimum |
+   747→|------|------|------|
+   748→| Flowchart main node title | 16-18px | 14px |
+   749→| Node description / subtext | 13-15px | 12px |
+   750→| Connector labels | 12-14px | 11px |
+   751→| Legend text | 13-14px | 12px |
+   752→| Footnotes / watermark | 11-13px | 10px |
+   753→| Phase titles | 16-18px | 16px |
+   754→| Role labels | 13-14px | 12px |
+   755→
+   756→**Not enough space → Enlarge canvas, don't shrink fonts.**
+   757→
+   758→---
+   759→
+   760→## Overflow Protection
+   761→
+   762→1. **`#root { width: fit-content; min-width: 800px; }`** — Expands with content automatically
+   763→2. **`overflow: hidden` / `overflow: clip` are forbidden**
+   764→3. **Auto-resize viewport before Playwright screenshot** (see 3.1 screenshot script)
+   765→4. **Canvas minimum width**:
+   766→
+   767→| Layout Type | Minimum Width | Recommended |
+   768→|---------|---------|------|
+   769→| Single-column flowchart | 800px | 1000px |
+   770→| Dual-panel / swimlane | 1400px | 1600-1800px |
+   771→| Three-column / multi-panel | 1800px | 2000-2400px |
+   772→
+   773→---
+   774→
+   775→## Quality Checklist
+   776→
+   777→1. **Layout C used by default** — If this is a flowchart, verify you're using Layout C (Phased Vertical) unless there's a specific reason not to
+   778→2. **Content complete** — Every node/step from the requirement is in the chart
+   779→3. **No overlap** — No boxes covering boxes, no lines through boxes
+   780→4. **Clear hierarchy** — Phase titles and sub-steps are instantly distinguishable
+   781→5. **Colors reasonable** — Node backgrounds low-saturation, no children's-drawing palette
+   782→6. **Connectors visible** — Connector color ≥ `#94A3B8`, arrow direction correct
+   783→7. **Font sizes meet standards** — Check against font size table, nothing below minimum
+   784→8. **Legend independent** — Not inside flow-grid, not obscured by any node
+   785→9. **No clipping** — Padding ≥ 40px on all sides, all nodes and labels fully visible
+   786→10. **Phase colors consistent** — Same hue family, no blue/brown/green/purple mix
+   787→11. **Connectors don't pass through nodes** — Cross-layer lines use detour or redesign hierarchy
+   788→12. **No scattered layout** — Phase titles MUST be inside group cards, NOT floating as isolated labels
+   789→
+   790→---
+   791→
+   792→## Playwright+CSS vs Other Approaches
+   793→
+   794→| Capability | Playwright+CSS | matplotlib | ECharts |
+   795→|------|---------------|------------|---------|
+   796→| Gradients/shadows/rounded | ✅ Full CSS power | ❌ Limited | ⚠️ Partial |
+   797→| Responsive layout | ✅ Flexbox/Grid | ❌ Fixed size | ⚠️ resize |
+   798→| PNG/PDF export | ✅ Native | ✅ savefig | ⚠️ Needs Playwright |
+   799→| Precise data charts | ⚠️ Manual | ✅ Built-in | ✅ Built-in |
+   800→
+   801→**Best practice: CSS for layout and visual design, embed ECharts/SVG for precise charts.**
+   802→
