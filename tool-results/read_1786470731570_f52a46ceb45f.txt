@@ -1,0 +1,656 @@
+     1→'use client'
+     2→
+     3→import { useState, useCallback } from 'react';
+     4→import {
+     5→  Shield, LayoutDashboard, BarChart3, Upload, UserCircle,
+     6→  ChevronRight, Activity, Network, Zap, Target, AlertTriangle,
+     7→  CheckCircle2, Clock, ShieldAlert, Brain, Database,
+     8→  ArrowUpRight, ArrowDownRight, TrendingUp, Search,
+     9→  Globe, FileText, Plus,
+    10→  Trash2, FileUp,
+    11→  Monitor, Terminal, Wifi, Braces, Table, FileJson,
+    12→  Sun, Moon,
+    13→  type LucideIcon
+    14→} from 'lucide-react';
+    15→import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+    16→import { Badge } from '@/components/ui/badge';
+    17→import { Button } from '@/components/ui/button';
+    18→import { Progress } from '@/components/ui/progress';
+    19→import { Separator } from '@/components/ui/separator';
+    20→import { Input } from '@/components/ui/input';
+    21→import { Label } from '@/components/ui/label';
+    22→import {
+    23→  AreaChart, Area, BarChart, Bar,
+    24→  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+    25→  ResponsiveContainer,
+    26→} from 'recharts';
+    27→import {
+    28→  generateTimeSeriesData, generateDetectionResults,
+    29→  generateGraphStats, generateNetworkEvents,
+    30→  generateProfiles, generateUploadedDatasets, supportedLogFormats,
+    31→  type DetectionResult, type UserProfile, type UploadedDataset
+    32→} from '@/lib/synthetic-data';
+    33→import { formatTime, formatDate } from '@/lib/date-utils';
+    34→import { AnalyticsPage } from '@/components/tgdetect/AnalyticsPage';
+    35→import { useTheme } from '@/lib/theme-context';
+    36→
+    37→// ─── NAVIGATION ─────────────────────────────────────────────────
+    38→const navItems = [
+    39→  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    40→  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    41→  { id: 'datasets', label: 'Datasets', icon: Database },
+    42→  { id: 'profiles', label: 'Profiles', icon: UserCircle },
+    43→] as const;
+    44→
+    45→type Page = typeof navItems[number]['id'];
+    46→
+    47→// ─── SYNTHETIC DATA ─────────────────────────────────────────────
+    48→const timeSeriesData = generateTimeSeriesData();
+    49→const detectionResults = generateDetectionResults();
+    50→const graphStats = generateGraphStats();
+    51→const networkEvents = generateNetworkEvents(200);
+    52→const initialProfiles = generateProfiles();
+    53→const initialDatasets = generateUploadedDatasets();
+    54→
+    55→const severityColors: Record<string, string> = {
+    56→  Low: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    57→  Medium: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+    58→  High: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
+    59→  Critical: 'bg-red-500/15 text-red-400 border-red-500/30',
+    60→};
+    61→
+    62→const statusIcons: Record<string, LucideIcon> = {
+    63→  Detected: Search,
+    64→  Investigating: Clock,
+    65→  Contained: ShieldAlert,
+    66→};
+    67→
+    68→const formatIcon: Record<string, LucideIcon> = {
+    69→  table: Table, braces: Braces, 'file-json': FileJson, terminal: Terminal,
+    70→  network: Wifi, shield: Shield, search: Search, globe: Globe,
+    71→  monitor: Monitor, 'file-text': FileText, wifi: Wifi, 'alert-triangle': AlertTriangle,
+    72→};
+    73→
+    74→// ─── MAIN PAGE ──────────────────────────────────────────────────
+    75→export default function Home() {
+    76→  const [activePage, setActivePage] = useState<Page>('dashboard');
+    77→  const [profiles, setProfiles] = useState<UserProfile[]>(initialProfiles);
+    78→  const [datasets, setDatasets] = useState<UploadedDataset[]>(initialDatasets);
+    79→  const [activeProfile, setActiveProfile] = useState<string>(initialProfiles[0].id);
+    80→  const [showCreateProfile, setShowCreateProfile] = useState(false);
+    81→  const [showUploadModal, setShowUploadModal] = useState(false);
+    82→  const [newProfileName, setNewProfileName] = useState('');
+    83→  const [newProfileDesc, setNewProfileDesc] = useState('');
+    84→  const [newProfileDataset, setNewProfileDataset] = useState('');
+    85→  const [dragOver, setDragOver] = useState(false);
+    86→  const { theme, toggleTheme } = useTheme();
+    87→
+    88→  const axisColor = theme === 'dark' ? '#6b7280' : '#64748b';
+    89→  const gridColor = theme === 'dark' ? '#1f2937' : '#e2e8f0';
+    90→  const axisLineColor = theme === 'dark' ? '#374151' : '#cbd5e1';
+    91→
+    92→  const chartTooltipStyle = theme === 'dark' ? {
+    93→    contentStyle: { backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8, fontSize: 12, color: '#9ca3af' },
+    94→    labelStyle: { color: '#9ca3af' },
+    95→  } : {
+    96→    contentStyle: { backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#475569' },
+    97→    labelStyle: { color: '#475569' },
+    98→  };
+    99→
+   100→  const handleCreateProfile = useCallback(() => {
+   101→    if (!newProfileName.trim()) return;
+   102→    const profile: UserProfile = {
+   103→      id: `prof-${String(profiles.length + 1).padStart(3, '0')}`,
+   104→      name: newProfileName,
+   105→      description: newProfileDesc || 'No description provided.',
+   106→      dataset: newProfileDataset || 'Custom',
+   107→      status: 'inactive',
+   108→      created: new Date().toISOString(),
+   109→      lastModified: new Date().toISOString(),
+   110→      config: { temporalWindow: 300, memoryDim: 64, numHeads: 4, nLayers: 2, embedDim: 64, threshold: 0.75 },
+   111→    };
+   112→    setProfiles(prev => [...prev, profile]);
+   113→    setNewProfileName(''); setNewProfileDesc(''); setNewProfileDataset('');
+   114→    setShowCreateProfile(false);
+   115→  }, [newProfileName, newProfileDesc, newProfileDataset, profiles.length]);
+   116→
+   117→  const handleDeleteProfile = useCallback((id: string) => {
+   118→    setProfiles(prev => prev.filter(p => p.id !== id));
+   119→    if (activeProfile === id && profiles.length > 1) {
+   120→      setActiveProfile(profiles.find(p => p.id !== id)?.id || '');
+   121→    }
+   122→  }, [activeProfile, profiles]);
+   123→
+   124→  const handleSimulateUpload = useCallback(() => {
+   125→    const newDs: UploadedDataset = {
+   126→      id: `ds-${String(datasets.length + 1).padStart(3, '0')}`,
+   127→      name: `synthetic_demo_${Date.now()}.csv`,
+   128→      format: 'CSV', size: '12.4 MB', events: 52340,
+   129→      uploadedAt: new Date().toISOString(),
+   130→      status: 'processed', source: 'Synthetic Demo',
+   131→    };
+   132→    setDatasets(prev => [newDs, ...prev]);
+   133→    setShowUploadModal(false);
+   134→  }, [datasets.length]);
+   135→
+   136→  return (
+   137→    <div className="flex h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden">
+   138→      {/* ─── Sidebar ─── */}
+   139→      <aside className="w-64 flex-shrink-0 border-r border-[var(--border-primary)] bg-[var(--bg-secondary)] flex flex-col">
+   140→        <div className="p-5 border-b border-[var(--border-primary)]">
+   141→          <div className="flex items-center gap-3">
+   142→            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20">
+   143→              <Shield className="w-5 h-5 text-white" />
+   144→            </div>
+   145→            <div>
+   146→              <h1 className="text-base font-bold tracking-tight text-[var(--text-primary)]">TGDetect</h1>
+   147→              <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-widest">V16 Apex TGNN</p>
+   148→            </div>
+   149→          </div>
+   150→        </div>
+   151→
+   152→        <nav className="flex-1 p-3 space-y-1">
+   153→          {navItems.map((item) => {
+   154→            const Icon = item.icon;
+   155→            const isActive = activePage === item.id;
+   156→            return (
+   157→              <button key={item.id} onClick={() => setActivePage(item.id)}
+   158→                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+   159→                  isActive ? 'bg-blue-500/10 text-blue-400 shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)]'
+   160→                }`}
+   161→              >
+   162→                <Icon className={`w-4 h-4 ${isActive ? 'text-blue-400' : ''}`} />
+   163→                {item.label}
+   164→                {isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto text-blue-400/60" />}
+   165→              </button>
+   166→            );
+   167→          })}
+   168→        </nav>
+   169→
+   170→        <div className="px-4 pb-3">
+   171→          <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-input)] p-3">
+   172→            <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium mb-1.5">Active Profile</p>
+   173→            <div className="flex items-center gap-2">
+   174→              <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+   175→              <span className="text-xs text-[var(--text-secondary)] truncate">
+   176→                {profiles.find(p => p.id === activeProfile)?.name || 'None'}
+   177→              </span>
+   178→            </div>
+   179→          </div>
+   180→        </div>
+   181→
+   182→        <div className="p-4 border-t border-[var(--border-primary)]">
+   183→          <div className="flex items-center gap-2 px-2">
+   184→            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+   185→            <span className="text-xs text-[var(--text-muted)]">Demo Mode — Synthetic Data</span>
+   186→          </div>
+   187→        </div>
+   188→      </aside>
+   189→
+   190→      {/* ─── Main Content ─── */}
+   191→      <main className="flex-1 overflow-y-auto">
+   192→        <header className="sticky top-0 z-10 border-b border-[var(--border-primary)] bg-[var(--bg-primary)]/80 backdrop-blur-xl px-6 py-3 flex items-center justify-between">
+   193→          <div>
+   194→            <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+   195→              {navItems.find(n => n.id === activePage)?.label}
+   196→            </h2>
+   197→            <p className="text-xs text-[var(--text-muted)] mt-0.5">
+   198→              {activePage === 'dashboard' && 'System overview and key performance indicators'}
+   199→              {activePage === 'analytics' && 'Detection analytics — per-source, fused, and objective analysis'}
+   200→              {activePage === 'datasets' && 'Upload and manage log datasets for analysis'}
+   201→              {activePage === 'profiles' && 'Create and manage analysis profiles'}
+   202→            </p>
+   203→          </div>
+   204→          <div className="flex items-center gap-3">
+   205→            <button onClick={toggleTheme} className="p-2 rounded-lg border transition-all hover:bg-[var(--bg-card-hover)]" style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-card)' }}>
+   206→              {theme === 'dark' ? <Sun className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} /> : <Moon className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />}
+   207→            </button>
+   208→            <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-xs px-2.5">
+   209→              <Activity className="w-3 h-3 mr-1" /> V16 Apex
+   210→            </Badge>
+   211→            <Badge variant="outline" className="border-[var(--border-secondary)] text-[var(--text-secondary)] text-xs px-2.5">
+   212→              <Database className="w-3 h-3 mr-1" /> Synthetic Data
+   213→            </Badge>
+   214→          </div>
+   215→        </header>
+   216→
+   217→        <div className="p-6">
+   218→          {activePage === 'dashboard' && <DashboardPage axisColor={axisColor} gridColor={gridColor} axisLineColor={axisLineColor} chartTooltipStyle={chartTooltipStyle} />}
+   219→          {activePage === 'analytics' && <AnalyticsPage />}
+   220→          {activePage === 'datasets' && <DatasetsPage datasets={datasets} onUploadClick={() => setShowUploadModal(true)} />}
+   221→          {activePage === 'profiles' && <ProfilesPage profiles={profiles} activeProfile={activeProfile} onSelectProfile={setActiveProfile} onCreateClick={() => setShowCreateProfile(true)} onDeleteProfile={handleDeleteProfile} />}
+   222→        </div>
+   223→      </main>
+   224→
+   225→      {/* ─── Upload Modal ─── */}
+   226→      {showUploadModal && (
+   227→        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowUploadModal(false)}>
+   228→          <div className="bg-[var(--bg-card)] border border-[var(--border-primary)] rounded-2xl w-full max-w-2xl shadow-2xl mx-4" onClick={e => e.stopPropagation()}>
+   229→            <div className="flex items-center justify-between p-5 border-b border-[var(--border-primary)]">
+   230→              <div>
+   231→                <h3 className="text-sm font-semibold text-[var(--text-primary)]">Upload Log Dataset</h3>
+   232→                <p className="text-xs text-[var(--text-muted)] mt-0.5">Select a file or drag & drop your log data</p>
+   233→              </div>
+   234→              <Button variant="ghost" size="sm" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]" onClick={() => setShowUploadModal(false)}>✕</Button>
+   235→            </div>
+   236→            <div className="p-5 space-y-5">
+   237→              <div className={`rounded-xl border-2 border-dashed p-8 text-center transition-all cursor-pointer ${dragOver ? 'border-blue-400 bg-blue-500/5' : 'border-[var(--border-secondary)] hover:border-[var(--text-muted)]'}`}
+   238→                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+   239→                onDragLeave={() => setDragOver(false)}
+   240→                onDrop={e => { e.preventDefault(); setDragOver(false); handleSimulateUpload(); }}
+   241→                onClick={handleSimulateUpload}
+   242→              >
+   243→                <Upload className={`w-10 h-10 mx-auto mb-3 ${dragOver ? 'text-blue-400' : 'text-[var(--text-muted)]'}`} />
+   244→                <p className="text-sm text-[var(--text-secondary)] font-medium">{dragOver ? 'Drop your file here' : 'Drag & drop your log file, or click to browse'}</p>
+   245→                <p className="text-xs text-[var(--text-muted)] mt-1">Supports CSV, JSON, Syslog, NetFlow, Wazuh, and more</p>
+   246→              </div>
+   247→              <div>
+   248→                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-medium mb-3">Supported Log Formats</p>
+   249→                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+   250→                  {supportedLogFormats.slice(0, 9).map((fmt, i) => {
+   251→                    const FmtIcon = formatIcon[fmt.icon] || FileText;
+   252→                    return (
+   253→                      <div key={i} className="flex items-center gap-2 rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-input)] px-3 py-2">
+   254→                        <FmtIcon className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+   255→                        <div>
+   256→                          <p className="text-[11px] font-medium text-[var(--text-secondary)]">{fmt.name}</p>
+   257→                          <p className="text-[9px] text-[var(--text-muted)]">{fmt.ext}</p>
+   258→                        </div>
+   259→                      </div>
+   260→                    );
+   261→                  })}
+   262→                </div>
+   263→              </div>
+   264→            </div>
+   265→            <div className="flex items-center justify-end gap-2 px-5 pb-5">
+   266→              <Button variant="ghost" size="sm" className="text-[var(--text-secondary)]" onClick={() => setShowUploadModal(false)}>Cancel</Button>
+   267→              <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white" onClick={handleSimulateUpload}>
+   268→                <Upload className="w-3.5 h-3.5 mr-1.5" /> Upload Dataset
+   269→              </Button>
+   270→            </div>
+   271→          </div>
+   272→        </div>
+   273→      )}
+   274→
+   275→      {/* ─── Create Profile Modal ─── */}
+   276→      {showCreateProfile && (
+   277→        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowCreateProfile(false)}>
+   278→          <div className="bg-[var(--bg-card)] border border-[var(--border-primary)] rounded-2xl w-full max-w-lg shadow-2xl mx-4" onClick={e => e.stopPropagation()}>
+   279→            <div className="flex items-center justify-between p-5 border-b border-[var(--border-primary)]">
+   280→              <div>
+   281→                <h3 className="text-sm font-semibold text-[var(--text-primary)]">Create New Profile</h3>
+   282→                <p className="text-xs text-[var(--text-muted)] mt-0.5">Set up a new analysis profile for your dataset</p>
+   283→              </div>
+   284→              <Button variant="ghost" size="sm" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]" onClick={() => setShowCreateProfile(false)}>✕</Button>
+   285→            </div>
+   286→            <div className="p-5 space-y-4">
+   287→              <div className="space-y-2">
+   288→                <Label className="text-xs text-[var(--text-secondary)]">Profile Name</Label>
+   289→                <Input placeholder="e.g., DARPA Engagement Analysis" value={newProfileName} onChange={e => setNewProfileName(e.target.value)}
+   290→                  className="bg-[var(--bg-input)] border-[var(--border-primary)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)]" />
+   291→              </div>
+   292→              <div className="space-y-2">
+   293→                <Label className="text-xs text-[var(--text-secondary)]">Description</Label>
+   294→                <Input placeholder="Brief description..." value={newProfileDesc} onChange={e => setNewProfileDesc(e.target.value)}
+   295→                  className="bg-[var(--bg-input)] border-[var(--border-primary)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)]" />
+   296→              </div>
+   297→              <div className="space-y-2">
+   298→                <Label className="text-xs text-[var(--text-secondary)]">Dataset Type</Label>
+   299→                <Input placeholder="e.g., DARPA TC, UNSW-NB15, LANL..." value={newProfileDataset} onChange={e => setNewProfileDataset(e.target.value)}
+   300→                  className="bg-[var(--bg-input)] border-[var(--border-primary)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)]" />
+   301→              </div>
+   302→              <div className="rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-input)] p-3">
+   303→                <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium mb-2">Default V16 Apex Configuration</p>
+   304→                <div className="grid grid-cols-2 gap-2">
+   305→                  {[{ label: 'Temporal Window', value: '300s' }, { label: 'Memory Dim', value: '64' }, { label: 'Attention Heads', value: '4' }, { label: 'GNN Layers', value: '2' }, { label: 'Embed Dim', value: '64' }, { label: 'Threshold', value: '0.75' }].map((c, i) => (
+   306→                    <div key={i} className="flex justify-between text-[11px]">
+   307→                      <span className="text-[var(--text-muted)]">{c.label}</span>
+   308→                      <span className="text-blue-400 font-mono">{c.value}</span>
+   309→                    </div>
+   310→                  ))}
+   311→                </div>
+   312→              </div>
+   313→            </div>
+   314→            <div className="flex items-center justify-end gap-2 px-5 pb-5">
+   315→              <Button variant="ghost" size="sm" className="text-[var(--text-secondary)]" onClick={() => setShowCreateProfile(false)}>Cancel</Button>
+   316→              <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white" onClick={handleCreateProfile}>
+   317→                <Plus className="w-3.5 h-3.5 mr-1.5" /> Create Profile
+   318→              </Button>
+   319→            </div>
+   320→          </div>
+   321→        </div>
+   322→      )}
+   323→    </div>
+   324→  );
+   325→}
+   326→
+   327→// ═══════════════════════════════════════════════════════════════════
+   328→// DASHBOARD
+   329→// ═══════════════════════════════════════════════════════════════════
+   330→function DashboardPage({ axisColor, gridColor, axisLineColor, chartTooltipStyle }: {
+   331→  axisColor: string; gridColor: string; axisLineColor: string; chartTooltipStyle: any;
+   332→}) {
+   333→  const totalThreats = detectionResults.length;
+   334→  const criticalCount = detectionResults.filter(d => d.severity === 'Critical').length;
+   335→  const contained = detectionResults.filter(d => d.status === 'Contained').length;
+   336→  const avgConfidence = Math.round(detectionResults.reduce((a, d) => a + d.confidence, 0) / detectionResults.length * 10) / 10;
+   337→
+   338→  return (
+   339→    <div className="space-y-6">
+   340→      {/* KPI Cards */}
+   341→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   342→        <StatCard title="Total Detections" value={totalThreats.toString()} subtitle="Last 24 hours" icon={ShieldAlert} trend="up" trendValue="+12%" color="blue" />
+   343→        <StatCard title="Critical Alerts" value={criticalCount.toString()} subtitle="Requires attention" icon={AlertTriangle} trend="up" trendValue="+3" color="red" />
+   344→        <StatCard title="Threats Contained" value={contained.toString()} subtitle={`${Math.round(contained / totalThreats * 100)}% containment rate`} icon={CheckCircle2} trend="up" trendValue="+8%" color="emerald" />
+   345→        <StatCard title="Avg. Confidence" value={`${avgConfidence}%`} subtitle="V16 Apex model confidence" icon={Brain} trend="stable" trendValue="0.989 F1" color="purple" />
+   346→      </div>
+   347→
+   348→      {/* Main Grid */}
+   349→      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+   350→        {/* Traffic Overview */}
+   351→        <Card className="lg:col-span-2 bg-[var(--bg-card)] border-[var(--border-primary)]">
+   352→          <CardHeader className="pb-2">
+   353→            <CardTitle className="text-sm font-semibold text-[var(--text-secondary)]">Network Traffic Overview</CardTitle>
+   354→            <CardDescription className="text-xs text-[var(--text-muted)]">24-hour event distribution by type (all sources fused)</CardDescription>
+   355→          </CardHeader>
+   356→          <CardContent>
+   357→            <div className="h-72">
+   358→              <ResponsiveContainer width="100%" height="100%">
+   359→                <AreaChart data={timeSeriesData}>
+   360→                  <defs>
+   361→                    <linearGradient id="gradNormal" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} /><stop offset="100%" stopColor="#3b82f6" stopOpacity={0} /></linearGradient>
+   362→                    <linearGradient id="gradSuspicious" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} /><stop offset="100%" stopColor="#f59e0b" stopOpacity={0} /></linearGradient>
+   363→                    <linearGradient id="gradMalicious" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ef4444" stopOpacity={0.3} /><stop offset="100%" stopColor="#ef4444" stopOpacity={0} /></linearGradient>
+   364→                  </defs>
+   365→                  <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+   366→                  <XAxis dataKey="time" stroke={axisColor} tick={{ fontSize: 11, fill: axisColor }} />
+   367→                  <YAxis stroke={axisColor} tick={{ fontSize: 11, fill: axisColor }} />
+   368→                  <Tooltip {...chartTooltipStyle} />
+   369→                  <Legend wrapperStyle={{ fontSize: 11 }} />
+   370→                  <Area type="monotone" dataKey="normal" stackId="1" stroke="#3b82f6" fill="url(#gradNormal)" strokeWidth={2} name="Normal" />
+   371→                  <Area type="monotone" dataKey="suspicious" stackId="1" stroke="#f59e0b" fill="url(#gradSuspicious)" strokeWidth={2} name="Suspicious" />
+   372→                  <Area type="monotone" dataKey="malicious" stackId="1" stroke="#ef4444" fill="url(#gradMalicious)" strokeWidth={2} name="Malicious" />
+   373→                </AreaChart>
+   374→              </ResponsiveContainer>
+   375→            </div>
+   376→          </CardContent>
+   377→        </Card>
+   378→
+   379→        {/* Graph Statistics */}
+   380→        <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
+   381→          <CardHeader className="pb-2">
+   382→            <CardTitle className="text-sm font-semibold text-[var(--text-secondary)]">Graph Statistics</CardTitle>
+   383→            <CardDescription className="text-xs text-[var(--text-muted)]">V16 Apex temporal graph snapshot</CardDescription>
+   384→          </CardHeader>
+   385→          <CardContent className="space-y-3">
+   386→            <GraphStatItem label="Total Nodes" value={graphStats.totalNodes.toString()} icon={Globe} color="blue" />
+   387→            <GraphStatItem label="Total Edges" value={graphStats.totalEdges.toLocaleString()} icon={Network} color="cyan" />
+   388→            <GraphStatItem label="Temporal Windows" value={graphStats.temporalWindows.toString()} icon={Clock} color="amber" />
+   389→            <GraphStatItem label="Clustering Coeff." value={graphStats.avgClusteringCoeff.toFixed(3)} icon={Target} color="purple" />
+   390→            <GraphStatItem label="Graph Density" value={graphStats.graphDensity.toFixed(4)} icon={Zap} color="emerald" />
+   391→            <Separator className="bg-[var(--border-primary)]" />
+   392→            <div className="pt-1">
+   393→              <div className="flex justify-between text-xs mb-1.5">
+   394→                <span className="text-[var(--text-secondary)]">Processing Load</span>
+   395→                <span className="text-emerald-400 font-medium">34%</span>
+   396→              </div>
+   397→              <Progress value={34} className="h-2 bg-[var(--bg-input)] [&>div]:bg-gradient-to-r [&>div]:from-blue-500 [&>div]:to-cyan-400" />
+   398→            </div>
+   399→          </CardContent>
+   400→        </Card>
+   401→      </div>
+   402→
+   403→      {/* Recent Detections Table */}
+   404→      <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
+   405→        <CardHeader className="pb-2">
+   406→          <div className="flex items-center justify-between">
+   407→            <div>
+   408→              <CardTitle className="text-sm font-semibold text-[var(--text-secondary)]">Recent Detections</CardTitle>
+   409→              <CardDescription className="text-xs text-[var(--text-muted)]">Latest V16 Apex threat detection results</CardDescription>
+   410→            </div>
+   411→            <Badge variant="outline" className="border-[var(--border-secondary)] text-[var(--text-secondary)] text-xs">{detectionResults.length} total</Badge>
+   412→          </div>
+   413→        </CardHeader>
+   414→        <CardContent>
+   415→          <div className="overflow-x-auto">
+   416→            <table className="w-full text-xs">
+   417→              <thead>
+   418→                <tr className="border-b border-[var(--border-primary)]">
+   419→                  <th className="text-left text-[var(--text-muted)] font-medium py-2 pr-4">ID</th>
+   420→                  <th className="text-left text-[var(--text-muted)] font-medium py-2 pr-4">Timestamp</th>
+   421→                  <th className="text-left text-[var(--text-muted)] font-medium py-2 pr-4">MITRE Tactic</th>
+   422→                  <th className="text-left text-[var(--text-muted)] font-medium py-2 pr-4">Severity</th>
+   423→                  <th className="text-left text-[var(--text-muted)] font-medium py-2 pr-4">Source</th>
+   424→                  <th className="text-left text-[var(--text-muted)] font-medium py-2 pr-4">Confidence</th>
+   425→                  <th className="text-left text-[var(--text-muted)] font-medium py-2 pr-4">Graph Score</th>
+   426→                  <th className="text-left text-[var(--text-muted)] font-medium py-2">Status</th>
+   427→                </tr>
+   428→              </thead>
+   429→              <tbody>
+   430→                {detectionResults.slice(0, 8).map((d) => {
+   431→                  const StatusIcon = statusIcons[d.status] || CheckCircle2;
+   432→                  return (
+   433→                    <tr key={d.id} className="border-b border-[var(--border-secondary)] hover:bg-[var(--bg-card-hover)] transition-colors">
+   434→                      <td className="py-2 pr-4 font-mono text-blue-400">{d.id}</td>
+   435→                      <td className="py-2 pr-4 text-[var(--text-secondary)] font-mono">{formatTime(d.timestamp)}</td>
+   436→                      <td className="py-2 pr-4">
+   437→                        <span className="text-[var(--text-secondary)]">{d.tactic}</span>
+   438→                        <span className="text-[var(--text-muted)] ml-1.5">({d.attackType})</span>
+   439→                      </td>
+   440→                      <td className="py-2 pr-4">
+   441→                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${severityColors[d.severity]}`}>{d.severity}</Badge>
+   442→                      </td>
+   443→                      <td className="py-2 pr-4 font-mono text-[var(--text-secondary)]">{d.sourceNode}</td>
+   444→                      <td className="py-2 pr-4">
+   445→                        <div className="flex items-center gap-1.5">
+   446→                          <Progress value={d.confidence} className="w-12 h-1.5 bg-[var(--bg-input)] [&>div]:bg-blue-500" />
+   447→                          <span className="text-[var(--text-secondary)]">{d.confidence}%</span>
+   448→                        </div>
+   449→                      </td>
+   450→                      <td className="py-2 pr-4">
+   451→                        <div className="flex items-center gap-1.5">
+   452→                          <Progress value={d.graphScore} className="w-12 h-1.5 bg-[var(--bg-input)] [&>div]:bg-purple-500" />
+   453→                          <span className="text-[var(--text-secondary)]">{d.graphScore}%</span>
+   454→                        </div>
+   455→                      </td>
+   456→                      <td className="py-2">
+   457→                        <div className="flex items-center gap-1">
+   458→                          <StatusIcon className={`w-3 h-3 ${d.status === 'Detected' ? 'text-amber-400' : d.status === 'Investigating' ? 'text-blue-400' : 'text-emerald-400'}`} />
+   459→                          <span className="text-[var(--text-secondary)]">{d.status}</span>
+   460→                        </div>
+   461→                      </td>
+   462→                    </tr>
+   463→                  );
+   464→                })}
+   465→              </tbody>
+   466→            </table>
+   467→          </div>
+   468→        </CardContent>
+   469→      </Card>
+   470→    </div>
+   471→  );
+   472→}
+   473→
+   474→// ─── SHARED COMPONENTS ────────────────────────────────────────────
+   475→function StatCard({ title, value, subtitle, icon: Icon, trend, trendValue, color }: {
+   476→  title: string; value: string; subtitle: string; icon: LucideIcon;
+   477→  trend: 'up' | 'down' | 'stable'; trendValue: string; color: string;
+   478→}) {
+   479→  const colorMap: Record<string, { bg: string; text: string; shadow: string }> = {
+   480→    blue: { bg: 'bg-blue-500/10', text: 'text-blue-400', shadow: 'shadow-blue-500/10' },
+   481→    red: { bg: 'bg-red-500/10', text: 'text-red-400', shadow: 'shadow-red-500/10' },
+   482→    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', shadow: 'shadow-emerald-500/10' },
+   483→    purple: { bg: 'bg-purple-500/10', text: 'text-purple-400', shadow: 'shadow-purple-500/10' },
+   484→  };
+   485→  const c = colorMap[color] || colorMap.blue;
+   486→  return (
+   487→    <Card className="bg-[var(--bg-card)] border-[var(--border-primary)] hover:border-[var(--border-secondary)] transition-colors">
+   488→      <CardContent className="p-4">
+   489→        <div className="flex items-start justify-between">
+   490→          <div>
+   491→            <p className="text-xs text-[var(--text-muted)] font-medium">{title}</p>
+   492→            <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{value}</p>
+   493→            <p className="text-[11px] text-[var(--text-muted)] mt-1">{subtitle}</p>
+   494→          </div>
+   495→          <div className={`w-10 h-10 rounded-lg ${c.bg} flex items-center justify-center shadow-lg ${c.shadow}`}>
+   496→            <Icon className={`w-5 h-5 ${c.text}`} />
+   497→          </div>
+   498→        </div>
+   499→        <div className="flex items-center gap-1 mt-3 text-xs">
+   500→          {trend === 'up' ? <ArrowUpRight className="w-3 h-3 text-emerald-400" /> :
+   501→           trend === 'down' ? <ArrowDownRight className="w-3 h-3 text-red-400" /> :
+   502→           <TrendingUp className="w-3 h-3 text-[var(--text-secondary)]" />}
+   503→          <span className={trend === 'up' ? 'text-emerald-400' : trend === 'down' ? 'text-red-400' : 'text-[var(--text-secondary)]'}>{trendValue}</span>
+   504→          <span className="text-[var(--text-muted)] ml-1">vs last period</span>
+   505→        </div>
+   506→      </CardContent>
+   507→    </Card>
+   508→  );
+   509→}
+   510→
+   511→function GraphStatItem({ label, value, icon: Icon, color }: {
+   512→  label: string; value: string; icon: LucideIcon; color: string;
+   513→}) {
+   514→  const colorMap: Record<string, string> = { blue: 'text-blue-400', cyan: 'text-cyan-400', amber: 'text-amber-400', purple: 'text-purple-400', emerald: 'text-emerald-400' };
+   515→  return (
+   516→    <div className="flex items-center justify-between py-1.5">
+   517→      <div className="flex items-center gap-2">
+   518→        <Icon className={`w-3.5 h-3.5 ${colorMap[color] || 'text-[var(--text-secondary)]'}`} />
+   519→        <span className="text-xs text-[var(--text-secondary)]">{label}</span>
+   520→      </div>
+   521→      <span className="text-xs font-semibold text-[var(--text-primary)]">{value}</span>
+   522→    </div>
+   523→  );
+   524→}
+   525→
+   526→// ═══════════════════════════════════════════════════════════════════
+   527→// DATASETS PAGE
+   528→// ═══════════════════════════════════════════════════════════════════
+   529→function DatasetsPage({ datasets, onUploadClick }: { datasets: UploadedDataset[]; onUploadClick: () => void }) {
+   530→  return (
+   531→    <div className="space-y-6">
+   532→      <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20">
+   533→        <CardContent className="p-5 flex items-center justify-between">
+   534→          <div className="flex items-center gap-4">
+   535→            <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center"><Upload className="w-6 h-6 text-blue-400" /></div>
+   536→            <div>
+   537→              <h3 className="text-sm font-semibold text-[var(--text-primary)]">Upload Log Dataset</h3>
+   538→              <p className="text-xs text-[var(--text-secondary)] mt-0.5">Upload network logs in CSV, JSON, Syslog, NetFlow, Wazuh, Zeek, or other supported formats for TGNN analysis.</p>
+   539→            </div>
+   540→          </div>
+   541→          <Button className="bg-blue-500 hover:bg-blue-600 text-white" onClick={onUploadClick}><FileUp className="w-4 h-4 mr-2" /> Upload Dataset</Button>
+   542→        </CardContent>
+   543→      </Card>
+   544→
+   545→      <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
+   546→        <CardHeader className="pb-2">
+   547→          <CardTitle className="text-sm font-semibold text-[var(--text-secondary)]">Supported Log Formats</CardTitle>
+   548→          <CardDescription className="text-xs text-[var(--text-muted)]">TGDetect V16 Apex supports the following data ingestion formats</CardDescription>
+   549→        </CardHeader>
+   550→        <CardContent>
+   551→          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+   552→            {supportedLogFormats.map((fmt, i) => {
+   553→              const FmtIcon = formatIcon[fmt.icon] || FileText;
+   554→              return (
+   555→                <div key={i} className="rounded-lg border border-[var(--border-secondary)] bg-[var(--bg-input)] p-3 hover:border-[var(--border-primary)] transition-colors">
+   556→                  <div className="flex items-center gap-2 mb-1.5"><FmtIcon className="w-3.5 h-3.5 text-blue-400" /><span className="text-xs font-medium text-[var(--text-secondary)]">{fmt.name}</span></div>
+   557→                  <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">{fmt.desc}</p>
+   558→                  <p className="text-[9px] text-blue-400/60 mt-1 font-mono">{fmt.ext}</p>
+   559→                </div>
+   560→              );
+   561→            })}
+   562→          </div>
+   563→        </CardContent>
+   564→      </Card>
+   565→
+   566→      <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
+   567→        <CardHeader className="pb-2">
+   568→          <div className="flex items-center justify-between">
+   569→            <div><CardTitle className="text-sm font-semibold text-[var(--text-secondary)]">Loaded Datasets</CardTitle><CardDescription className="text-xs text-[var(--text-muted)]">Currently loaded log datasets for analysis</CardDescription></div>
+   570→            <Badge variant="outline" className="border-[var(--border-secondary)] text-[var(--text-secondary)] text-xs">{datasets.length} datasets</Badge>
+   571→          </div>
+   572→        </CardHeader>
+   573→        <CardContent>
+   574→          <div className="overflow-x-auto">
+   575→            <table className="w-full text-xs">
+   576→              <thead>
+   577→                <tr className="border-b border-[var(--border-primary)]">
+   578→                  <th className="text-left text-[var(--text-muted)] font-medium py-2 pr-4">Dataset</th>
+   579→                  <th className="text-left text-[var(--text-muted)] font-medium py-2 pr-4">Format</th>
+   580→                  <th className="text-left text-[var(--text-muted)] font-medium py-2 pr-4">Size</th>
+   581→                  <th className="text-left text-[var(--text-muted)] font-medium py-2 pr-4">Events</th>
+   582→                  <th className="text-left text-[var(--text-muted)] font-medium py-2 pr-4">Source</th>
+   583→                  <th className="text-left text-[var(--text-muted)] font-medium py-2 pr-4">Uploaded</th>
+   584→                  <th className="text-left text-[var(--text-muted)] font-medium py-2">Status</th>
+   585→                </tr>
+   586→              </thead>
+   587→              <tbody>
+   588→                {datasets.map((ds) => (
+   589→                  <tr key={ds.id} className="border-b border-[var(--border-secondary)] hover:bg-[var(--bg-card-hover)] transition-colors">
+   590→                    <td className="py-2.5 pr-4"><div className="flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-[var(--text-muted)]" /><span className="text-[var(--text-secondary)] font-medium">{ds.name}</span></div></td>
+   591→                    <td className="py-2.5 pr-4"><Badge variant="outline" className="border-[var(--border-secondary)] text-[var(--text-secondary)] text-[10px] px-1.5">{ds.format}</Badge></td>
+   592→                    <td className="py-2.5 pr-4 text-[var(--text-secondary)]">{ds.size}</td>
+   593→                    <td className="py-2.5 pr-4 text-[var(--text-secondary)]">{ds.events.toLocaleString()}</td>
+   594→                    <td className="py-2.5 pr-4 text-[var(--text-secondary)]">{ds.source}</td>
+   595→                    <td className="py-2.5 pr-4 text-[var(--text-secondary)]">{formatDate(ds.uploadedAt)}</td>
+   596→                    <td className="py-2.5"><div className="flex items-center gap-1.5"><div className={`w-1.5 h-1.5 rounded-full ${ds.status === 'processed' ? 'bg-emerald-400' : ds.status === 'pending' ? 'bg-amber-400' : 'bg-red-400'}`} /><span className="text-[var(--text-secondary)] capitalize">{ds.status}</span></div></td>
+   597→                  </tr>
+   598→                ))}
+   599→              </tbody>
+   600→            </table>
+   601→          </div>
+   602→        </CardContent>
+   603→      </Card>
+   604→    </div>
+   605→  );
+   606→}
+   607→
+   608→// ═══════════════════════════════════════════════════════════════════
+   609→// PROFILES PAGE
+   610→// ═══════════════════════════════════════════════════════════════════
+   611→function ProfilesPage({ profiles, activeProfile, onSelectProfile, onCreateClick, onDeleteProfile }: {
+   612→  profiles: UserProfile[]; activeProfile: string; onSelectProfile: (id: string) => void; onCreateClick: () => void; onDeleteProfile: (id: string) => void;
+   613→}) {
+   614→  return (
+   615→    <div className="space-y-6">
+   616→      <div className="flex items-center justify-between">
+   617→        <div><h3 className="text-sm font-semibold text-[var(--text-primary)]">Analysis Profiles</h3><p className="text-xs text-[var(--text-muted)] mt-0.5">Create profiles to manage different datasets and configurations</p></div>
+   618→        <Button className="bg-blue-500 hover:bg-blue-600 text-white" onClick={onCreateClick}><Plus className="w-4 h-4 mr-1.5" /> Create Profile</Button>
+   619→      </div>
+   620→      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+   621→        {profiles.map((profile) => {
+   622→          const isActive = profile.id === activeProfile;
+   623→          return (
+   624→            <Card key={profile.id} className={`bg-[var(--bg-card)] border transition-colors ${isActive ? 'border-blue-500/40 shadow-lg shadow-blue-500/5' : 'border-[var(--border-primary)] hover:border-[var(--border-secondary)]'}`}>
+   625→              <CardHeader className="pb-2">
+   626→                <div className="flex items-start justify-between">
+   627→                  <div className="flex items-center gap-2"><UserCircle className={`w-4 h-4 ${isActive ? 'text-blue-400' : 'text-[var(--text-muted)]'}`} /><CardTitle className="text-sm font-semibold text-[var(--text-secondary)]">{profile.name}</CardTitle></div>
+   628→                  {isActive && <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 text-[9px]">Active</Badge>}
+   629→                </div>
+   630→                <CardDescription className="text-[11px] text-[var(--text-muted)]">{profile.description}</CardDescription>
+   631→              </CardHeader>
+   632→              <CardContent className="space-y-3">
+   633→                <div className="grid grid-cols-2 gap-2">
+   634→                  <div className="rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] px-2.5 py-1.5"><p className="text-[9px] text-[var(--text-muted)] uppercase">Dataset</p><p className="text-[11px] text-[var(--text-secondary)] font-medium">{profile.dataset}</p></div>
+   635→                  <div className="rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] px-2.5 py-1.5"><p className="text-[9px] text-[var(--text-muted)] uppercase">Modified</p><p className="text-[11px] text-[var(--text-secondary)] font-medium">{formatDate(profile.lastModified)}</p></div>
+   636→                </div>
+   637→                <div>
+   638→                  <p className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider mb-1.5">V16 Apex Config</p>
+   639→                  <div className="grid grid-cols-3 gap-1.5">
+   640→                    {[{ label: 'Window', value: `${profile.config.temporalWindow}s` }, { label: 'Heads', value: profile.config.numHeads.toString() }, { label: 'Layers', value: profile.config.nLayers.toString() }, { label: 'Memory', value: profile.config.memoryDim.toString() }, { label: 'Embed', value: profile.config.embedDim.toString() }, { label: 'Threshold', value: profile.config.threshold.toString() }].map((c, i) => (
+   641→                      <div key={i} className="rounded bg-[var(--bg-primary)] px-1.5 py-1 text-center"><p className="text-[8px] text-[var(--text-muted)]">{c.label}</p><p className="text-[10px] text-blue-400 font-mono">{c.value}</p></div>
+   642→                    ))}
+   643→                  </div>
+   644→                </div>
+   645→                <div className="flex items-center gap-2 pt-1">
+   646→                  <Button variant="outline" size="sm" className={`flex-1 text-[10px] h-7 ${isActive ? 'border-blue-500/30 text-blue-400 bg-blue-500/5' : 'border-[var(--border-secondary)] text-[var(--text-secondary)]'}`} onClick={() => onSelectProfile(profile.id)}>{isActive ? 'Currently Active' : 'Set Active'}</Button>
+   647→                  <Button variant="ghost" size="sm" className="text-[var(--text-muted)] hover:text-red-400 h-7 w-7 p-0" onClick={() => onDeleteProfile(profile.id)}><Trash2 className="w-3 h-3" /></Button>
+   648→                </div>
+   649→              </CardContent>
+   650→            </Card>
+   651→          );
+   652→        })}
+   653→      </div>
+   654→    </div>
+   655→  );
+   656→}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Shield, LayoutDashboard, BarChart3, Upload, UserCircle,
   ChevronRight, Activity, Network, Zap, Target, AlertTriangle,
@@ -9,7 +9,7 @@ import {
   Globe, FileText, Plus,
   Trash2, FileUp,
   Monitor, Terminal, Wifi, Braces, Table, FileJson,
-  Sun, Moon,
+  Sun, Moon, GitBranch, Cpu,
   type LucideIcon
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +32,11 @@ import {
 } from '@/lib/synthetic-data';
 import { formatTime, formatDate } from '@/lib/date-utils';
 import { AnalyticsPage } from '@/components/tgdetect/AnalyticsPage';
+import { TimeRangePicker } from '@/components/tgdetect/TimeRangePicker';
+import { ColumnMappingModal } from '@/components/tgdetect/ColumnMappingModal';
 import { useTheme } from '@/lib/theme-context';
+import { OnboardingTour } from '@/components/tgdetect/OnboardingTour';
+import { useLiveStream, type LiveMetrics } from '@/hooks/useLiveStream';
 
 // ─── NAVIGATION ─────────────────────────────────────────────────
 const navItems = [
@@ -79,11 +83,28 @@ export default function Home() {
   const [activeProfile, setActiveProfile] = useState<string>(initialProfiles[0].id);
   const [showCreateProfile, setShowCreateProfile] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showColumnMapping, setShowColumnMapping] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState('');
+  const [showTour, setShowTour] = useState(false);
   const [newProfileName, setNewProfileName] = useState('');
   const [newProfileDesc, setNewProfileDesc] = useState('');
   const [newProfileDataset, setNewProfileDataset] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [timeRange, setTimeRange] = useState<'1h' | '6h' | '12h' | '24h' | '7d' | '30d'>('24h');
   const { theme, toggleTheme } = useTheme();
+  const { metrics, feedItems } = useLiveStream();
+
+  useEffect(() => {
+    if (!localStorage.getItem('tgdetect-tour-completed')) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reading localStorage once on mount to avoid hydration mismatch
+      setShowTour(true);
+    }
+  }, []);
+
+  const handleTourComplete = useCallback(() => {
+    setShowTour(false);
+    localStorage.setItem('tgdetect-tour-completed', 'true');
+  }, []);
 
   const axisColor = theme === 'dark' ? '#6b7280' : '#64748b';
   const gridColor = theme === 'dark' ? '#1f2937' : '#e2e8f0';
@@ -121,17 +142,24 @@ export default function Home() {
     }
   }, [activeProfile, profiles]);
 
-  const handleSimulateUpload = useCallback(() => {
+  const handleFileSelected = useCallback(() => {
+    const fileName = `network_logs_${Date.now()}.csv`;
+    setUploadedFileName(fileName);
+    setShowUploadModal(false);
+    setShowColumnMapping(true);
+  }, []);
+
+  const handleMappingComplete = useCallback(() => {
     const newDs: UploadedDataset = {
       id: `ds-${String(datasets.length + 1).padStart(3, '0')}`,
-      name: `synthetic_demo_${Date.now()}.csv`,
-      format: 'CSV', size: '12.4 MB', events: 52340,
+      name: uploadedFileName,
+      format: 'CSV', size: '12.4 MB', events: 523340,
       uploadedAt: new Date().toISOString(),
-      status: 'processed', source: 'Synthetic Demo',
+      status: 'processed', source: 'Uploaded',
     };
     setDatasets(prev => [newDs, ...prev]);
-    setShowUploadModal(false);
-  }, [datasets.length]);
+    setShowColumnMapping(false);
+  }, [uploadedFileName, datasets.length]);
 
   return (
     <div className="flex h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden">
@@ -149,12 +177,12 @@ export default function Home() {
           </div>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1">
+        <nav id="tour-sidebar" className="flex-1 p-3 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activePage === item.id;
             return (
-              <button key={item.id} onClick={() => setActivePage(item.id)}
+              <button key={item.id} id={`tour-${item.id}`} onClick={() => setActivePage(item.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                   isActive ? 'bg-blue-500/10 text-blue-400 shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)]'
                 }`}
@@ -179,11 +207,23 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="p-4 border-t border-[var(--border-primary)]">
+        <div id="tour-pulse" className="p-4 border-t border-[var(--border-primary)]">
           <div className="flex items-center gap-2 px-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs text-[var(--text-muted)]">Demo Mode — Synthetic Data</span>
+            <div className="relative flex items-center justify-center">
+              <div className="w-2 h-2 rounded-full bg-emerald-400" />
+              <div className="absolute w-2 h-2 rounded-full bg-emerald-400 animate-ping opacity-75" />
+            </div>
+            <span className="text-xs text-[var(--text-tertiary)]">Live Demo — Synthetic Stream</span>
           </div>
+          <button
+            onClick={() => {
+              localStorage.removeItem('tgdetect-tour-completed');
+              setShowTour(true);
+            }}
+            className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors w-full text-center mt-1"
+          >
+            Restart Tour
+          </button>
         </div>
       </aside>
 
@@ -215,8 +255,8 @@ export default function Home() {
         </header>
 
         <div className="p-6">
-          {activePage === 'dashboard' && <DashboardPage axisColor={axisColor} gridColor={gridColor} axisLineColor={axisLineColor} chartTooltipStyle={chartTooltipStyle} />}
-          {activePage === 'analytics' && <AnalyticsPage />}
+          {activePage === 'dashboard' && <DashboardPage axisColor={axisColor} gridColor={gridColor} axisLineColor={axisLineColor} chartTooltipStyle={chartTooltipStyle} liveMetrics={metrics} liveFeed={feedItems} timeRange={timeRange} onTimeRangeChange={setTimeRange} />}
+          {activePage === 'analytics' && <AnalyticsPage timeRange={timeRange} onTimeRangeChange={setTimeRange} />}
           {activePage === 'datasets' && <DatasetsPage datasets={datasets} onUploadClick={() => setShowUploadModal(true)} />}
           {activePage === 'profiles' && <ProfilesPage profiles={profiles} activeProfile={activeProfile} onSelectProfile={setActiveProfile} onCreateClick={() => setShowCreateProfile(true)} onDeleteProfile={handleDeleteProfile} />}
         </div>
@@ -237,8 +277,8 @@ export default function Home() {
               <div className={`rounded-xl border-2 border-dashed p-8 text-center transition-all cursor-pointer ${dragOver ? 'border-blue-400 bg-blue-500/5' : 'border-[var(--border-secondary)] hover:border-[var(--text-muted)]'}`}
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
-                onDrop={e => { e.preventDefault(); setDragOver(false); handleSimulateUpload(); }}
-                onClick={handleSimulateUpload}
+                onDrop={e => { e.preventDefault(); setDragOver(false); handleFileSelected(); }}
+                onClick={handleFileSelected}
               >
                 <Upload className={`w-10 h-10 mx-auto mb-3 ${dragOver ? 'text-blue-400' : 'text-[var(--text-muted)]'}`} />
                 <p className="text-sm text-[var(--text-secondary)] font-medium">{dragOver ? 'Drop your file here' : 'Drag & drop your log file, or click to browse'}</p>
@@ -264,12 +304,21 @@ export default function Home() {
             </div>
             <div className="flex items-center justify-end gap-2 px-5 pb-5">
               <Button variant="ghost" size="sm" className="text-[var(--text-secondary)]" onClick={() => setShowUploadModal(false)}>Cancel</Button>
-              <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white" onClick={handleSimulateUpload}>
+              <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white" onClick={handleFileSelected}>
                 <Upload className="w-3.5 h-3.5 mr-1.5" /> Upload Dataset
               </Button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* ─── Column Mapping Modal ─── */}
+      {showColumnMapping && (
+        <ColumnMappingModal
+          fileName={uploadedFileName}
+          onClose={() => setShowColumnMapping(false)}
+          onComplete={handleMappingComplete}
+        />
       )}
 
       {/* ─── Create Profile Modal ─── */}
@@ -320,6 +369,8 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {showTour && <OnboardingTour onComplete={handleTourComplete} />}
     </div>
   );
 }
@@ -327,8 +378,12 @@ export default function Home() {
 // ═══════════════════════════════════════════════════════════════════
 // DASHBOARD
 // ═══════════════════════════════════════════════════════════════════
-function DashboardPage({ axisColor, gridColor, axisLineColor, chartTooltipStyle }: {
+function DashboardPage({ axisColor, gridColor, axisLineColor, chartTooltipStyle, liveMetrics, liveFeed, timeRange, onTimeRangeChange }: {
   axisColor: string; gridColor: string; axisLineColor: string; chartTooltipStyle: any;
+  liveMetrics: LiveMetrics;
+  liveFeed: Array<{ id: string; type: 'detection' | 'ingestion' | 'alert' | 'system'; message: string; timestamp: string; source?: string }>;
+  timeRange: string;
+  onTimeRangeChange: (r: any) => void;
 }) {
   const totalThreats = detectionResults.length;
   const criticalCount = detectionResults.filter(d => d.severity === 'Critical').length;
@@ -337,6 +392,50 @@ function DashboardPage({ axisColor, gridColor, axisLineColor, chartTooltipStyle 
 
   return (
     <div className="space-y-6">
+      {/* ── System Pulse Bar ── */}
+      <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] p-3">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <div className="relative flex items-center justify-center">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+              <div className="absolute w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping opacity-75" />
+            </div>
+            <span className="text-xs font-medium text-[var(--text-secondary)]">System Active</span>
+            <Badge className="bg-emerald-400/10 text-emerald-400 border-emerald-400/20 text-[10px]">Ingesting</Badge>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+              <span className="text-[10px] text-[var(--text-muted)]">Events/s</span>
+              <span className="text-xs font-semibold text-[var(--text-primary)] tabular-nums">{liveMetrics.eventsPerSecond.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Database className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+              <span className="text-[10px] text-[var(--text-muted)]">Total Events</span>
+              <span className="text-xs font-semibold text-[var(--text-primary)] tabular-nums">{(liveMetrics.totalEvents / 1_000_000).toFixed(2)}M</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Network className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+              <span className="text-[10px] text-[var(--text-muted)]">Active Nodes</span>
+              <span className="text-xs font-semibold text-[var(--text-primary)] tabular-nums">{liveMetrics.activeNodes.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <GitBranch className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+              <span className="text-[10px] text-[var(--text-muted)]">Edges</span>
+              <span className="text-xs font-semibold text-[var(--text-primary)] tabular-nums">{liveMetrics.graphEdges.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Cpu className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+              <span className="text-[10px] text-[var(--text-muted)]">Memory</span>
+              <div className="w-16 h-1.5 rounded-full bg-[var(--bg-input)] overflow-hidden">
+                <div className="h-full rounded-full bg-emerald-400 transition-all duration-1000" style={{ width: `${liveMetrics.memoryUsage}%` }} />
+              </div>
+              <span className="text-[10px] font-medium text-[var(--text-secondary)]">{liveMetrics.memoryUsage.toFixed(1)}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Total Detections" value={totalThreats.toString()} subtitle="Last 24 hours" icon={ShieldAlert} trend="up" trendValue="+12%" color="blue" />
@@ -350,8 +449,15 @@ function DashboardPage({ axisColor, gridColor, axisLineColor, chartTooltipStyle 
         {/* Traffic Overview */}
         <Card className="lg:col-span-2 bg-[var(--bg-card)] border-[var(--border-primary)]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-[var(--text-secondary)]">Network Traffic Overview</CardTitle>
-            <CardDescription className="text-xs text-[var(--text-muted)]">24-hour event distribution by type (all sources fused)</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-sm font-semibold text-[var(--text-secondary)]">Network Traffic Overview</CardTitle>
+                <CardDescription className="text-xs text-[var(--text-muted)]">
+                  Event distribution by type — {timeRange === 'custom' ? 'Custom' : `Last ${timeRange}`}
+                </CardDescription>
+              </div>
+              <TimeRangePicker value={timeRange as any} onChange={onTimeRangeChange} />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-72">
@@ -408,7 +514,10 @@ function DashboardPage({ axisColor, gridColor, axisLineColor, chartTooltipStyle 
               <CardTitle className="text-sm font-semibold text-[var(--text-secondary)]">Recent Detections</CardTitle>
               <CardDescription className="text-xs text-[var(--text-muted)]">Latest V16 Apex threat detection results</CardDescription>
             </div>
-            <Badge variant="outline" className="border-[var(--border-secondary)] text-[var(--text-secondary)] text-xs">{detectionResults.length} total</Badge>
+            <div className="flex items-center gap-2">
+              <TimeRangePicker value={timeRange as any} onChange={onTimeRangeChange} />
+              <Badge variant="outline" className="border-[var(--border-secondary)] text-[var(--text-secondary)] text-xs">{detectionResults.length} total</Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -464,6 +573,44 @@ function DashboardPage({ axisColor, gridColor, axisLineColor, chartTooltipStyle 
                 })}
               </tbody>
             </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Live Activity Feed */}
+      <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="relative flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                <div className="absolute w-2 h-2 rounded-full bg-emerald-400 animate-ping opacity-75" />
+              </div>
+              <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">Live Activity Feed</CardTitle>
+            </div>
+            <span className="text-[10px] text-[var(--text-muted)]">{liveMetrics.lastEventTime}</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+            {liveFeed.slice(0, 8).map((item) => (
+              <div key={item.id} className="flex items-start gap-2 p-2 rounded-lg bg-[var(--bg-input)]/50">
+                <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${
+                  item.type === 'detection' ? 'bg-blue-400' :
+                  item.type === 'alert' ? 'bg-red-400' :
+                  item.type === 'ingestion' ? 'bg-emerald-400' : 'bg-[var(--text-muted)]'
+                }`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed truncate">{item.message}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[9px] text-[var(--text-muted)] font-mono">{item.timestamp}</span>
+                    {item.source && (
+                      <Badge className="text-[8px] px-1 py-0 bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-secondary)]">{item.source}</Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>

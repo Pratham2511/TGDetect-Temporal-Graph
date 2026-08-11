@@ -1,0 +1,294 @@
+================================================================================
+                    TGDetect — Production Upgrade Roadmap
+================================================================================
+Generated: 2026-08-12
+Purpose: Track remaining improvements to bring TGDetect from demo to 
+         industry-grade production readiness.
+================================================================================
+
+COMPLETED FEATURES (as of 2026-08-12):
+────────────────────────────────────────
+  [✓] Live Streaming Indicators (pulsing dots, updating counters, activity feed)
+  [✓] Time Range Picker on all charts (1H / 6H / 12H / 24H / 7D / 30D)
+  [✓] Column Mapping UI for uploads (3-step: Scan → Map → Process)
+  [✓] Onboarding Tour (6-step spotlight tour for first-time users)
+  [✓] Dark/Light Theme Toggle (full CSS variable system)
+  [✓] Backtracking Engine & Explainability in separate Threat Intelligence section
+  [✓] Detailed professional explanations in all analytics sections
+  [✓] Hydration error fix
+
+PENDING UPGRADES:
+────────────────────────────────────────
+
+═══ HIGH PRIORITY ══════════════════════════════════════════════════════════════
+
+1. COMMAND PALETTE (Cmd+K / Ctrl+K)
+   ─────────────────────────────────
+   What: A Spotlight/Vercel-style command palette overlay triggered by Cmd+K
+   Why: Every serious product has this. Allows power users to navigate, search,
+        and execute actions without touching the mouse.
+   Scope:
+   - Search across detections by ID, attack type, IP, tactic
+   - Navigate to pages ("Go to Dashboard", "Open Analytics")
+   - Execute actions ("Upload dataset", "Create profile", "Export report")
+   - Switch profiles ("Switch to DARPA Engagement")
+   - Toggle theme, restart tour
+   Implementation:
+   - Use @cmdk/react or build custom with Radix dialog
+   - Keyboard shortcuts: Cmd+K to open, Esc to close, arrow keys to navigate
+   - Fuzzy search across all indexed entities
+   - Recent commands history
+   Effort: ~3-4 hours
+   Impact: VERY HIGH (perception of product maturity)
+
+2. GEO-MAP OF ATTACK SOURCES
+   ────────────────────────────
+   What: An interactive world map showing source/destination IP geolocations
+   Why: Table stakes for security products. CrowdStrike, Sentinel, Splunk all
+        have this. Makes the demo visually impressive.
+   Scope:
+   - World map with dots for attack sources (red) and destinations (blue)
+   - Connection arcs between source→destination for attack chains
+   - Zoomable, pannable map using Leaflet or Mapbox GL
+   - Country-level aggregation with click-to-drill
+   - Real-time updates as new detections come in
+   Implementation:
+   - Use react-leaflet or deck.gl for rendering
+   - IP geolocation via free MaxMind GeoLite2 or ip-api.com
+   - Aggregate by country for clean visualization
+   - Attack chain lines with animation
+   Effort: ~6-8 hours
+   Impact: VERY HIGH (visual wow factor for panel)
+
+3. INTERACTIVE NETWORK TOPOLOGY GRAPH
+   ────────────────────────────────────
+   What: A force-directed graph showing actual node connections (IPs as nodes,
+        connections as edges) with attack paths highlighted
+   Why: The core of TGNN is a TEMPORAL GRAPH — showing it visually is the #1
+        most compelling way to demonstrate the technology.
+   Scope:
+   - Force-directed layout with D3-force or @react-sigma/core
+   - Nodes colored by type (endpoint=blue, server=purple, external=red, router=cyan)
+   - Edge thickness = event frequency, edge color = threat severity
+   - Click node → show details (IP, event count, threat score, connected nodes)
+   - Click edge → show events on that connection
+   - Highlight attack chains from backtracking results
+   - Temporal scrubber to see graph evolution over time
+   - Zoom, pan, filter by source/type/severity
+   Implementation:
+   - react-force-graph-2d or sigma.js for rendering
+   - Export graph data from synthetic-data.ts
+   - Interactive controls: search node, filter edges, temporal slider
+   Effort: ~10-12 hours
+   Impact: VERY HIGH (directly demonstrates TGNN technology)
+
+4. NOTIFICATION CENTER (Bell Icon + Feed)
+   ───────────────────────────────────────
+   What: A bell icon in the header with a dropdown showing recent notifications
+   Why: Production apps always have this. Adds to the "alive" feeling.
+   Scope:
+   - Bell icon with unread count badge in header
+   - Dropdown panel showing: detections, alerts, system events
+   - Each notification: icon, message, timestamp, source badge
+   - "Mark all read" button
+   - Click notification → navigate to relevant section
+   - Persist unread count in localStorage
+   Implementation:
+   - Reuse live feed data from useLiveStream hook
+   - Add notification state management
+   - Animate badge count changes
+   Effort: ~2-3 hours
+   Impact: MEDIUM
+
+5. SKELETON LOADING STATES
+   ───────────────────────────
+   What: Shimmer placeholders while content loads
+   Why: Real products never show blank screens. Skeleton states signal
+        "content is coming" and feel polished.
+   Scope:
+   - Skeleton cards for KPI metrics on Dashboard
+   - Skeleton chart placeholders (animated bars)
+   - Skeleton table rows for detection feed
+   - Skeleton cards for analytics tabs
+   Implementation:
+   - Create SkeletonCard, SkeletonChart, SkeletonRow components
+   - Show for 500-800ms on page transition
+   - Use Tailwind animate-pulse with gradient backgrounds
+   Effort: ~2 hours
+   Impact: MEDIUM (polish factor)
+
+═══ MEDIUM PRIORITY ═══════════════════════════════════════════════════════════
+
+6. EXPORT FUNCTIONALITY
+   ──────────────────────
+   What: Export charts as PNG, tables as CSV, generate PDF reports
+   Why: Analysts need to share findings. Export is essential for workflows.
+   Scope:
+   - "Export PNG" button on every chart (use html2canvas or recharts download)
+   - "Export CSV" button on detection tables and explainability data
+   - "Generate Report" button → creates a multi-page PDF summary
+   - Download icon in chart headers
+   Implementation:
+   - html2canvas for chart PNG export
+   - PapaParse for CSV generation
+   - jsPDF or @react-pdf/renderer for report generation
+   Effort: ~4-5 hours
+   Impact: HIGH (analyst workflow)
+
+7. DRILL-DOWN / INTERACTIVE CHARTS
+   ───────────────────────────────────
+   What: Clicking a spike on a chart filters and shows the events that caused it
+   Why: Turns static charts into investigation tools. This is what separates
+        dashboards from actual analytics products.
+   Scope:
+   - Click on chart data point → filter detection table to that time window
+   - Click on bar in source comparison → filter to that source
+   - Brush selection on time series → zoom into time range
+   - Cross-filtering: selecting in one chart filters others
+   - Breadcrumb trail for navigation back
+   Implementation:
+   - Recharts onClick handlers on chart elements
+   - Shared filter state across analytics components
+   - Animated transitions between filtered views
+   Effort: ~6-8 hours
+   Impact: HIGH (interactivity)
+
+8. SAVED SEARCHES / BOOKMARKS
+   ───────────────────────────
+   What: Save filter combinations for quick access
+   Why: Analysts repeatedly investigate the same patterns. Saved searches
+        eliminate repetitive setup.
+   Scope:
+   - "Save this view" button on analytics pages
+   - Named saved searches with filter state
+   - Quick-access list in sidebar or analytics header
+   - Share via URL parameters
+   Implementation:
+   - Store in localStorage (demo) or backend (production)
+   - Serialize filter state to URL params
+   - List component with edit/delete
+   Effort: ~3-4 hours
+   Impact: MEDIUM
+
+9. COMPARISON MODE
+   ─────────────────
+   What: Compare two time ranges side by side
+   Why: "Is this week worse than last week?" — fundamental security question.
+   Scope:
+   - Split-screen chart view (this week vs last week)
+   - Delta indicators (+12% more detections)
+   - Statistical comparison panel
+   Implementation:
+   - Duplicate chart components with different data ranges
+   - Compute deltas between ranges
+   - Toggle between single and comparison view
+   Effort: ~5-6 hours
+   Impact: MEDIUM
+
+10. INCIDENT MANAGEMENT
+    ─────────────────────
+    What: Group related alerts into incidents with lifecycle management
+    Why: Real SOC workflows don't stop at detection. They manage incidents.
+    Scope:
+    - "Create Incident" from related detections
+    - Incident detail view with all associated alerts
+    - Status workflow: New → Triaged → Investigating → Contained → Resolved
+    - Severity-based SLA timers
+    - Assignment to analyst
+    - Case notes / comments (collaborative)
+    - Severity priority matrix
+    Implementation:
+    - New "Incidents" page in navigation
+    - Incident state management (localStorage for demo)
+    - Link detections to incidents
+    - Timeline view of incident activity
+    Effort: ~12-15 hours
+    Impact: HIGH (SOC workflow completeness)
+
+═══ LOW PRIORITY / NICE TO HAVE ═══════════════════════════════════════════════
+
+11. KEYBOARD SHORTCUTS PANEL
+    ─────────────────────────
+    What: A ? shortcut to show all keyboard shortcuts
+    Scope: List all shortcuts in a modal (Cmd+K, 1-4 for nav, Esc, etc.)
+    Effort: ~1 hour
+    Impact: LOW
+
+12. BETTER EMPTY STATES
+    ─────────────────────
+    What: Illustrated empty states for when there's no data
+    Scope: Custom illustrations or icons with helpful text and CTAs
+    Effort: ~2 hours
+    Impact: LOW
+
+13. DATA PREVIEW TABLE
+    ─────────────────────
+    What: Show first 50 rows of uploaded data before processing
+    Scope: Virtualized table with column highlights, type badges
+    Implementation: @tanstack/react-virtual for performance
+    Effort: ~3 hours
+    Impact: MEDIUM
+
+14. SYNTHETIC DATA CONFIGURATOR
+    ────────────────────────────
+    What: UI to configure synthetic data generation parameters
+    Scope: Sliders for event count, attack ratio, noise level, time range,
+           dataset type. "Generate" button to refresh all data.
+    Effort: ~4 hours
+    Impact: MEDIUM (demo flexibility)
+
+15. BATCH IMPORT WITH QUEUE
+    ────────────────────────
+    What: Upload multiple files at once with progress tracking
+    Scope: File queue with individual progress bars, retry failed, cancel pending
+    Effort: ~4-5 hours
+    Impact: MEDIUM
+
+16. IMPORT HISTORY / AUDIT TRAIL
+    ──────────────────────────────
+    What: Log of every import with status, row counts, processing time, errors
+    Scope: Table with filters, detail view for each import job
+    Effort: ~3-4 hours
+    Impact: LOW
+
+17. BREADCRUMB NAVIGATION
+    ───────────────────────
+    What: Breadcrumb trail showing current location
+    Scope: Dashboard > Analytics > Source Analysis (clickable segments)
+    Effort: ~1 hour
+    Impact: LOW
+
+18. PAGE TRANSITION ANIMATIONS
+    ───────────────────────────
+    What: Smooth fade/slide animations when switching pages
+    Scope: framer-motion AnimatePresence on page containers
+    Effort: ~2 hours
+    Impact: LOW (polish)
+
+19. RESPONSIVE / MOBILE LAYOUT
+    ────────────────────────────
+    What: Collapsible sidebar, stacked cards on mobile
+    Scope: Media queries, hamburger menu, touch-friendly controls
+    Effort: ~6-8 hours
+    Impact: MEDIUM (accessibility)
+
+20. COLLABORATIVE ANNOTATIONS
+    ───────────────────────────
+    What: Allow analysts to add notes/comments to detections
+    Scope: Comment thread on each detection card
+    Effort: ~5-6 hours
+    Impact: LOW
+
+═══ DESIGN REFERENCES ════════════════════════════════════════════════════════
+
+Study these products for design inspiration:
+  • CrowdStrike Falcon (threat detection dashboard)
+  • Splunk Enterprise Security (SIEM interface)
+  • Microsoft Sentinel (azure security analytics)
+  • Datadog Security (real-time monitoring)
+  • Elastic Security (detection & response)
+  • Panther (security analytics platform)
+  • Vercel Dashboard (developer UX patterns)
+  • Linear (project management UX)
+
+================================================================================
