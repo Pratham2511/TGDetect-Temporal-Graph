@@ -9,28 +9,29 @@ import {
   Globe, Lock, Eye, FileText, FolderOpen, Plus,
   Settings, Trash2, Download, FileUp, ChevronDown,
   Monitor, Terminal, Wifi, Braces, Table, FileJson,
+  GitBranch, RefreshCw, Route, BookOpen,
   type LucideIcon
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line, RadarChart, Radar, PolarGrid,
-  PolarAngleAxis, PolarRadiusAxis, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, PieChart, Pie, Cell, ScatterChart, Scatter, ZAxis,
+  AreaChart, Area, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer,
 } from 'recharts';
 import {
-  generateTimeSeriesData, generateDetectionResults, generateModelMetrics,
-  generateGraphStats, generateNetworkEvents, generateNodeTypeDistribution,
-  generateThreatTimeline, generateEdgeTypeDistribution, generateProfiles,
-  generateUploadedDatasets, supportedLogFormats,
+  generateTimeSeriesData, generateDetectionResults,
+  generateGraphStats, generateNetworkEvents,
+  generateProfiles, generateUploadedDatasets, supportedLogFormats,
   type DetectionResult, type UserProfile, type UploadedDataset
 } from '@/lib/synthetic-data';
+import { formatTime, formatDate } from '@/lib/date-utils';
+import { AnalyticsPage } from '@/components/tgdetect/AnalyticsPage';
 
 // ─── NAVIGATION ─────────────────────────────────────────────────
 const navItems = [
@@ -45,12 +46,8 @@ type Page = typeof navItems[number]['id'];
 // ─── SYNTHETIC DATA ─────────────────────────────────────────────
 const timeSeriesData = generateTimeSeriesData();
 const detectionResults = generateDetectionResults();
-const modelMetrics = generateModelMetrics();
 const graphStats = generateGraphStats();
 const networkEvents = generateNetworkEvents(200);
-const nodeTypeData = generateNodeTypeDistribution();
-const threatTimeline = generateThreatTimeline();
-const edgeTypeData = generateEdgeTypeDistribution();
 const initialProfiles = generateProfiles();
 const initialDatasets = generateUploadedDatasets();
 
@@ -73,18 +70,9 @@ const CHART_TOOLTIP_STYLE = {
 };
 
 const formatIcon: Record<string, LucideIcon> = {
-  table: Table,
-  braces: Braces,
-  'file-json': FileJson,
-  terminal: Terminal,
-  network: Wifi,
-  shield: Shield,
-  search: Search,
-  globe: Globe,
-  monitor: Monitor,
-  'file-text': FileText,
-  wifi: Wifi,
-  'alert-triangle': AlertTriangle,
+  table: Table, braces: Braces, 'file-json': FileJson, terminal: Terminal,
+  network: Wifi, shield: Shield, search: Search, globe: Globe,
+  monitor: Monitor, 'file-text': FileText, wifi: Wifi, 'alert-triangle': AlertTriangle,
 };
 
 // ─── MAIN PAGE ──────────────────────────────────────────────────
@@ -113,9 +101,7 @@ export default function Home() {
       config: { temporalWindow: 300, memoryDim: 64, numHeads: 4, nLayers: 2, embedDim: 64, threshold: 0.75 },
     };
     setProfiles(prev => [...prev, profile]);
-    setNewProfileName('');
-    setNewProfileDesc('');
-    setNewProfileDataset('');
+    setNewProfileName(''); setNewProfileDesc(''); setNewProfileDataset('');
     setShowCreateProfile(false);
   }, [newProfileName, newProfileDesc, newProfileDataset, profiles.length]);
 
@@ -130,12 +116,9 @@ export default function Home() {
     const newDs: UploadedDataset = {
       id: `ds-${String(datasets.length + 1).padStart(3, '0')}`,
       name: `synthetic_demo_${Date.now()}.csv`,
-      format: 'CSV',
-      size: '12.4 MB',
-      events: 52340,
+      format: 'CSV', size: '12.4 MB', events: 52340,
       uploadedAt: new Date().toISOString(),
-      status: 'processed',
-      source: 'Synthetic Demo',
+      status: 'processed', source: 'Synthetic Demo',
     };
     setDatasets(prev => [newDs, ...prev]);
     setShowUploadModal(false);
@@ -162,26 +145,19 @@ export default function Home() {
             const Icon = item.icon;
             const isActive = activePage === item.id;
             return (
-              <button
-                key={item.id}
-                onClick={() => setActivePage(item.id)}
+              <button key={item.id} onClick={() => setActivePage(item.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? 'bg-blue-500/10 text-blue-400 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/50'
+                  isActive ? 'bg-blue-500/10 text-blue-400 shadow-sm' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/50'
                 }`}
               >
                 <Icon className={`w-4 h-4 ${isActive ? 'text-blue-400' : ''}`} />
                 {item.label}
-                {isActive && (
-                  <ChevronRight className="w-3.5 h-3.5 ml-auto text-blue-400/60" />
-                )}
+                {isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto text-blue-400/60" />}
               </button>
             );
           })}
         </nav>
 
-        {/* Active Profile Indicator */}
         <div className="px-4 pb-3">
           <div className="rounded-lg border border-gray-800/60 bg-[#111827]/50 p-3">
             <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium mb-1.5">Active Profile</p>
@@ -204,7 +180,6 @@ export default function Home() {
 
       {/* ─── Main Content ─── */}
       <main className="flex-1 overflow-y-auto">
-        {/* Top Bar */}
         <header className="sticky top-0 z-10 border-b border-gray-800/60 bg-[#0a0e1a]/80 backdrop-blur-xl px-6 py-3 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-white">
@@ -212,42 +187,26 @@ export default function Home() {
             </h2>
             <p className="text-xs text-gray-500 mt-0.5">
               {activePage === 'dashboard' && 'System overview and key performance indicators'}
-              {activePage === 'analytics' && 'Detection analytics with synthetic network data'}
+              {activePage === 'analytics' && 'Detection analytics — per-source, fused, and objective analysis'}
               {activePage === 'datasets' && 'Upload and manage log datasets for analysis'}
               {activePage === 'profiles' && 'Create and manage analysis profiles'}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-xs px-2.5">
-              <Activity className="w-3 h-3 mr-1" />
-              V16 Apex
+              <Activity className="w-3 h-3 mr-1" /> V16 Apex
             </Badge>
             <Badge variant="outline" className="border-gray-700 text-gray-400 text-xs px-2.5">
-              <Database className="w-3 h-3 mr-1" />
-              Synthetic Data
+              <Database className="w-3 h-3 mr-1" /> Synthetic Data
             </Badge>
           </div>
         </header>
 
-        {/* Page Content */}
         <div className="p-6">
           {activePage === 'dashboard' && <DashboardPage />}
           {activePage === 'analytics' && <AnalyticsPage />}
-          {activePage === 'datasets' && (
-            <DatasetsPage
-              datasets={datasets}
-              onUploadClick={() => setShowUploadModal(true)}
-            />
-          )}
-          {activePage === 'profiles' && (
-            <ProfilesPage
-              profiles={profiles}
-              activeProfile={activeProfile}
-              onSelectProfile={setActiveProfile}
-              onCreateClick={() => setShowCreateProfile(true)}
-              onDeleteProfile={handleDeleteProfile}
-            />
-          )}
+          {activePage === 'datasets' && <DatasetsPage datasets={datasets} onUploadClick={() => setShowUploadModal(true)} />}
+          {activePage === 'profiles' && <ProfilesPage profiles={profiles} activeProfile={activeProfile} onSelectProfile={setActiveProfile} onCreateClick={() => setShowCreateProfile(true)} onDeleteProfile={handleDeleteProfile} />}
         </div>
       </main>
 
@@ -263,24 +222,16 @@ export default function Home() {
               <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white" onClick={() => setShowUploadModal(false)}>✕</Button>
             </div>
             <div className="p-5 space-y-5">
-              {/* Drop Zone */}
-              <div
-                className={`rounded-xl border-2 border-dashed p-8 text-center transition-all cursor-pointer ${
-                  dragOver ? 'border-blue-400 bg-blue-500/5' : 'border-gray-700 hover:border-gray-600'
-                }`}
+              <div className={`rounded-xl border-2 border-dashed p-8 text-center transition-all cursor-pointer ${dragOver ? 'border-blue-400 bg-blue-500/5' : 'border-gray-700 hover:border-gray-600'}`}
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={e => { e.preventDefault(); setDragOver(false); handleSimulateUpload(); }}
                 onClick={handleSimulateUpload}
               >
                 <Upload className={`w-10 h-10 mx-auto mb-3 ${dragOver ? 'text-blue-400' : 'text-gray-600'}`} />
-                <p className="text-sm text-gray-300 font-medium">
-                  {dragOver ? 'Drop your file here' : 'Drag & drop your log file, or click to browse'}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">Supports CSV, JSON, JSONL, Syslog, NetFlow, and more</p>
+                <p className="text-sm text-gray-300 font-medium">{dragOver ? 'Drop your file here' : 'Drag & drop your log file, or click to browse'}</p>
+                <p className="text-xs text-gray-500 mt-1">Supports CSV, JSON, Syslog, NetFlow, Wazuh, and more</p>
               </div>
-
-              {/* Supported Formats */}
               <div>
                 <p className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-3">Supported Log Formats</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -323,42 +274,23 @@ export default function Home() {
             <div className="p-5 space-y-4">
               <div className="space-y-2">
                 <Label className="text-xs text-gray-400">Profile Name</Label>
-                <Input
-                  placeholder="e.g., DARPA Engagement Analysis"
-                  value={newProfileName}
-                  onChange={e => setNewProfileName(e.target.value)}
-                  className="bg-[#0d1120] border-gray-800/60 text-sm text-gray-200 placeholder:text-gray-600"
-                />
+                <Input placeholder="e.g., DARPA Engagement Analysis" value={newProfileName} onChange={e => setNewProfileName(e.target.value)}
+                  className="bg-[#0d1120] border-gray-800/60 text-sm text-gray-200 placeholder:text-gray-600" />
               </div>
               <div className="space-y-2">
                 <Label className="text-xs text-gray-400">Description</Label>
-                <Input
-                  placeholder="Brief description of this profile..."
-                  value={newProfileDesc}
-                  onChange={e => setNewProfileDesc(e.target.value)}
-                  className="bg-[#0d1120] border-gray-800/60 text-sm text-gray-200 placeholder:text-gray-600"
-                />
+                <Input placeholder="Brief description..." value={newProfileDesc} onChange={e => setNewProfileDesc(e.target.value)}
+                  className="bg-[#0d1120] border-gray-800/60 text-sm text-gray-200 placeholder:text-gray-600" />
               </div>
               <div className="space-y-2">
                 <Label className="text-xs text-gray-400">Dataset Type</Label>
-                <Input
-                  placeholder="e.g., DARPA TC, UNSW-NB15, LANL, Custom..."
-                  value={newProfileDataset}
-                  onChange={e => setNewProfileDataset(e.target.value)}
-                  className="bg-[#0d1120] border-gray-800/60 text-sm text-gray-200 placeholder:text-gray-600"
-                />
+                <Input placeholder="e.g., DARPA TC, UNSW-NB15, LANL..." value={newProfileDataset} onChange={e => setNewProfileDataset(e.target.value)}
+                  className="bg-[#0d1120] border-gray-800/60 text-sm text-gray-200 placeholder:text-gray-600" />
               </div>
               <div className="rounded-lg border border-gray-800/40 bg-[#0d1120]/50 p-3">
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium mb-2">Default V16 Apex Configuration</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: 'Temporal Window', value: '300s' },
-                    { label: 'Memory Dim', value: '64' },
-                    { label: 'Attention Heads', value: '4' },
-                    { label: 'GNN Layers', value: '2' },
-                    { label: 'Embed Dim', value: '64' },
-                    { label: 'Threshold', value: '0.75' },
-                  ].map((c, i) => (
+                  {[{ label: 'Temporal Window', value: '300s' }, { label: 'Memory Dim', value: '64' }, { label: 'Attention Heads', value: '4' }, { label: 'GNN Layers', value: '2' }, { label: 'Embed Dim', value: '64' }, { label: 'Threshold', value: '0.75' }].map((c, i) => (
                     <div key={i} className="flex justify-between text-[11px]">
                       <span className="text-gray-500">{c.label}</span>
                       <span className="text-blue-400 font-mono">{c.value}</span>
@@ -381,13 +313,27 @@ export default function Home() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// PAGE 1: DASHBOARD
+// DASHBOARD
 // ═══════════════════════════════════════════════════════════════════
 function DashboardPage() {
   const totalThreats = detectionResults.length;
   const criticalCount = detectionResults.filter(d => d.severity === 'Critical').length;
   const contained = detectionResults.filter(d => d.status === 'Contained').length;
   const avgConfidence = Math.round(detectionResults.reduce((a, d) => a + d.confidence, 0) / detectionResults.length * 10) / 10;
+
+  const objectives = [
+    { num: 1, title: 'Heterogeneous TGNN Fusion', desc: 'Fuses DARPA, UNSW, LANL into a unified temporal graph', icon: GitBranch, color: 'blue', location: 'Analytics → Fused Temporal Graph' },
+    { num: 2, title: 'Concept Drift Adaptation', desc: 'Online continuous learning without accuracy degradation', icon: RefreshCw, color: 'emerald', location: 'Analytics → Concept Drift' },
+    { num: 3, title: 'Attack Backtracking Engine', desc: 'Reconstructs multi-step attack chains from alert to compromise', icon: Route, color: 'amber', location: 'Analytics → Attack Backtracking' },
+    { num: 4, title: 'Temporal Explainability', desc: 'Maps detections to MITRE ATT&CK with attention weights', icon: BookOpen, color: 'purple', location: 'Analytics → Explainability' },
+  ];
+
+  const objColorMap: Record<string, { bg: string; text: string; border: string }> = {
+    blue: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20' },
+    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20' },
+    amber: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20' },
+    purple: { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/20' },
+  };
 
   return (
     <div className="space-y-6">
@@ -399,31 +345,53 @@ function DashboardPage() {
         <StatCard title="Avg. Confidence" value={`${avgConfidence}%`} subtitle="V16 Apex model confidence" icon={Brain} trend="stable" trendValue="0.989 F1" color="purple" />
       </div>
 
+      {/* Research Objectives */}
+      <Card className="bg-[#111827]/80 border-gray-800/60">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold text-gray-300">Research Objectives</CardTitle>
+          <CardDescription className="text-xs text-gray-500">4 core objectives — each implemented and visualized in the Analytics section</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {objectives.map((obj) => {
+              const Icon = obj.icon;
+              const c = objColorMap[obj.color];
+              return (
+                <div key={obj.num} className={`rounded-lg border ${c.border} ${c.bg} p-3`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold text-white bg-gradient-to-br ${
+                      obj.color === 'blue' ? 'from-blue-500 to-cyan-400' : obj.color === 'emerald' ? 'from-emerald-500 to-teal-400' : obj.color === 'amber' ? 'from-amber-500 to-orange-400' : 'from-purple-500 to-violet-400'
+                    }`}>
+                      {obj.num}
+                    </div>
+                    <Icon className={`w-3.5 h-3.5 ${c.text}`} />
+                  </div>
+                  <p className="text-[11px] font-medium text-gray-200 leading-tight">{obj.title}</p>
+                  <p className="text-[10px] text-gray-500 mt-1 leading-relaxed">{obj.desc}</p>
+                  <p className={`text-[9px] ${c.text} mt-2 font-medium`}>→ {obj.location}</p>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Traffic Overview Chart */}
+        {/* Traffic Overview */}
         <Card className="lg:col-span-2 bg-[#111827]/80 border-gray-800/60">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold text-gray-300">Network Traffic Overview</CardTitle>
-            <CardDescription className="text-xs text-gray-500">24-hour event distribution by type</CardDescription>
+            <CardDescription className="text-xs text-gray-500">24-hour event distribution by type (all sources fused)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={timeSeriesData}>
                   <defs>
-                    <linearGradient id="gradNormal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="gradSuspicious" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="#f59e0b" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="gradMalicious" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#ef4444" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
-                    </linearGradient>
+                    <linearGradient id="gradNormal" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} /><stop offset="100%" stopColor="#3b82f6" stopOpacity={0} /></linearGradient>
+                    <linearGradient id="gradSuspicious" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} /><stop offset="100%" stopColor="#f59e0b" stopOpacity={0} /></linearGradient>
+                    <linearGradient id="gradMalicious" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ef4444" stopOpacity={0.3} /><stop offset="100%" stopColor="#ef4444" stopOpacity={0} /></linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                   <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
@@ -495,15 +463,13 @@ function DashboardPage() {
                   return (
                     <tr key={d.id} className="border-b border-gray-800/30 hover:bg-gray-800/20 transition-colors">
                       <td className="py-2 pr-4 font-mono text-blue-400">{d.id}</td>
-                      <td className="py-2 pr-4 text-gray-400">{new Date(d.timestamp).toLocaleTimeString()}</td>
+                      <td className="py-2 pr-4 text-gray-400 font-mono">{formatTime(d.timestamp)}</td>
                       <td className="py-2 pr-4">
                         <span className="text-gray-300">{d.tactic}</span>
                         <span className="text-gray-600 ml-1.5">({d.attackType})</span>
                       </td>
                       <td className="py-2 pr-4">
-                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${severityColors[d.severity]}`}>
-                          {d.severity}
-                        </Badge>
+                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${severityColors[d.severity]}`}>{d.severity}</Badge>
                       </td>
                       <td className="py-2 pr-4 font-mono text-gray-400">{d.sourceNode}</td>
                       <td className="py-2 pr-4">
@@ -548,7 +514,6 @@ function StatCard({ title, value, subtitle, icon: Icon, trend, trendValue, color
     purple: { bg: 'bg-purple-500/10', text: 'text-purple-400', shadow: 'shadow-purple-500/10' },
   };
   const c = colorMap[color] || colorMap.blue;
-
   return (
     <Card className="bg-[#111827]/80 border-gray-800/60 hover:border-gray-700/60 transition-colors">
       <CardContent className="p-4">
@@ -566,9 +531,7 @@ function StatCard({ title, value, subtitle, icon: Icon, trend, trendValue, color
           {trend === 'up' ? <ArrowUpRight className="w-3 h-3 text-emerald-400" /> :
            trend === 'down' ? <ArrowDownRight className="w-3 h-3 text-red-400" /> :
            <TrendingUp className="w-3 h-3 text-gray-400" />}
-          <span className={trend === 'up' ? 'text-emerald-400' : trend === 'down' ? 'text-red-400' : 'text-gray-400'}>
-            {trendValue}
-          </span>
+          <span className={trend === 'up' ? 'text-emerald-400' : trend === 'down' ? 'text-red-400' : 'text-gray-400'}>{trendValue}</span>
           <span className="text-gray-600 ml-1">vs last period</span>
         </div>
       </CardContent>
@@ -579,10 +542,7 @@ function StatCard({ title, value, subtitle, icon: Icon, trend, trendValue, color
 function GraphStatItem({ label, value, icon: Icon, color }: {
   label: string; value: string; icon: LucideIcon; color: string;
 }) {
-  const colorMap: Record<string, string> = {
-    blue: 'text-blue-400', cyan: 'text-cyan-400', amber: 'text-amber-400',
-    purple: 'text-purple-400', emerald: 'text-emerald-400',
-  };
+  const colorMap: Record<string, string> = { blue: 'text-blue-400', cyan: 'text-cyan-400', amber: 'text-amber-400', purple: 'text-purple-400', emerald: 'text-emerald-400' };
   return (
     <div className="flex items-center justify-between py-1.5">
       <div className="flex items-center gap-2">
@@ -595,243 +555,24 @@ function GraphStatItem({ label, value, icon: Icon, color }: {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// PAGE 2: ANALYTICS
+// DATASETS PAGE
 // ═══════════════════════════════════════════════════════════════════
-function AnalyticsPage() {
+function DatasetsPage({ datasets, onUploadClick }: { datasets: UploadedDataset[]; onUploadClick: () => void }) {
   return (
     <div className="space-y-6">
-      {/* Graph Score + Radar */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="bg-[#111827]/80 border-gray-800/60">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-300">Threat Graph Score Over Time</CardTitle>
-            <CardDescription className="text-xs text-gray-500">Composite threat score derived from temporal graph analysis</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={timeSeriesData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                  <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
-                  <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} domain={[40, 100]} />
-                  <Tooltip {...CHART_TOOLTIP_STYLE} />
-                  <Line type="monotone" dataKey="graphScore" stroke="#8b5cf6" strokeWidth={2.5} dot={{ fill: '#8b5cf6', r: 3 }} activeDot={{ r: 5, fill: '#8b5cf6' }} name="Graph Score" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-[#111827]/80 border-gray-800/60">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-300">Model Comparison (F1-Score & ROC-AUC)</CardTitle>
-            <CardDescription className="text-xs text-gray-500">V16 Apex vs baseline models on 1M OOD events</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={modelMetrics} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" horizontal={false} />
-                  <XAxis type="number" stroke="#6b7280" tick={{ fontSize: 10 }} domain={[0, 1]} />
-                  <YAxis type="category" dataKey="name" stroke="#6b7280" tick={{ fontSize: 10 }} width={110} />
-                  <Tooltip {...CHART_TOOLTIP_STYLE} formatter={(v: number) => [typeof v === 'number' ? v.toFixed(3) : v, '']} />
-                  <Legend wrapperStyle={{ fontSize: 10 }} />
-                  <Bar dataKey="f1Score" name="F1-Score" fill="#8b5cf6" radius={[0, 3, 3, 0]} barSize={12} />
-                  <Bar dataKey="rocAuc" name="ROC-AUC" fill="#06b6d4" radius={[0, 3, 3, 0]} barSize={12} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Scatter + Timeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="bg-[#111827]/80 border-gray-800/60">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-300">Confidence vs Graph Score</CardTitle>
-            <CardDescription className="text-xs text-gray-500">Detection confidence correlated with graph analysis score</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                  <XAxis dataKey="confidence" name="Confidence" stroke="#6b7280" tick={{ fontSize: 11 }} domain={[65, 100]} />
-                  <YAxis dataKey="graphScore" name="Graph Score" stroke="#6b7280" tick={{ fontSize: 11 }} domain={[55, 100]} />
-                  <ZAxis dataKey="confidence" range={[40, 200]} />
-                  <Tooltip
-                    {...CHART_TOOLTIP_STYLE}
-                    formatter={(value: number, name: string) => [`${value}%`, name]}
-                  />
-                  <Scatter name="Detections" data={detectionResults.map(d => ({ confidence: d.confidence, graphScore: d.graphScore, severity: d.severity }))} fill="#8b5cf6">
-                    {detectionResults.map((d, i) => (
-                      <Cell key={i} fill={d.severity === 'Critical' ? '#ef4444' : d.severity === 'High' ? '#f59e0b' : d.severity === 'Medium' ? '#3b82f6' : '#10b981'} />
-                    ))}
-                  </Scatter>
-                </ScatterChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-[#111827]/80 border-gray-800/60">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-300">APT Attack Timeline (MITRE ATT&CK)</CardTitle>
-            <CardDescription className="text-xs text-gray-500">Reconstructed attack phases from V16 Apex causal analysis</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 overflow-y-auto pr-2 space-y-2">
-              {threatTimeline.map((phase, i) => (
-                <div key={i} className="relative pl-6">
-                  <div className="absolute left-0 top-1 w-4 h-4 rounded-full border-2 flex items-center justify-center" style={{
-                    borderColor: phase.severity === 'Critical' ? '#ef4444' : phase.severity === 'High' ? '#f59e0b' : phase.severity === 'Medium' ? '#3b82f6' : '#10b981',
-                  }}>
-                    <div className="w-1.5 h-1.5 rounded-full" style={{
-                      backgroundColor: phase.severity === 'Critical' ? '#ef4444' : phase.severity === 'High' ? '#f59e0b' : phase.severity === 'Medium' ? '#3b82f6' : '#10b981',
-                    }} />
-                  </div>
-                  {i < threatTimeline.length - 1 && (
-                    <div className="absolute left-[7px] top-5 w-px h-full bg-gray-800" />
-                  )}
-                  <div className="rounded-lg border border-gray-800/40 bg-[#0d1120]/50 p-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-medium text-gray-300">{phase.phase}</h4>
-                      <Badge variant="outline" className={`text-[9px] px-1.5 py-0 border ${severityColors[phase.severity]}`}>
-                        {phase.severity}
-                      </Badge>
-                    </div>
-                    <p className="text-[10px] text-gray-500 mt-1">
-                      Window {phase.start}–{phase.start + phase.duration}h &middot; Duration: {phase.duration}h
-                    </p>
-                    <div className="mt-2 h-1.5 rounded-full bg-gray-800 overflow-hidden">
-                      <div className="h-full rounded-full" style={{
-                        width: `${(phase.duration / 5) * 100}%`,
-                        backgroundColor: phase.severity === 'Critical' ? '#ef4444' : phase.severity === 'High' ? '#f59e0b' : phase.severity === 'Medium' ? '#3b82f6' : '#10b981',
-                      }} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Model Performance Grouped Bar */}
-      <Card className="bg-[#111827]/80 border-gray-800/60">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-gray-300">V16 Apex Performance Breakdown</CardTitle>
-          <CardDescription className="text-xs text-gray-500">Precision, Recall, F1-Score, and ROC-AUC across all models</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={modelMetrics}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                <XAxis dataKey="name" stroke="#6b7280" tick={{ fontSize: 10 }} />
-                <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} domain={[0, 1.05]} />
-                <Tooltip {...CHART_TOOLTIP_STYLE} formatter={(v: number) => [typeof v === 'number' ? v.toFixed(3) : v, '']} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="precision" name="Precision" fill="#3b82f6" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="recall" name="Recall" fill="#8b5cf6" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="f1Score" name="F1-Score" fill="#06b6d4" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="rocAuc" name="ROC-AUC" fill="#f59e0b" radius={[2, 2, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Event Breakdown + Hourly Detection */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="bg-[#111827]/80 border-gray-800/60">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-300">Event Type Breakdown</CardTitle>
-            <CardDescription className="text-xs text-gray-500">Distribution of network events by category</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Normal', value: networkEvents.filter(e => e.eventType === 'normal').length },
-                      { name: 'Suspicious', value: networkEvents.filter(e => e.eventType === 'suspicious').length },
-                      { name: 'Malicious', value: networkEvents.filter(e => e.eventType === 'malicious').length },
-                    ]}
-                    cx="50%" cy="50%" innerRadius={45} outerRadius={75} dataKey="value" stroke="none"
-                    label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    <Cell fill="#3b82f6" />
-                    <Cell fill="#f59e0b" />
-                    <Cell fill="#ef4444" />
-                  </Pie>
-                  <Tooltip {...CHART_TOOLTIP_STYLE} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-[#111827]/80 border-gray-800/60">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-300">Hourly Detection Rate</CardTitle>
-            <CardDescription className="text-xs text-gray-500">Malicious events detected per hour</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={timeSeriesData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                  <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 10 }} interval={2} />
-                  <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} />
-                  <Tooltip {...CHART_TOOLTIP_STYLE} />
-                  <Bar dataKey="malicious" name="Malicious Events" radius={[3, 3, 0, 0]}>
-                    {timeSeriesData.map((entry, i) => (
-                      <Cell key={i} fill={entry.malicious > 10 ? '#ef4444' : entry.malicious > 5 ? '#f59e0b' : '#f59e0b80'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// PAGE 3: DATASETS
-// ═══════════════════════════════════════════════════════════════════
-function DatasetsPage({ datasets, onUploadClick }: {
-  datasets: UploadedDataset[];
-  onUploadClick: () => void;
-}) {
-  return (
-    <div className="space-y-6">
-      {/* Upload Banner */}
       <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20">
         <CardContent className="p-5 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
-              <Upload className="w-6 h-6 text-blue-400" />
-            </div>
+            <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center"><Upload className="w-6 h-6 text-blue-400" /></div>
             <div>
               <h3 className="text-sm font-semibold text-white">Upload Log Dataset</h3>
-              <p className="text-xs text-gray-400 mt-0.5">
-                Upload network logs in CSV, JSON, Syslog, NetFlow, Wazuh, Zeek, or other supported formats for TGNN analysis.
-              </p>
+              <p className="text-xs text-gray-400 mt-0.5">Upload network logs in CSV, JSON, Syslog, NetFlow, Wazuh, Zeek, or other supported formats for TGNN analysis.</p>
             </div>
           </div>
-          <Button className="bg-blue-500 hover:bg-blue-600 text-white" onClick={onUploadClick}>
-            <FileUp className="w-4 h-4 mr-2" /> Upload Dataset
-          </Button>
+          <Button className="bg-blue-500 hover:bg-blue-600 text-white" onClick={onUploadClick}><FileUp className="w-4 h-4 mr-2" /> Upload Dataset</Button>
         </CardContent>
       </Card>
 
-      {/* Quick Upload Formats */}
       <Card className="bg-[#111827]/80 border-gray-800/60">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold text-gray-300">Supported Log Formats</CardTitle>
@@ -843,10 +584,7 @@ function DatasetsPage({ datasets, onUploadClick }: {
               const FmtIcon = formatIcon[fmt.icon] || FileText;
               return (
                 <div key={i} className="rounded-lg border border-gray-800/40 bg-[#0d1120]/50 p-3 hover:border-gray-700/60 transition-colors">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <FmtIcon className="w-3.5 h-3.5 text-blue-400" />
-                    <span className="text-xs font-medium text-gray-300">{fmt.name}</span>
-                  </div>
+                  <div className="flex items-center gap-2 mb-1.5"><FmtIcon className="w-3.5 h-3.5 text-blue-400" /><span className="text-xs font-medium text-gray-300">{fmt.name}</span></div>
                   <p className="text-[10px] text-gray-500 leading-relaxed">{fmt.desc}</p>
                   <p className="text-[9px] text-blue-400/60 mt-1 font-mono">{fmt.ext}</p>
                 </div>
@@ -856,14 +594,10 @@ function DatasetsPage({ datasets, onUploadClick }: {
         </CardContent>
       </Card>
 
-      {/* Uploaded Datasets Table */}
       <Card className="bg-[#111827]/80 border-gray-800/60">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-sm font-semibold text-gray-300">Loaded Datasets</CardTitle>
-              <CardDescription className="text-xs text-gray-500">Currently loaded log datasets for analysis</CardDescription>
-            </div>
+            <div><CardTitle className="text-sm font-semibold text-gray-300">Loaded Datasets</CardTitle><CardDescription className="text-xs text-gray-500">Currently loaded log datasets for analysis</CardDescription></div>
             <Badge variant="outline" className="border-gray-700 text-gray-400 text-xs">{datasets.length} datasets</Badge>
           </div>
         </CardHeader>
@@ -884,25 +618,13 @@ function DatasetsPage({ datasets, onUploadClick }: {
               <tbody>
                 {datasets.map((ds) => (
                   <tr key={ds.id} className="border-b border-gray-800/30 hover:bg-gray-800/20 transition-colors">
-                    <td className="py-2.5 pr-4">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-3.5 h-3.5 text-gray-500" />
-                        <span className="text-gray-300 font-medium">{ds.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-2.5 pr-4">
-                      <Badge variant="outline" className="border-gray-700 text-gray-400 text-[10px] px-1.5">{ds.format}</Badge>
-                    </td>
+                    <td className="py-2.5 pr-4"><div className="flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-gray-500" /><span className="text-gray-300 font-medium">{ds.name}</span></div></td>
+                    <td className="py-2.5 pr-4"><Badge variant="outline" className="border-gray-700 text-gray-400 text-[10px] px-1.5">{ds.format}</Badge></td>
                     <td className="py-2.5 pr-4 text-gray-400">{ds.size}</td>
                     <td className="py-2.5 pr-4 text-gray-400">{ds.events.toLocaleString()}</td>
                     <td className="py-2.5 pr-4 text-gray-400">{ds.source}</td>
-                    <td className="py-2.5 pr-4 text-gray-400">{new Date(ds.uploadedAt).toLocaleDateString()}</td>
-                    <td className="py-2.5">
-                      <div className="flex items-center gap-1.5">
-                        <div className={`w-1.5 h-1.5 rounded-full ${ds.status === 'processed' ? 'bg-emerald-400' : ds.status === 'pending' ? 'bg-amber-400' : 'bg-red-400'}`} />
-                        <span className="text-gray-400 capitalize">{ds.status}</span>
-                      </div>
-                    </td>
+                    <td className="py-2.5 pr-4 text-gray-400">{formatDate(ds.uploadedAt)}</td>
+                    <td className="py-2.5"><div className="flex items-center gap-1.5"><div className={`w-1.5 h-1.5 rounded-full ${ds.status === 'processed' ? 'bg-emerald-400' : ds.status === 'pending' ? 'bg-amber-400' : 'bg-red-400'}`} /><span className="text-gray-400 capitalize">{ds.status}</span></div></td>
                   </tr>
                 ))}
               </tbody>
@@ -915,119 +637,50 @@ function DatasetsPage({ datasets, onUploadClick }: {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// PAGE 4: PROFILES
+// PROFILES PAGE
 // ═══════════════════════════════════════════════════════════════════
 function ProfilesPage({ profiles, activeProfile, onSelectProfile, onCreateClick, onDeleteProfile }: {
-  profiles: UserProfile[];
-  activeProfile: string;
-  onSelectProfile: (id: string) => void;
-  onCreateClick: () => void;
-  onDeleteProfile: (id: string) => void;
+  profiles: UserProfile[]; activeProfile: string; onSelectProfile: (id: string) => void; onCreateClick: () => void; onDeleteProfile: (id: string) => void;
 }) {
   return (
     <div className="space-y-6">
-      {/* Header with Create */}
       <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-semibold text-white">Analysis Profiles</h3>
-          <p className="text-xs text-gray-500 mt-0.5">Create profiles to manage different datasets and configurations</p>
-        </div>
-        <Button className="bg-blue-500 hover:bg-blue-600 text-white" onClick={onCreateClick}>
-          <Plus className="w-4 h-4 mr-1.5" /> Create Profile
-        </Button>
+        <div><h3 className="text-sm font-semibold text-white">Analysis Profiles</h3><p className="text-xs text-gray-500 mt-0.5">Create profiles to manage different datasets and configurations</p></div>
+        <Button className="bg-blue-500 hover:bg-blue-600 text-white" onClick={onCreateClick}><Plus className="w-4 h-4 mr-1.5" /> Create Profile</Button>
       </div>
-
-      {/* Profile Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {profiles.map((profile) => {
           const isActive = profile.id === activeProfile;
           return (
-            <Card key={profile.id} className={`bg-[#111827]/80 border transition-colors ${
-              isActive ? 'border-blue-500/40 shadow-lg shadow-blue-500/5' : 'border-gray-800/60 hover:border-gray-700/60'
-            }`}>
+            <Card key={profile.id} className={`bg-[#111827]/80 border transition-colors ${isActive ? 'border-blue-500/40 shadow-lg shadow-blue-500/5' : 'border-gray-800/60 hover:border-gray-700/60'}`}>
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <UserCircle className={`w-4 h-4 ${isActive ? 'text-blue-400' : 'text-gray-600'}`} />
-                    <CardTitle className="text-sm font-semibold text-gray-200">{profile.name}</CardTitle>
-                  </div>
-                  {isActive && (
-                    <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 text-[9px]">Active</Badge>
-                  )}
+                  <div className="flex items-center gap-2"><UserCircle className={`w-4 h-4 ${isActive ? 'text-blue-400' : 'text-gray-600'}`} /><CardTitle className="text-sm font-semibold text-gray-200">{profile.name}</CardTitle></div>
+                  {isActive && <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 text-[9px]">Active</Badge>}
                 </div>
                 <CardDescription className="text-[11px] text-gray-500">{profile.description}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-lg bg-[#0d1120]/50 border border-gray-800/30 px-2.5 py-1.5">
-                    <p className="text-[9px] text-gray-600 uppercase">Dataset</p>
-                    <p className="text-[11px] text-gray-300 font-medium">{profile.dataset}</p>
-                  </div>
-                  <div className="rounded-lg bg-[#0d1120]/50 border border-gray-800/30 px-2.5 py-1.5">
-                    <p className="text-[9px] text-gray-600 uppercase">Modified</p>
-                    <p className="text-[11px] text-gray-300 font-medium">{new Date(profile.lastModified).toLocaleDateString()}</p>
-                  </div>
+                  <div className="rounded-lg bg-[#0d1120]/50 border border-gray-800/30 px-2.5 py-1.5"><p className="text-[9px] text-gray-600 uppercase">Dataset</p><p className="text-[11px] text-gray-300 font-medium">{profile.dataset}</p></div>
+                  <div className="rounded-lg bg-[#0d1120]/50 border border-gray-800/30 px-2.5 py-1.5"><p className="text-[9px] text-gray-600 uppercase">Modified</p><p className="text-[11px] text-gray-300 font-medium">{formatDate(profile.lastModified)}</p></div>
                 </div>
-
-                {/* Config Preview */}
                 <div>
                   <p className="text-[9px] text-gray-600 uppercase tracking-wider mb-1.5">V16 Apex Config</p>
                   <div className="grid grid-cols-3 gap-1.5">
-                    {[
-                      { label: 'Window', value: `${profile.config.temporalWindow}s` },
-                      { label: 'Heads', value: profile.config.numHeads.toString() },
-                      { label: 'Layers', value: profile.config.nLayers.toString() },
-                      { label: 'Memory', value: profile.config.memoryDim.toString() },
-                      { label: 'Embed', value: profile.config.embedDim.toString() },
-                      { label: 'Threshold', value: profile.config.threshold.toString() },
-                    ].map((c, i) => (
-                      <div key={i} className="rounded bg-[#0a0e1a] px-1.5 py-1 text-center">
-                        <p className="text-[8px] text-gray-600">{c.label}</p>
-                        <p className="text-[10px] text-blue-400 font-mono">{c.value}</p>
-                      </div>
+                    {[{ label: 'Window', value: `${profile.config.temporalWindow}s` }, { label: 'Heads', value: profile.config.numHeads.toString() }, { label: 'Layers', value: profile.config.nLayers.toString() }, { label: 'Memory', value: profile.config.memoryDim.toString() }, { label: 'Embed', value: profile.config.embedDim.toString() }, { label: 'Threshold', value: profile.config.threshold.toString() }].map((c, i) => (
+                      <div key={i} className="rounded bg-[#0a0e1a] px-1.5 py-1 text-center"><p className="text-[8px] text-gray-600">{c.label}</p><p className="text-[10px] text-blue-400 font-mono">{c.value}</p></div>
                     ))}
                   </div>
                 </div>
-
-                {/* Actions */}
                 <div className="flex items-center gap-2 pt-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={`flex-1 text-[10px] h-7 ${
-                      isActive ? 'border-blue-500/30 text-blue-400 bg-blue-500/5' : 'border-gray-700 text-gray-400'
-                    }`}
-                    onClick={() => onSelectProfile(profile.id)}
-                  >
-                    {isActive ? 'Currently Active' : 'Set Active'}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-500 hover:text-red-400 h-7 w-7 p-0"
-                    onClick={() => onDeleteProfile(profile.id)}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
+                  <Button variant="outline" size="sm" className={`flex-1 text-[10px] h-7 ${isActive ? 'border-blue-500/30 text-blue-400 bg-blue-500/5' : 'border-gray-700 text-gray-400'}`} onClick={() => onSelectProfile(profile.id)}>{isActive ? 'Currently Active' : 'Set Active'}</Button>
+                  <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-400 h-7 w-7 p-0" onClick={() => onDeleteProfile(profile.id)}><Trash2 className="w-3 h-3" /></Button>
                 </div>
               </CardContent>
             </Card>
           );
         })}
-
-        {/* Empty State - Create Card */}
-        {profiles.length === 0 && (
-          <Card className="bg-[#111827]/40 border-gray-800/40 border-dashed lg:col-span-3">
-            <CardContent className="p-8 flex flex-col items-center justify-center text-center">
-              <UserCircle className="w-10 h-10 text-gray-700 mb-3" />
-              <p className="text-sm text-gray-500">No profiles yet</p>
-              <p className="text-xs text-gray-600 mt-1">Create a profile to start analyzing different datasets</p>
-              <Button className="mt-4 bg-blue-500 hover:bg-blue-600 text-white text-xs" onClick={onCreateClick}>
-                <Plus className="w-3.5 h-3.5 mr-1.5" /> Create Your First Profile
-              </Button>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );
