@@ -1,25 +1,30 @@
 ---
 Task ID: 1
 Agent: Main Agent
-Task: Build TGDetect Frontend Demo Interface for Panel Presentation
+Task: Update TGDetect Frontend Demo - Remove Arch/Methodology, Add Datasets & Profiles
 
 Work Log:
-- Analyzed existing TGDetect project files (architecture HTML, complete guide, panel prep docs)
-- Initialized Next.js 16 project with fullstack-dev skill
-- Created synthetic data generator module (src/lib/synthetic-data.ts) with seeded random for consistent demo data
-- Built 4-page demo interface with sidebar navigation:
-  - Page 1 (Dashboard): KPI cards, network traffic area chart, graph statistics, detection results table
-  - Page 2 (Architecture): 4-layer architecture flow diagram, model config details, node/edge type charts
-  - Page 3 (Analytics): 7 charts on single page (line, radar, scatter, bar, pie, timeline, hourly detection)
-  - Page 4 (Methodology): Problem statement, research objectives, 4-phase methodology, tech stack
-- Applied dark cybersecurity theme with consistent color system
-- Verified all pages with Agent Browser — no errors, clean rendering, navigation works
+- Read scientific_evaluation_report.md and Architecture Analysis.md from teammate
+- Updated synthetic data to reflect V16_Apex architecture (DARPA/UNSW/LANL datasets, MITRE ATT&CK tactics)
+- Updated model metrics to match scientific report (V16 Apex F1=0.989 vs Pomsathit F1=0.330)
+- Removed Architecture and Methodology pages from navigation
+- Added Datasets page with:
+  - Upload banner with drag-and-drop zone
+  - 12 supported log formats (CSV, JSON, JSONL, Syslog, NetFlow, Wazuh, Zeek, Apache, Windows EVT, CEF, PCAP, Suricata)
+  - Loaded datasets table with format, size, events, source, status columns
+  - Upload modal with drag-and-drop and format grid
+- Added Profiles page with:
+  - Profile cards showing dataset, config (temporal window, heads, layers, memory, embed, threshold)
+  - Active profile indicator in sidebar
+  - Create Profile modal with name, description, dataset type, default V16 Apex config
+  - Set Active / Delete actions per profile
+- Fixed all tooltip formatters to avoid NaN display
+- Updated detection table to show MITRE ATT&CK tactics
+- Verified all 4 pages with Agent Browser - zero errors, clean rendering
 
 Stage Summary:
-- All 4 pages render correctly with synthetic data
-- Sidebar navigation works between all sections
-- 7+ chart types rendered using Recharts
-- Detection results table with severity badges and progress bars
-- Professional dark theme suitable for panel presentation
-- Files created: src/app/page.tsx, src/app/layout.tsx, src/lib/synthetic-data.ts
-- Screenshots saved to download/ folder for reference
+- Interface now has 4 pages: Dashboard, Analytics, Datasets, Profiles
+- All data reflects V16_Apex architecture from scientific report
+- Upload supports 12 popular log formats
+- Profile system with create/delete/activate functionality
+- No NaN or "N" display issues found in charts
