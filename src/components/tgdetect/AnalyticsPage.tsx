@@ -29,6 +29,7 @@ import {
   Pie,
   Cell,
 } from 'recharts';
+import { TimeRangePicker } from './TimeRangePicker';
 import {
   Database,
   Network,
@@ -1343,18 +1344,21 @@ function ExplainabilityTab() {
 
 // ── Main Component ─────────────────────────────────────────────────────
 
-export function AnalyticsPage() {
+export function AnalyticsPage({ timeRange, onTimeRangeChange }: { timeRange: string; onTimeRangeChange: (r: any) => void }) {
   return (
     <div className="w-full max-w-[1400px] mx-auto space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-3">
-          <BarChart3 className="w-6 h-6 text-emerald-400" />
-          Analytics
-        </h1>
-        <p className="text-sm text-[var(--text-muted)] mt-1">
-          Comprehensive detection analytics across DARPA TC, UNSW-NB15, and LANL NetFlow log sources.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-3">
+            <BarChart3 className="w-6 h-6 text-emerald-400" />
+            Analytics
+          </h1>
+          <p className="text-sm text-[var(--text-muted)] mt-1">
+            Comprehensive detection analytics across DARPA TC, UNSW-NB15, and LANL NetFlow log sources.
+          </p>
+        </div>
+        <TimeRangePicker value={timeRange as any} onChange={onTimeRangeChange} />
       </div>
 
       <Separator className="bg-[var(--border-primary)]" />
