@@ -1,30 +1,31 @@
 ---
-Task ID: 1
+Task ID: 2
 Agent: Main Agent
-Task: Update TGDetect Frontend Demo - Remove Arch/Methodology, Add Datasets & Profiles
+Task: Fix hydration error, restructure Analytics with per-source graphs + objectives
 
 Work Log:
-- Read scientific_evaluation_report.md and Architecture Analysis.md from teammate
-- Updated synthetic data to reflect V16_Apex architecture (DARPA/UNSW/LANL datasets, MITRE ATT&CK tactics)
-- Updated model metrics to match scientific report (V16 Apex F1=0.989 vs Pomsathit F1=0.330)
-- Removed Architecture and Methodology pages from navigation
-- Added Datasets page with:
-  - Upload banner with drag-and-drop zone
-  - 12 supported log formats (CSV, JSON, JSONL, Syslog, NetFlow, Wazuh, Zeek, Apache, Windows EVT, CEF, PCAP, Suricata)
-  - Loaded datasets table with format, size, events, source, status columns
-  - Upload modal with drag-and-drop and format grid
-- Added Profiles page with:
-  - Profile cards showing dataset, config (temporal window, heads, layers, memory, embed, threshold)
-  - Active profile indicator in sidebar
-  - Create Profile modal with name, description, dataset type, default V16 Apex config
-  - Set Active / Delete actions per profile
-- Fixed all tooltip formatters to avoid NaN display
-- Updated detection table to show MITRE ATT&CK tactics
-- Verified all 4 pages with Agent Browser - zero errors, clean rendering
+- Created src/lib/date-utils.ts with hydration-safe formatTime() and formatDate() using manual HH:MM:SS formatting
+- Updated src/lib/synthetic-data.ts with new data generators:
+  - generateSourceTimeSeries() — per-source (DARPA/UNSW/LANL) + fused detection counts
+  - generateSourceMetrics() — per-source detection metrics
+  - generateConceptDriftData() — with/without adaptation accuracy over epochs
+  - generateAttackChain() — 9-step attack chain reconstruction
+  - generateExplainabilityData() — attention weights + temporal contributions + reasoning
+- Created src/components/tgdetect/AnalyticsPage.tsx with 5 tabs:
+  - Source Analysis: per-source metric cards + multi-line chart + volume bar chart
+  - Fused Temporal Graph (Objective 1): fusion chart + node/edge type charts + source contribution
+  - Concept Drift (Objective 2): dual-line adaptation chart + mechanism explanation cards
+  - Attack Backtracking (Objective 3): visual 9-step causal chain timeline with evidence
+  - Explainability (Objective 4): full table with attention weights + reasoning + MITRE bar chart
+- Updated src/app/page.tsx:
+  - Replaced all toLocaleTimeString() with formatTime() from date-utils (fixes hydration)
+  - Added Research Objectives section to Dashboard with 4 cards showing each objective + location
+  - Imported AnalyticsPage component
+  - All date formatting uses hydration-safe utilities
+- Verified with Agent Browser: zero errors, no hydration mismatch, all 5 tabs work
 
 Stage Summary:
-- Interface now has 4 pages: Dashboard, Analytics, Datasets, Profiles
-- All data reflects V16_Apex architecture from scientific report
-- Upload supports 12 popular log formats
-- Profile system with create/delete/activate functionality
-- No NaN or "N" display issues found in charts
+- Hydration error FIXED — all dates use manual formatting, no locale dependency
+- Analytics restructured: 5 tabs covering per-source analysis + all 4 objectives
+- Dashboard now shows Research Objectives with clear navigation pointers
+- Each objective is visually demonstrable and explained for panel presentation

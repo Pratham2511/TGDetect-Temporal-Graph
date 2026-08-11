@@ -1,0 +1,1035 @@
+     1→'use client'
+     2→
+     3→import { useState, useCallback } from 'react';
+     4→import {
+     5→  Shield, LayoutDashboard, BarChart3, Upload, UserCircle,
+     6→  ChevronRight, Activity, Network, Zap, Target, AlertTriangle,
+     7→  CheckCircle2, Clock, ShieldAlert, Brain, Database, Cpu,
+     8→  ArrowUpRight, ArrowDownRight, TrendingUp, Search,
+     9→  Globe, Lock, Eye, FileText, FolderOpen, Plus,
+    10→  Settings, Trash2, Download, FileUp, ChevronDown,
+    11→  Monitor, Terminal, Wifi, Braces, Table, FileJson,
+    12→  type LucideIcon
+    13→} from 'lucide-react';
+    14→import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+    15→import { Badge } from '@/components/ui/badge';
+    16→import { Button } from '@/components/ui/button';
+    17→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+    18→import { Progress } from '@/components/ui/progress';
+    19→import { Separator } from '@/components/ui/separator';
+    20→import { Input } from '@/components/ui/input';
+    21→import { Label } from '@/components/ui/label';
+    22→import {
+    23→  AreaChart, Area, BarChart, Bar, LineChart, Line, RadarChart, Radar, PolarGrid,
+    24→  PolarAngleAxis, PolarRadiusAxis, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+    25→  ResponsiveContainer, PieChart, Pie, Cell, ScatterChart, Scatter, ZAxis,
+    26→} from 'recharts';
+    27→import {
+    28→  generateTimeSeriesData, generateDetectionResults, generateModelMetrics,
+    29→  generateGraphStats, generateNetworkEvents, generateNodeTypeDistribution,
+    30→  generateThreatTimeline, generateEdgeTypeDistribution, generateProfiles,
+    31→  generateUploadedDatasets, supportedLogFormats,
+    32→  type DetectionResult, type UserProfile, type UploadedDataset
+    33→} from '@/lib/synthetic-data';
+    34→
+    35→// ─── NAVIGATION ─────────────────────────────────────────────────
+    36→const navItems = [
+    37→  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    38→  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    39→  { id: 'datasets', label: 'Datasets', icon: Database },
+    40→  { id: 'profiles', label: 'Profiles', icon: UserCircle },
+    41→] as const;
+    42→
+    43→type Page = typeof navItems[number]['id'];
+    44→
+    45→// ─── SYNTHETIC DATA ─────────────────────────────────────────────
+    46→const timeSeriesData = generateTimeSeriesData();
+    47→const detectionResults = generateDetectionResults();
+    48→const modelMetrics = generateModelMetrics();
+    49→const graphStats = generateGraphStats();
+    50→const networkEvents = generateNetworkEvents(200);
+    51→const nodeTypeData = generateNodeTypeDistribution();
+    52→const threatTimeline = generateThreatTimeline();
+    53→const edgeTypeData = generateEdgeTypeDistribution();
+    54→const initialProfiles = generateProfiles();
+    55→const initialDatasets = generateUploadedDatasets();
+    56→
+    57→const severityColors: Record<string, string> = {
+    58→  Low: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    59→  Medium: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+    60→  High: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
+    61→  Critical: 'bg-red-500/15 text-red-400 border-red-500/30',
+    62→};
+    63→
+    64→const statusIcons: Record<string, LucideIcon> = {
+    65→  Detected: Search,
+    66→  Investigating: Clock,
+    67→  Contained: ShieldAlert,
+    68→};
+    69→
+    70→const CHART_TOOLTIP_STYLE = {
+    71→  contentStyle: { backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8, fontSize: 12 },
+    72→  labelStyle: { color: '#9ca3af' },
+    73→};
+    74→
+    75→const formatIcon: Record<string, LucideIcon> = {
+    76→  table: Table,
+    77→  braces: Braces,
+    78→  'file-json': FileJson,
+    79→  terminal: Terminal,
+    80→  network: Wifi,
+    81→  shield: Shield,
+    82→  search: Search,
+    83→  globe: Globe,
+    84→  monitor: Monitor,
+    85→  'file-text': FileText,
+    86→  wifi: Wifi,
+    87→  'alert-triangle': AlertTriangle,
+    88→};
+    89→
+    90→// ─── MAIN PAGE ──────────────────────────────────────────────────
+    91→export default function Home() {
+    92→  const [activePage, setActivePage] = useState<Page>('dashboard');
+    93→  const [profiles, setProfiles] = useState<UserProfile[]>(initialProfiles);
+    94→  const [datasets, setDatasets] = useState<UploadedDataset[]>(initialDatasets);
+    95→  const [activeProfile, setActiveProfile] = useState<string>(initialProfiles[0].id);
+    96→  const [showCreateProfile, setShowCreateProfile] = useState(false);
+    97→  const [showUploadModal, setShowUploadModal] = useState(false);
+    98→  const [newProfileName, setNewProfileName] = useState('');
+    99→  const [newProfileDesc, setNewProfileDesc] = useState('');
+   100→  const [newProfileDataset, setNewProfileDataset] = useState('');
+   101→  const [dragOver, setDragOver] = useState(false);
+   102→
+   103→  const handleCreateProfile = useCallback(() => {
+   104→    if (!newProfileName.trim()) return;
+   105→    const profile: UserProfile = {
+   106→      id: `prof-${String(profiles.length + 1).padStart(3, '0')}`,
+   107→      name: newProfileName,
+   108→      description: newProfileDesc || 'No description provided.',
+   109→      dataset: newProfileDataset || 'Custom',
+   110→      status: 'inactive',
+   111→      created: new Date().toISOString(),
+   112→      lastModified: new Date().toISOString(),
+   113→      config: { temporalWindow: 300, memoryDim: 64, numHeads: 4, nLayers: 2, embedDim: 64, threshold: 0.75 },
+   114→    };
+   115→    setProfiles(prev => [...prev, profile]);
+   116→    setNewProfileName('');
+   117→    setNewProfileDesc('');
+   118→    setNewProfileDataset('');
+   119→    setShowCreateProfile(false);
+   120→  }, [newProfileName, newProfileDesc, newProfileDataset, profiles.length]);
+   121→
+   122→  const handleDeleteProfile = useCallback((id: string) => {
+   123→    setProfiles(prev => prev.filter(p => p.id !== id));
+   124→    if (activeProfile === id && profiles.length > 1) {
+   125→      setActiveProfile(profiles.find(p => p.id !== id)?.id || '');
+   126→    }
+   127→  }, [activeProfile, profiles]);
+   128→
+   129→  const handleSimulateUpload = useCallback(() => {
+   130→    const newDs: UploadedDataset = {
+   131→      id: `ds-${String(datasets.length + 1).padStart(3, '0')}`,
+   132→      name: `synthetic_demo_${Date.now()}.csv`,
+   133→      format: 'CSV',
+   134→      size: '12.4 MB',
+   135→      events: 52340,
+   136→      uploadedAt: new Date().toISOString(),
+   137→      status: 'processed',
+   138→      source: 'Synthetic Demo',
+   139→    };
+   140→    setDatasets(prev => [newDs, ...prev]);
+   141→    setShowUploadModal(false);
+   142→  }, [datasets.length]);
+   143→
+   144→  return (
+   145→    <div className="flex h-screen bg-[#0a0e1a] text-gray-200 overflow-hidden">
+   146→      {/* ─── Sidebar ─── */}
+   147→      <aside className="w-64 flex-shrink-0 border-r border-gray-800/80 bg-[#0d1120] flex flex-col">
+   148→        <div className="p-5 border-b border-gray-800/80">
+   149→          <div className="flex items-center gap-3">
+   150→            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20">
+   151→              <Shield className="w-5 h-5 text-white" />
+   152→            </div>
+   153→            <div>
+   154→              <h1 className="text-base font-bold tracking-tight text-white">TGDetect</h1>
+   155→              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest">V16 Apex TGNN</p>
+   156→            </div>
+   157→          </div>
+   158→        </div>
+   159→
+   160→        <nav className="flex-1 p-3 space-y-1">
+   161→          {navItems.map((item) => {
+   162→            const Icon = item.icon;
+   163→            const isActive = activePage === item.id;
+   164→            return (
+   165→              <button
+   166→                key={item.id}
+   167→                onClick={() => setActivePage(item.id)}
+   168→                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+   169→                  isActive
+   170→                    ? 'bg-blue-500/10 text-blue-400 shadow-sm'
+   171→                    : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/50'
+   172→                }`}
+   173→              >
+   174→                <Icon className={`w-4 h-4 ${isActive ? 'text-blue-400' : ''}`} />
+   175→                {item.label}
+   176→                {isActive && (
+   177→                  <ChevronRight className="w-3.5 h-3.5 ml-auto text-blue-400/60" />
+   178→                )}
+   179→              </button>
+   180→            );
+   181→          })}
+   182→        </nav>
+   183→
+   184→        {/* Active Profile Indicator */}
+   185→        <div className="px-4 pb-3">
+   186→          <div className="rounded-lg border border-gray-800/60 bg-[#111827]/50 p-3">
+   187→            <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium mb-1.5">Active Profile</p>
+   188→            <div className="flex items-center gap-2">
+   189→              <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+   190→              <span className="text-xs text-gray-300 truncate">
+   191→                {profiles.find(p => p.id === activeProfile)?.name || 'None'}
+   192→              </span>
+   193→            </div>
+   194→          </div>
+   195→        </div>
+   196→
+   197→        <div className="p-4 border-t border-gray-800/80">
+   198→          <div className="flex items-center gap-2 px-2">
+   199→            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+   200→            <span className="text-xs text-gray-500">Demo Mode — Synthetic Data</span>
+   201→          </div>
+   202→        </div>
+   203→      </aside>
+   204→
+   205→      {/* ─── Main Content ─── */}
+   206→      <main className="flex-1 overflow-y-auto">
+   207→        {/* Top Bar */}
+   208→        <header className="sticky top-0 z-10 border-b border-gray-800/60 bg-[#0a0e1a]/80 backdrop-blur-xl px-6 py-3 flex items-center justify-between">
+   209→          <div>
+   210→            <h2 className="text-lg font-semibold text-white">
+   211→              {navItems.find(n => n.id === activePage)?.label}
+   212→            </h2>
+   213→            <p className="text-xs text-gray-500 mt-0.5">
+   214→              {activePage === 'dashboard' && 'System overview and key performance indicators'}
+   215→              {activePage === 'analytics' && 'Detection analytics with synthetic network data'}
+   216→              {activePage === 'datasets' && 'Upload and manage log datasets for analysis'}
+   217→              {activePage === 'profiles' && 'Create and manage analysis profiles'}
+   218→            </p>
+   219→          </div>
+   220→          <div className="flex items-center gap-3">
+   221→            <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-xs px-2.5">
+   222→              <Activity className="w-3 h-3 mr-1" />
+   223→              V16 Apex
+   224→            </Badge>
+   225→            <Badge variant="outline" className="border-gray-700 text-gray-400 text-xs px-2.5">
+   226→              <Database className="w-3 h-3 mr-1" />
+   227→              Synthetic Data
+   228→            </Badge>
+   229→          </div>
+   230→        </header>
+   231→
+   232→        {/* Page Content */}
+   233→        <div className="p-6">
+   234→          {activePage === 'dashboard' && <DashboardPage />}
+   235→          {activePage === 'analytics' && <AnalyticsPage />}
+   236→          {activePage === 'datasets' && (
+   237→            <DatasetsPage
+   238→              datasets={datasets}
+   239→              onUploadClick={() => setShowUploadModal(true)}
+   240→            />
+   241→          )}
+   242→          {activePage === 'profiles' && (
+   243→            <ProfilesPage
+   244→              profiles={profiles}
+   245→              activeProfile={activeProfile}
+   246→              onSelectProfile={setActiveProfile}
+   247→              onCreateClick={() => setShowCreateProfile(true)}
+   248→              onDeleteProfile={handleDeleteProfile}
+   249→            />
+   250→          )}
+   251→        </div>
+   252→      </main>
+   253→
+   254→      {/* ─── Upload Modal ─── */}
+   255→      {showUploadModal && (
+   256→        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowUploadModal(false)}>
+   257→          <div className="bg-[#111827] border border-gray-800/80 rounded-2xl w-full max-w-2xl shadow-2xl mx-4" onClick={e => e.stopPropagation()}>
+   258→            <div className="flex items-center justify-between p-5 border-b border-gray-800/60">
+   259→              <div>
+   260→                <h3 className="text-sm font-semibold text-white">Upload Log Dataset</h3>
+   261→                <p className="text-xs text-gray-500 mt-0.5">Select a file or drag & drop your log data</p>
+   262→              </div>
+   263→              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white" onClick={() => setShowUploadModal(false)}>✕</Button>
+   264→            </div>
+   265→            <div className="p-5 space-y-5">
+   266→              {/* Drop Zone */}
+   267→              <div
+   268→                className={`rounded-xl border-2 border-dashed p-8 text-center transition-all cursor-pointer ${
+   269→                  dragOver ? 'border-blue-400 bg-blue-500/5' : 'border-gray-700 hover:border-gray-600'
+   270→                }`}
+   271→                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+   272→                onDragLeave={() => setDragOver(false)}
+   273→                onDrop={e => { e.preventDefault(); setDragOver(false); handleSimulateUpload(); }}
+   274→                onClick={handleSimulateUpload}
+   275→              >
+   276→                <Upload className={`w-10 h-10 mx-auto mb-3 ${dragOver ? 'text-blue-400' : 'text-gray-600'}`} />
+   277→                <p className="text-sm text-gray-300 font-medium">
+   278→                  {dragOver ? 'Drop your file here' : 'Drag & drop your log file, or click to browse'}
+   279→                </p>
+   280→                <p className="text-xs text-gray-500 mt-1">Supports CSV, JSON, JSONL, Syslog, NetFlow, and more</p>
+   281→              </div>
+   282→
+   283→              {/* Supported Formats */}
+   284→              <div>
+   285→                <p className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-3">Supported Log Formats</p>
+   286→                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+   287→                  {supportedLogFormats.slice(0, 9).map((fmt, i) => {
+   288→                    const FmtIcon = formatIcon[fmt.icon] || FileText;
+   289→                    return (
+   290→                      <div key={i} className="flex items-center gap-2 rounded-lg border border-gray-800/40 bg-[#0d1120]/50 px-3 py-2">
+   291→                        <FmtIcon className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+   292→                        <div>
+   293→                          <p className="text-[11px] font-medium text-gray-300">{fmt.name}</p>
+   294→                          <p className="text-[9px] text-gray-600">{fmt.ext}</p>
+   295→                        </div>
+   296→                      </div>
+   297→                    );
+   298→                  })}
+   299→                </div>
+   300→              </div>
+   301→            </div>
+   302→            <div className="flex items-center justify-end gap-2 px-5 pb-5">
+   303→              <Button variant="ghost" size="sm" className="text-gray-400" onClick={() => setShowUploadModal(false)}>Cancel</Button>
+   304→              <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white" onClick={handleSimulateUpload}>
+   305→                <Upload className="w-3.5 h-3.5 mr-1.5" /> Upload Dataset
+   306→              </Button>
+   307→            </div>
+   308→          </div>
+   309→        </div>
+   310→      )}
+   311→
+   312→      {/* ─── Create Profile Modal ─── */}
+   313→      {showCreateProfile && (
+   314→        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowCreateProfile(false)}>
+   315→          <div className="bg-[#111827] border border-gray-800/80 rounded-2xl w-full max-w-lg shadow-2xl mx-4" onClick={e => e.stopPropagation()}>
+   316→            <div className="flex items-center justify-between p-5 border-b border-gray-800/60">
+   317→              <div>
+   318→                <h3 className="text-sm font-semibold text-white">Create New Profile</h3>
+   319→                <p className="text-xs text-gray-500 mt-0.5">Set up a new analysis profile for your dataset</p>
+   320→              </div>
+   321→              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white" onClick={() => setShowCreateProfile(false)}>✕</Button>
+   322→            </div>
+   323→            <div className="p-5 space-y-4">
+   324→              <div className="space-y-2">
+   325→                <Label className="text-xs text-gray-400">Profile Name</Label>
+   326→                <Input
+   327→                  placeholder="e.g., DARPA Engagement Analysis"
+   328→                  value={newProfileName}
+   329→                  onChange={e => setNewProfileName(e.target.value)}
+   330→                  className="bg-[#0d1120] border-gray-800/60 text-sm text-gray-200 placeholder:text-gray-600"
+   331→                />
+   332→              </div>
+   333→              <div className="space-y-2">
+   334→                <Label className="text-xs text-gray-400">Description</Label>
+   335→                <Input
+   336→                  placeholder="Brief description of this profile..."
+   337→                  value={newProfileDesc}
+   338→                  onChange={e => setNewProfileDesc(e.target.value)}
+   339→                  className="bg-[#0d1120] border-gray-800/60 text-sm text-gray-200 placeholder:text-gray-600"
+   340→                />
+   341→              </div>
+   342→              <div className="space-y-2">
+   343→                <Label className="text-xs text-gray-400">Dataset Type</Label>
+   344→                <Input
+   345→                  placeholder="e.g., DARPA TC, UNSW-NB15, LANL, Custom..."
+   346→                  value={newProfileDataset}
+   347→                  onChange={e => setNewProfileDataset(e.target.value)}
+   348→                  className="bg-[#0d1120] border-gray-800/60 text-sm text-gray-200 placeholder:text-gray-600"
+   349→                />
+   350→              </div>
+   351→              <div className="rounded-lg border border-gray-800/40 bg-[#0d1120]/50 p-3">
+   352→                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium mb-2">Default V16 Apex Configuration</p>
+   353→                <div className="grid grid-cols-2 gap-2">
+   354→                  {[
+   355→                    { label: 'Temporal Window', value: '300s' },
+   356→                    { label: 'Memory Dim', value: '64' },
+   357→                    { label: 'Attention Heads', value: '4' },
+   358→                    { label: 'GNN Layers', value: '2' },
+   359→                    { label: 'Embed Dim', value: '64' },
+   360→                    { label: 'Threshold', value: '0.75' },
+   361→                  ].map((c, i) => (
+   362→                    <div key={i} className="flex justify-between text-[11px]">
+   363→                      <span className="text-gray-500">{c.label}</span>
+   364→                      <span className="text-blue-400 font-mono">{c.value}</span>
+   365→                    </div>
+   366→                  ))}
+   367→                </div>
+   368→              </div>
+   369→            </div>
+   370→            <div className="flex items-center justify-end gap-2 px-5 pb-5">
+   371→              <Button variant="ghost" size="sm" className="text-gray-400" onClick={() => setShowCreateProfile(false)}>Cancel</Button>
+   372→              <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white" onClick={handleCreateProfile}>
+   373→                <Plus className="w-3.5 h-3.5 mr-1.5" /> Create Profile
+   374→              </Button>
+   375→            </div>
+   376→          </div>
+   377→        </div>
+   378→      )}
+   379→    </div>
+   380→  );
+   381→}
+   382→
+   383→// ═══════════════════════════════════════════════════════════════════
+   384→// PAGE 1: DASHBOARD
+   385→// ═══════════════════════════════════════════════════════════════════
+   386→function DashboardPage() {
+   387→  const totalThreats = detectionResults.length;
+   388→  const criticalCount = detectionResults.filter(d => d.severity === 'Critical').length;
+   389→  const contained = detectionResults.filter(d => d.status === 'Contained').length;
+   390→  const avgConfidence = Math.round(detectionResults.reduce((a, d) => a + d.confidence, 0) / detectionResults.length * 10) / 10;
+   391→
+   392→  return (
+   393→    <div className="space-y-6">
+   394→      {/* KPI Cards */}
+   395→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   396→        <StatCard title="Total Detections" value={totalThreats.toString()} subtitle="Last 24 hours" icon={ShieldAlert} trend="up" trendValue="+12%" color="blue" />
+   397→        <StatCard title="Critical Alerts" value={criticalCount.toString()} subtitle="Requires attention" icon={AlertTriangle} trend="up" trendValue="+3" color="red" />
+   398→        <StatCard title="Threats Contained" value={contained.toString()} subtitle={`${Math.round(contained / totalThreats * 100)}% containment rate`} icon={CheckCircle2} trend="up" trendValue="+8%" color="emerald" />
+   399→        <StatCard title="Avg. Confidence" value={`${avgConfidence}%`} subtitle="V16 Apex model confidence" icon={Brain} trend="stable" trendValue="0.989 F1" color="purple" />
+   400→      </div>
+   401→
+   402→      {/* Main Grid */}
+   403→      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+   404→        {/* Traffic Overview Chart */}
+   405→        <Card className="lg:col-span-2 bg-[#111827]/80 border-gray-800/60">
+   406→          <CardHeader className="pb-2">
+   407→            <CardTitle className="text-sm font-semibold text-gray-300">Network Traffic Overview</CardTitle>
+   408→            <CardDescription className="text-xs text-gray-500">24-hour event distribution by type</CardDescription>
+   409→          </CardHeader>
+   410→          <CardContent>
+   411→            <div className="h-72">
+   412→              <ResponsiveContainer width="100%" height="100%">
+   413→                <AreaChart data={timeSeriesData}>
+   414→                  <defs>
+   415→                    <linearGradient id="gradNormal" x1="0" y1="0" x2="0" y2="1">
+   416→                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
+   417→                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+   418→                    </linearGradient>
+   419→                    <linearGradient id="gradSuspicious" x1="0" y1="0" x2="0" y2="1">
+   420→                      <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
+   421→                      <stop offset="100%" stopColor="#f59e0b" stopOpacity={0} />
+   422→                    </linearGradient>
+   423→                    <linearGradient id="gradMalicious" x1="0" y1="0" x2="0" y2="1">
+   424→                      <stop offset="0%" stopColor="#ef4444" stopOpacity={0.3} />
+   425→                      <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
+   426→                    </linearGradient>
+   427→                  </defs>
+   428→                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+   429→                  <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
+   430→                  <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} />
+   431→                  <Tooltip {...CHART_TOOLTIP_STYLE} />
+   432→                  <Legend wrapperStyle={{ fontSize: 11 }} />
+   433→                  <Area type="monotone" dataKey="normal" stackId="1" stroke="#3b82f6" fill="url(#gradNormal)" strokeWidth={2} name="Normal" />
+   434→                  <Area type="monotone" dataKey="suspicious" stackId="1" stroke="#f59e0b" fill="url(#gradSuspicious)" strokeWidth={2} name="Suspicious" />
+   435→                  <Area type="monotone" dataKey="malicious" stackId="1" stroke="#ef4444" fill="url(#gradMalicious)" strokeWidth={2} name="Malicious" />
+   436→                </AreaChart>
+   437→              </ResponsiveContainer>
+   438→            </div>
+   439→          </CardContent>
+   440→        </Card>
+   441→
+   442→        {/* Graph Statistics */}
+   443→        <Card className="bg-[#111827]/80 border-gray-800/60">
+   444→          <CardHeader className="pb-2">
+   445→            <CardTitle className="text-sm font-semibold text-gray-300">Graph Statistics</CardTitle>
+   446→            <CardDescription className="text-xs text-gray-500">V16 Apex temporal graph snapshot</CardDescription>
+   447→          </CardHeader>
+   448→          <CardContent className="space-y-3">
+   449→            <GraphStatItem label="Total Nodes" value={graphStats.totalNodes.toString()} icon={Globe} color="blue" />
+   450→            <GraphStatItem label="Total Edges" value={graphStats.totalEdges.toLocaleString()} icon={Network} color="cyan" />
+   451→            <GraphStatItem label="Temporal Windows" value={graphStats.temporalWindows.toString()} icon={Clock} color="amber" />
+   452→            <GraphStatItem label="Clustering Coeff." value={graphStats.avgClusteringCoeff.toFixed(3)} icon={Target} color="purple" />
+   453→            <GraphStatItem label="Graph Density" value={graphStats.graphDensity.toFixed(4)} icon={Zap} color="emerald" />
+   454→            <Separator className="bg-gray-800/60" />
+   455→            <div className="pt-1">
+   456→              <div className="flex justify-between text-xs mb-1.5">
+   457→                <span className="text-gray-400">Processing Load</span>
+   458→                <span className="text-emerald-400 font-medium">34%</span>
+   459→              </div>
+   460→              <Progress value={34} className="h-2 bg-gray-800 [&>div]:bg-gradient-to-r [&>div]:from-blue-500 [&>div]:to-cyan-400" />
+   461→            </div>
+   462→          </CardContent>
+   463→        </Card>
+   464→      </div>
+   465→
+   466→      {/* Recent Detections Table */}
+   467→      <Card className="bg-[#111827]/80 border-gray-800/60">
+   468→        <CardHeader className="pb-2">
+   469→          <div className="flex items-center justify-between">
+   470→            <div>
+   471→              <CardTitle className="text-sm font-semibold text-gray-300">Recent Detections</CardTitle>
+   472→              <CardDescription className="text-xs text-gray-500">Latest V16 Apex threat detection results</CardDescription>
+   473→            </div>
+   474→            <Badge variant="outline" className="border-gray-700 text-gray-400 text-xs">{detectionResults.length} total</Badge>
+   475→          </div>
+   476→        </CardHeader>
+   477→        <CardContent>
+   478→          <div className="overflow-x-auto">
+   479→            <table className="w-full text-xs">
+   480→              <thead>
+   481→                <tr className="border-b border-gray-800/60">
+   482→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">ID</th>
+   483→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Timestamp</th>
+   484→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">MITRE Tactic</th>
+   485→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Severity</th>
+   486→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Source</th>
+   487→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Confidence</th>
+   488→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Graph Score</th>
+   489→                  <th className="text-left text-gray-500 font-medium py-2">Status</th>
+   490→                </tr>
+   491→              </thead>
+   492→              <tbody>
+   493→                {detectionResults.slice(0, 8).map((d) => {
+   494→                  const StatusIcon = statusIcons[d.status] || CheckCircle2;
+   495→                  return (
+   496→                    <tr key={d.id} className="border-b border-gray-800/30 hover:bg-gray-800/20 transition-colors">
+   497→                      <td className="py-2 pr-4 font-mono text-blue-400">{d.id}</td>
+   498→                      <td className="py-2 pr-4 text-gray-400">{new Date(d.timestamp).toLocaleTimeString()}</td>
+   499→                      <td className="py-2 pr-4">
+   500→                        <span className="text-gray-300">{d.tactic}</span>
+   501→                        <span className="text-gray-600 ml-1.5">({d.attackType})</span>
+   502→                      </td>
+   503→                      <td className="py-2 pr-4">
+   504→                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${severityColors[d.severity]}`}>
+   505→                          {d.severity}
+   506→                        </Badge>
+   507→                      </td>
+   508→                      <td className="py-2 pr-4 font-mono text-gray-400">{d.sourceNode}</td>
+   509→                      <td className="py-2 pr-4">
+   510→                        <div className="flex items-center gap-1.5">
+   511→                          <Progress value={d.confidence} className="w-12 h-1.5 bg-gray-800 [&>div]:bg-blue-500" />
+   512→                          <span className="text-gray-400">{d.confidence}%</span>
+   513→                        </div>
+   514→                      </td>
+   515→                      <td className="py-2 pr-4">
+   516→                        <div className="flex items-center gap-1.5">
+   517→                          <Progress value={d.graphScore} className="w-12 h-1.5 bg-gray-800 [&>div]:bg-purple-500" />
+   518→                          <span className="text-gray-400">{d.graphScore}%</span>
+   519→                        </div>
+   520→                      </td>
+   521→                      <td className="py-2">
+   522→                        <div className="flex items-center gap-1">
+   523→                          <StatusIcon className={`w-3 h-3 ${d.status === 'Detected' ? 'text-amber-400' : d.status === 'Investigating' ? 'text-blue-400' : 'text-emerald-400'}`} />
+   524→                          <span className="text-gray-400">{d.status}</span>
+   525→                        </div>
+   526→                      </td>
+   527→                    </tr>
+   528→                  );
+   529→                })}
+   530→              </tbody>
+   531→            </table>
+   532→          </div>
+   533→        </CardContent>
+   534→      </Card>
+   535→    </div>
+   536→  );
+   537→}
+   538→
+   539→// ─── SHARED COMPONENTS ────────────────────────────────────────────
+   540→function StatCard({ title, value, subtitle, icon: Icon, trend, trendValue, color }: {
+   541→  title: string; value: string; subtitle: string; icon: LucideIcon;
+   542→  trend: 'up' | 'down' | 'stable'; trendValue: string; color: string;
+   543→}) {
+   544→  const colorMap: Record<string, { bg: string; text: string; shadow: string }> = {
+   545→    blue: { bg: 'bg-blue-500/10', text: 'text-blue-400', shadow: 'shadow-blue-500/10' },
+   546→    red: { bg: 'bg-red-500/10', text: 'text-red-400', shadow: 'shadow-red-500/10' },
+   547→    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', shadow: 'shadow-emerald-500/10' },
+   548→    purple: { bg: 'bg-purple-500/10', text: 'text-purple-400', shadow: 'shadow-purple-500/10' },
+   549→  };
+   550→  const c = colorMap[color] || colorMap.blue;
+   551→
+   552→  return (
+   553→    <Card className="bg-[#111827]/80 border-gray-800/60 hover:border-gray-700/60 transition-colors">
+   554→      <CardContent className="p-4">
+   555→        <div className="flex items-start justify-between">
+   556→          <div>
+   557→            <p className="text-xs text-gray-500 font-medium">{title}</p>
+   558→            <p className="text-2xl font-bold text-white mt-1">{value}</p>
+   559→            <p className="text-[11px] text-gray-500 mt-1">{subtitle}</p>
+   560→          </div>
+   561→          <div className={`w-10 h-10 rounded-lg ${c.bg} flex items-center justify-center shadow-lg ${c.shadow}`}>
+   562→            <Icon className={`w-5 h-5 ${c.text}`} />
+   563→          </div>
+   564→        </div>
+   565→        <div className="flex items-center gap-1 mt-3 text-xs">
+   566→          {trend === 'up' ? <ArrowUpRight className="w-3 h-3 text-emerald-400" /> :
+   567→           trend === 'down' ? <ArrowDownRight className="w-3 h-3 text-red-400" /> :
+   568→           <TrendingUp className="w-3 h-3 text-gray-400" />}
+   569→          <span className={trend === 'up' ? 'text-emerald-400' : trend === 'down' ? 'text-red-400' : 'text-gray-400'}>
+   570→            {trendValue}
+   571→          </span>
+   572→          <span className="text-gray-600 ml-1">vs last period</span>
+   573→        </div>
+   574→      </CardContent>
+   575→    </Card>
+   576→  );
+   577→}
+   578→
+   579→function GraphStatItem({ label, value, icon: Icon, color }: {
+   580→  label: string; value: string; icon: LucideIcon; color: string;
+   581→}) {
+   582→  const colorMap: Record<string, string> = {
+   583→    blue: 'text-blue-400', cyan: 'text-cyan-400', amber: 'text-amber-400',
+   584→    purple: 'text-purple-400', emerald: 'text-emerald-400',
+   585→  };
+   586→  return (
+   587→    <div className="flex items-center justify-between py-1.5">
+   588→      <div className="flex items-center gap-2">
+   589→        <Icon className={`w-3.5 h-3.5 ${colorMap[color] || 'text-gray-400'}`} />
+   590→        <span className="text-xs text-gray-400">{label}</span>
+   591→      </div>
+   592→      <span className="text-xs font-semibold text-white">{value}</span>
+   593→    </div>
+   594→  );
+   595→}
+   596→
+   597→// ═══════════════════════════════════════════════════════════════════
+   598→// PAGE 2: ANALYTICS
+   599→// ═══════════════════════════════════════════════════════════════════
+   600→function AnalyticsPage() {
+   601→  return (
+   602→    <div className="space-y-6">
+   603→      {/* Graph Score + Radar */}
+   604→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   605→        <Card className="bg-[#111827]/80 border-gray-800/60">
+   606→          <CardHeader className="pb-2">
+   607→            <CardTitle className="text-sm font-semibold text-gray-300">Threat Graph Score Over Time</CardTitle>
+   608→            <CardDescription className="text-xs text-gray-500">Composite threat score derived from temporal graph analysis</CardDescription>
+   609→          </CardHeader>
+   610→          <CardContent>
+   611→            <div className="h-64">
+   612→              <ResponsiveContainer width="100%" height="100%">
+   613→                <LineChart data={timeSeriesData}>
+   614→                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+   615→                  <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
+   616→                  <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} domain={[40, 100]} />
+   617→                  <Tooltip {...CHART_TOOLTIP_STYLE} />
+   618→                  <Line type="monotone" dataKey="graphScore" stroke="#8b5cf6" strokeWidth={2.5} dot={{ fill: '#8b5cf6', r: 3 }} activeDot={{ r: 5, fill: '#8b5cf6' }} name="Graph Score" />
+   619→                </LineChart>
+   620→              </ResponsiveContainer>
+   621→            </div>
+   622→          </CardContent>
+   623→        </Card>
+   624→
+   625→        <Card className="bg-[#111827]/80 border-gray-800/60">
+   626→          <CardHeader className="pb-2">
+   627→            <CardTitle className="text-sm font-semibold text-gray-300">Model Comparison (F1-Score & ROC-AUC)</CardTitle>
+   628→            <CardDescription className="text-xs text-gray-500">V16 Apex vs baseline models on 1M OOD events</CardDescription>
+   629→          </CardHeader>
+   630→          <CardContent>
+   631→            <div className="h-64">
+   632→              <ResponsiveContainer width="100%" height="100%">
+   633→                <BarChart data={modelMetrics} layout="vertical">
+   634→                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" horizontal={false} />
+   635→                  <XAxis type="number" stroke="#6b7280" tick={{ fontSize: 10 }} domain={[0, 1]} />
+   636→                  <YAxis type="category" dataKey="name" stroke="#6b7280" tick={{ fontSize: 10 }} width={110} />
+   637→                  <Tooltip {...CHART_TOOLTIP_STYLE} formatter={(v: number) => [typeof v === 'number' ? v.toFixed(3) : v, '']} />
+   638→                  <Legend wrapperStyle={{ fontSize: 10 }} />
+   639→                  <Bar dataKey="f1Score" name="F1-Score" fill="#8b5cf6" radius={[0, 3, 3, 0]} barSize={12} />
+   640→                  <Bar dataKey="rocAuc" name="ROC-AUC" fill="#06b6d4" radius={[0, 3, 3, 0]} barSize={12} />
+   641→                </BarChart>
+   642→              </ResponsiveContainer>
+   643→            </div>
+   644→          </CardContent>
+   645→        </Card>
+   646→      </div>
+   647→
+   648→      {/* Scatter + Timeline */}
+   649→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   650→        <Card className="bg-[#111827]/80 border-gray-800/60">
+   651→          <CardHeader className="pb-2">
+   652→            <CardTitle className="text-sm font-semibold text-gray-300">Confidence vs Graph Score</CardTitle>
+   653→            <CardDescription className="text-xs text-gray-500">Detection confidence correlated with graph analysis score</CardDescription>
+   654→          </CardHeader>
+   655→          <CardContent>
+   656→            <div className="h-64">
+   657→              <ResponsiveContainer width="100%" height="100%">
+   658→                <ScatterChart>
+   659→                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+   660→                  <XAxis dataKey="confidence" name="Confidence" stroke="#6b7280" tick={{ fontSize: 11 }} domain={[65, 100]} />
+   661→                  <YAxis dataKey="graphScore" name="Graph Score" stroke="#6b7280" tick={{ fontSize: 11 }} domain={[55, 100]} />
+   662→                  <ZAxis dataKey="confidence" range={[40, 200]} />
+   663→                  <Tooltip
+   664→                    {...CHART_TOOLTIP_STYLE}
+   665→                    formatter={(value: number, name: string) => [`${value}%`, name]}
+   666→                  />
+   667→                  <Scatter name="Detections" data={detectionResults.map(d => ({ confidence: d.confidence, graphScore: d.graphScore, severity: d.severity }))} fill="#8b5cf6">
+   668→                    {detectionResults.map((d, i) => (
+   669→                      <Cell key={i} fill={d.severity === 'Critical' ? '#ef4444' : d.severity === 'High' ? '#f59e0b' : d.severity === 'Medium' ? '#3b82f6' : '#10b981'} />
+   670→                    ))}
+   671→                  </Scatter>
+   672→                </ScatterChart>
+   673→              </ResponsiveContainer>
+   674→            </div>
+   675→          </CardContent>
+   676→        </Card>
+   677→
+   678→        <Card className="bg-[#111827]/80 border-gray-800/60">
+   679→          <CardHeader className="pb-2">
+   680→            <CardTitle className="text-sm font-semibold text-gray-300">APT Attack Timeline (MITRE ATT&CK)</CardTitle>
+   681→            <CardDescription className="text-xs text-gray-500">Reconstructed attack phases from V16 Apex causal analysis</CardDescription>
+   682→          </CardHeader>
+   683→          <CardContent>
+   684→            <div className="h-64 overflow-y-auto pr-2 space-y-2">
+   685→              {threatTimeline.map((phase, i) => (
+   686→                <div key={i} className="relative pl-6">
+   687→                  <div className="absolute left-0 top-1 w-4 h-4 rounded-full border-2 flex items-center justify-center" style={{
+   688→                    borderColor: phase.severity === 'Critical' ? '#ef4444' : phase.severity === 'High' ? '#f59e0b' : phase.severity === 'Medium' ? '#3b82f6' : '#10b981',
+   689→                  }}>
+   690→                    <div className="w-1.5 h-1.5 rounded-full" style={{
+   691→                      backgroundColor: phase.severity === 'Critical' ? '#ef4444' : phase.severity === 'High' ? '#f59e0b' : phase.severity === 'Medium' ? '#3b82f6' : '#10b981',
+   692→                    }} />
+   693→                  </div>
+   694→                  {i < threatTimeline.length - 1 && (
+   695→                    <div className="absolute left-[7px] top-5 w-px h-full bg-gray-800" />
+   696→                  )}
+   697→                  <div className="rounded-lg border border-gray-800/40 bg-[#0d1120]/50 p-3">
+   698→                    <div className="flex items-center justify-between">
+   699→                      <h4 className="text-xs font-medium text-gray-300">{phase.phase}</h4>
+   700→                      <Badge variant="outline" className={`text-[9px] px-1.5 py-0 border ${severityColors[phase.severity]}`}>
+   701→                        {phase.severity}
+   702→                      </Badge>
+   703→                    </div>
+   704→                    <p className="text-[10px] text-gray-500 mt-1">
+   705→                      Window {phase.start}–{phase.start + phase.duration}h &middot; Duration: {phase.duration}h
+   706→                    </p>
+   707→                    <div className="mt-2 h-1.5 rounded-full bg-gray-800 overflow-hidden">
+   708→                      <div className="h-full rounded-full" style={{
+   709→                        width: `${(phase.duration / 5) * 100}%`,
+   710→                        backgroundColor: phase.severity === 'Critical' ? '#ef4444' : phase.severity === 'High' ? '#f59e0b' : phase.severity === 'Medium' ? '#3b82f6' : '#10b981',
+   711→                      }} />
+   712→                    </div>
+   713→                  </div>
+   714→                </div>
+   715→              ))}
+   716→            </div>
+   717→          </CardContent>
+   718→        </Card>
+   719→      </div>
+   720→
+   721→      {/* Model Performance Grouped Bar */}
+   722→      <Card className="bg-[#111827]/80 border-gray-800/60">
+   723→        <CardHeader className="pb-2">
+   724→          <CardTitle className="text-sm font-semibold text-gray-300">V16 Apex Performance Breakdown</CardTitle>
+   725→          <CardDescription className="text-xs text-gray-500">Precision, Recall, F1-Score, and ROC-AUC across all models</CardDescription>
+   726→        </CardHeader>
+   727→        <CardContent>
+   728→          <div className="h-72">
+   729→            <ResponsiveContainer width="100%" height="100%">
+   730→              <BarChart data={modelMetrics}>
+   731→                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+   732→                <XAxis dataKey="name" stroke="#6b7280" tick={{ fontSize: 10 }} />
+   733→                <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} domain={[0, 1.05]} />
+   734→                <Tooltip {...CHART_TOOLTIP_STYLE} formatter={(v: number) => [typeof v === 'number' ? v.toFixed(3) : v, '']} />
+   735→                <Legend wrapperStyle={{ fontSize: 11 }} />
+   736→                <Bar dataKey="precision" name="Precision" fill="#3b82f6" radius={[2, 2, 0, 0]} />
+   737→                <Bar dataKey="recall" name="Recall" fill="#8b5cf6" radius={[2, 2, 0, 0]} />
+   738→                <Bar dataKey="f1Score" name="F1-Score" fill="#06b6d4" radius={[2, 2, 0, 0]} />
+   739→                <Bar dataKey="rocAuc" name="ROC-AUC" fill="#f59e0b" radius={[2, 2, 0, 0]} />
+   740→              </BarChart>
+   741→            </ResponsiveContainer>
+   742→          </div>
+   743→        </CardContent>
+   744→      </Card>
+   745→
+   746→      {/* Event Breakdown + Hourly Detection */}
+   747→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   748→        <Card className="bg-[#111827]/80 border-gray-800/60">
+   749→          <CardHeader className="pb-2">
+   750→            <CardTitle className="text-sm font-semibold text-gray-300">Event Type Breakdown</CardTitle>
+   751→            <CardDescription className="text-xs text-gray-500">Distribution of network events by category</CardDescription>
+   752→          </CardHeader>
+   753→          <CardContent>
+   754→            <div className="h-56">
+   755→              <ResponsiveContainer width="100%" height="100%">
+   756→                <PieChart>
+   757→                  <Pie
+   758→                    data={[
+   759→                      { name: 'Normal', value: networkEvents.filter(e => e.eventType === 'normal').length },
+   760→                      { name: 'Suspicious', value: networkEvents.filter(e => e.eventType === 'suspicious').length },
+   761→                      { name: 'Malicious', value: networkEvents.filter(e => e.eventType === 'malicious').length },
+   762→                    ]}
+   763→                    cx="50%" cy="50%" innerRadius={45} outerRadius={75} dataKey="value" stroke="none"
+   764→                    label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
+   765→                  >
+   766→                    <Cell fill="#3b82f6" />
+   767→                    <Cell fill="#f59e0b" />
+   768→                    <Cell fill="#ef4444" />
+   769→                  </Pie>
+   770→                  <Tooltip {...CHART_TOOLTIP_STYLE} />
+   771→                </PieChart>
+   772→              </ResponsiveContainer>
+   773→            </div>
+   774→          </CardContent>
+   775→        </Card>
+   776→
+   777→        <Card className="bg-[#111827]/80 border-gray-800/60">
+   778→          <CardHeader className="pb-2">
+   779→            <CardTitle className="text-sm font-semibold text-gray-300">Hourly Detection Rate</CardTitle>
+   780→            <CardDescription className="text-xs text-gray-500">Malicious events detected per hour</CardDescription>
+   781→          </CardHeader>
+   782→          <CardContent>
+   783→            <div className="h-56">
+   784→              <ResponsiveContainer width="100%" height="100%">
+   785→                <BarChart data={timeSeriesData}>
+   786→                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+   787→                  <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 10 }} interval={2} />
+   788→                  <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} />
+   789→                  <Tooltip {...CHART_TOOLTIP_STYLE} />
+   790→                  <Bar dataKey="malicious" name="Malicious Events" radius={[3, 3, 0, 0]}>
+   791→                    {timeSeriesData.map((entry, i) => (
+   792→                      <Cell key={i} fill={entry.malicious > 10 ? '#ef4444' : entry.malicious > 5 ? '#f59e0b' : '#f59e0b80'} />
+   793→                    ))}
+   794→                  </Bar>
+   795→                </BarChart>
+   796→              </ResponsiveContainer>
+   797→            </div>
+   798→          </CardContent>
+   799→        </Card>
+   800→      </div>
+   801→    </div>
+   802→  );
+   803→}
+   804→
+   805→// ═══════════════════════════════════════════════════════════════════
+   806→// PAGE 3: DATASETS
+   807→// ═══════════════════════════════════════════════════════════════════
+   808→function DatasetsPage({ datasets, onUploadClick }: {
+   809→  datasets: UploadedDataset[];
+   810→  onUploadClick: () => void;
+   811→}) {
+   812→  return (
+   813→    <div className="space-y-6">
+   814→      {/* Upload Banner */}
+   815→      <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20">
+   816→        <CardContent className="p-5 flex items-center justify-between">
+   817→          <div className="flex items-center gap-4">
+   818→            <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
+   819→              <Upload className="w-6 h-6 text-blue-400" />
+   820→            </div>
+   821→            <div>
+   822→              <h3 className="text-sm font-semibold text-white">Upload Log Dataset</h3>
+   823→              <p className="text-xs text-gray-400 mt-0.5">
+   824→                Upload network logs in CSV, JSON, Syslog, NetFlow, Wazuh, Zeek, or other supported formats for TGNN analysis.
+   825→              </p>
+   826→            </div>
+   827→          </div>
+   828→          <Button className="bg-blue-500 hover:bg-blue-600 text-white" onClick={onUploadClick}>
+   829→            <FileUp className="w-4 h-4 mr-2" /> Upload Dataset
+   830→          </Button>
+   831→        </CardContent>
+   832→      </Card>
+   833→
+   834→      {/* Quick Upload Formats */}
+   835→      <Card className="bg-[#111827]/80 border-gray-800/60">
+   836→        <CardHeader className="pb-2">
+   837→          <CardTitle className="text-sm font-semibold text-gray-300">Supported Log Formats</CardTitle>
+   838→          <CardDescription className="text-xs text-gray-500">TGDetect V16 Apex supports the following data ingestion formats</CardDescription>
+   839→        </CardHeader>
+   840→        <CardContent>
+   841→          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+   842→            {supportedLogFormats.map((fmt, i) => {
+   843→              const FmtIcon = formatIcon[fmt.icon] || FileText;
+   844→              return (
+   845→                <div key={i} className="rounded-lg border border-gray-800/40 bg-[#0d1120]/50 p-3 hover:border-gray-700/60 transition-colors">
+   846→                  <div className="flex items-center gap-2 mb-1.5">
+   847→                    <FmtIcon className="w-3.5 h-3.5 text-blue-400" />
+   848→                    <span className="text-xs font-medium text-gray-300">{fmt.name}</span>
+   849→                  </div>
+   850→                  <p className="text-[10px] text-gray-500 leading-relaxed">{fmt.desc}</p>
+   851→                  <p className="text-[9px] text-blue-400/60 mt-1 font-mono">{fmt.ext}</p>
+   852→                </div>
+   853→              );
+   854→            })}
+   855→          </div>
+   856→        </CardContent>
+   857→      </Card>
+   858→
+   859→      {/* Uploaded Datasets Table */}
+   860→      <Card className="bg-[#111827]/80 border-gray-800/60">
+   861→        <CardHeader className="pb-2">
+   862→          <div className="flex items-center justify-between">
+   863→            <div>
+   864→              <CardTitle className="text-sm font-semibold text-gray-300">Loaded Datasets</CardTitle>
+   865→              <CardDescription className="text-xs text-gray-500">Currently loaded log datasets for analysis</CardDescription>
+   866→            </div>
+   867→            <Badge variant="outline" className="border-gray-700 text-gray-400 text-xs">{datasets.length} datasets</Badge>
+   868→          </div>
+   869→        </CardHeader>
+   870→        <CardContent>
+   871→          <div className="overflow-x-auto">
+   872→            <table className="w-full text-xs">
+   873→              <thead>
+   874→                <tr className="border-b border-gray-800/60">
+   875→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Dataset</th>
+   876→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Format</th>
+   877→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Size</th>
+   878→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Events</th>
+   879→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Source</th>
+   880→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Uploaded</th>
+   881→                  <th className="text-left text-gray-500 font-medium py-2">Status</th>
+   882→                </tr>
+   883→              </thead>
+   884→              <tbody>
+   885→                {datasets.map((ds) => (
+   886→                  <tr key={ds.id} className="border-b border-gray-800/30 hover:bg-gray-800/20 transition-colors">
+   887→                    <td className="py-2.5 pr-4">
+   888→                      <div className="flex items-center gap-2">
+   889→                        <FileText className="w-3.5 h-3.5 text-gray-500" />
+   890→                        <span className="text-gray-300 font-medium">{ds.name}</span>
+   891→                      </div>
+   892→                    </td>
+   893→                    <td className="py-2.5 pr-4">
+   894→                      <Badge variant="outline" className="border-gray-700 text-gray-400 text-[10px] px-1.5">{ds.format}</Badge>
+   895→                    </td>
+   896→                    <td className="py-2.5 pr-4 text-gray-400">{ds.size}</td>
+   897→                    <td className="py-2.5 pr-4 text-gray-400">{ds.events.toLocaleString()}</td>
+   898→                    <td className="py-2.5 pr-4 text-gray-400">{ds.source}</td>
+   899→                    <td className="py-2.5 pr-4 text-gray-400">{new Date(ds.uploadedAt).toLocaleDateString()}</td>
+   900→                    <td className="py-2.5">
+   901→                      <div className="flex items-center gap-1.5">
+   902→                        <div className={`w-1.5 h-1.5 rounded-full ${ds.status === 'processed' ? 'bg-emerald-400' : ds.status === 'pending' ? 'bg-amber-400' : 'bg-red-400'}`} />
+   903→                        <span className="text-gray-400 capitalize">{ds.status}</span>
+   904→                      </div>
+   905→                    </td>
+   906→                  </tr>
+   907→                ))}
+   908→              </tbody>
+   909→            </table>
+   910→          </div>
+   911→        </CardContent>
+   912→      </Card>
+   913→    </div>
+   914→  );
+   915→}
+   916→
+   917→// ═══════════════════════════════════════════════════════════════════
+   918→// PAGE 4: PROFILES
+   919→// ═══════════════════════════════════════════════════════════════════
+   920→function ProfilesPage({ profiles, activeProfile, onSelectProfile, onCreateClick, onDeleteProfile }: {
+   921→  profiles: UserProfile[];
+   922→  activeProfile: string;
+   923→  onSelectProfile: (id: string) => void;
+   924→  onCreateClick: () => void;
+   925→  onDeleteProfile: (id: string) => void;
+   926→}) {
+   927→  return (
+   928→    <div className="space-y-6">
+   929→      {/* Header with Create */}
+   930→      <div className="flex items-center justify-between">
+   931→        <div>
+   932→          <h3 className="text-sm font-semibold text-white">Analysis Profiles</h3>
+   933→          <p className="text-xs text-gray-500 mt-0.5">Create profiles to manage different datasets and configurations</p>
+   934→        </div>
+   935→        <Button className="bg-blue-500 hover:bg-blue-600 text-white" onClick={onCreateClick}>
+   936→          <Plus className="w-4 h-4 mr-1.5" /> Create Profile
+   937→        </Button>
+   938→      </div>
+   939→
+   940→      {/* Profile Cards */}
+   941→      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+   942→        {profiles.map((profile) => {
+   943→          const isActive = profile.id === activeProfile;
+   944→          return (
+   945→            <Card key={profile.id} className={`bg-[#111827]/80 border transition-colors ${
+   946→              isActive ? 'border-blue-500/40 shadow-lg shadow-blue-500/5' : 'border-gray-800/60 hover:border-gray-700/60'
+   947→            }`}>
+   948→              <CardHeader className="pb-2">
+   949→                <div className="flex items-start justify-between">
+   950→                  <div className="flex items-center gap-2">
+   951→                    <UserCircle className={`w-4 h-4 ${isActive ? 'text-blue-400' : 'text-gray-600'}`} />
+   952→                    <CardTitle className="text-sm font-semibold text-gray-200">{profile.name}</CardTitle>
+   953→                  </div>
+   954→                  {isActive && (
+   955→                    <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 text-[9px]">Active</Badge>
+   956→                  )}
+   957→                </div>
+   958→                <CardDescription className="text-[11px] text-gray-500">{profile.description}</CardDescription>
+   959→              </CardHeader>
+   960→              <CardContent className="space-y-3">
+   961→                <div className="grid grid-cols-2 gap-2">
+   962→                  <div className="rounded-lg bg-[#0d1120]/50 border border-gray-800/30 px-2.5 py-1.5">
+   963→                    <p className="text-[9px] text-gray-600 uppercase">Dataset</p>
+   964→                    <p className="text-[11px] text-gray-300 font-medium">{profile.dataset}</p>
+   965→                  </div>
+   966→                  <div className="rounded-lg bg-[#0d1120]/50 border border-gray-800/30 px-2.5 py-1.5">
+   967→                    <p className="text-[9px] text-gray-600 uppercase">Modified</p>
+   968→                    <p className="text-[11px] text-gray-300 font-medium">{new Date(profile.lastModified).toLocaleDateString()}</p>
+   969→                  </div>
+   970→                </div>
+   971→
+   972→                {/* Config Preview */}
+   973→                <div>
+   974→                  <p className="text-[9px] text-gray-600 uppercase tracking-wider mb-1.5">V16 Apex Config</p>
+   975→                  <div className="grid grid-cols-3 gap-1.5">
+   976→                    {[
+   977→                      { label: 'Window', value: `${profile.config.temporalWindow}s` },
+   978→                      { label: 'Heads', value: profile.config.numHeads.toString() },
+   979→                      { label: 'Layers', value: profile.config.nLayers.toString() },
+   980→                      { label: 'Memory', value: profile.config.memoryDim.toString() },
+   981→                      { label: 'Embed', value: profile.config.embedDim.toString() },
+   982→                      { label: 'Threshold', value: profile.config.threshold.toString() },
+   983→                    ].map((c, i) => (
+   984→                      <div key={i} className="rounded bg-[#0a0e1a] px-1.5 py-1 text-center">
+   985→                        <p className="text-[8px] text-gray-600">{c.label}</p>
+   986→                        <p className="text-[10px] text-blue-400 font-mono">{c.value}</p>
+   987→                      </div>
+   988→                    ))}
+   989→                  </div>
+   990→                </div>
+   991→
+   992→                {/* Actions */}
+   993→                <div className="flex items-center gap-2 pt-1">
+   994→                  <Button
+   995→                    variant="outline"
+   996→                    size="sm"
+   997→                    className={`flex-1 text-[10px] h-7 ${
+   998→                      isActive ? 'border-blue-500/30 text-blue-400 bg-blue-500/5' : 'border-gray-700 text-gray-400'
+   999→                    }`}
+  1000→                    onClick={() => onSelectProfile(profile.id)}
+  1001→                  >
+  1002→                    {isActive ? 'Currently Active' : 'Set Active'}
+  1003→                  </Button>
+  1004→                  <Button
+  1005→                    variant="ghost"
+  1006→                    size="sm"
+  1007→                    className="text-gray-500 hover:text-red-400 h-7 w-7 p-0"
+  1008→                    onClick={() => onDeleteProfile(profile.id)}
+  1009→                  >
+  1010→                    <Trash2 className="w-3 h-3" />
+  1011→                  </Button>
+  1012→                </div>
+  1013→              </CardContent>
+  1014→            </Card>
+  1015→          );
+  1016→        })}
+  1017→
+  1018→        {/* Empty State - Create Card */}
+  1019→        {profiles.length === 0 && (
+  1020→          <Card className="bg-[#111827]/40 border-gray-800/40 border-dashed lg:col-span-3">
+  1021→            <CardContent className="p-8 flex flex-col items-center justify-center text-center">
+  1022→              <UserCircle className="w-10 h-10 text-gray-700 mb-3" />
+  1023→              <p className="text-sm text-gray-500">No profiles yet</p>
+  1024→              <p className="text-xs text-gray-600 mt-1">Create a profile to start analyzing different datasets</p>
+  1025→              <Button className="mt-4 bg-blue-500 hover:bg-blue-600 text-white text-xs" onClick={onCreateClick}>
+  1026→                <Plus className="w-3.5 h-3.5 mr-1.5" /> Create Your First Profile
+  1027→              </Button>
+  1028→            </CardContent>
+  1029→          </Card>
+  1030→        )}
+  1031→      </div>
+  1032→    </div>
+  1033→  );
+  1034→}
+  1035→

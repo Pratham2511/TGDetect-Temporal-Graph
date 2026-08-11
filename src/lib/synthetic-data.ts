@@ -348,6 +348,121 @@ export function generateUploadedDatasets(): UploadedDataset[] {
   ];
 }
 
+// ── Per-Source Time Series ───────────────────────────────────────
+export interface SourceTimeSeriesPoint {
+  time: string;
+  darpa: number;
+  unsw: number;
+  lanl: number;
+  fused: number;
+}
+
+export function generateSourceTimeSeries(): SourceTimeSeriesPoint[] {
+  const data: SourceTimeSeriesPoint[] = [];
+  for (let i = 0; i < 24; i++) {
+    const isPeak = i >= 8 && i <= 18;
+    const spike = (i === 14 || i === 15) ? 12 : 0;
+    const darpa = isPeak ? 25 + Math.floor(rand() * 15) + spike : 8 + Math.floor(rand() * 8);
+    const unsw = isPeak ? 20 + Math.floor(rand() * 12) + Math.floor(spike * 0.6) : 6 + Math.floor(rand() * 6);
+    const lanl = isPeak ? 35 + Math.floor(rand() * 20) + Math.floor(spike * 0.8) : 10 + Math.floor(rand() * 10);
+    data.push({
+      time: `${String(i).padStart(2, '0')}:00`,
+      darpa,
+      unsw,
+      lanl,
+      fused: darpa + unsw + lanl,
+    });
+  }
+  return data;
+}
+
+// ── Source Detection Metrics ─────────────────────────────────────
+export interface SourceMetric {
+  source: string;
+  totalEvents: number;
+  malicious: number;
+  detectionRate: number;
+  avgConfidence: number;
+  topTactic: string;
+}
+
+export function generateSourceMetrics(): SourceMetric[] {
+  return [
+    { source: 'DARPA TC', totalEvents: 1847291, malicious: 2341, detectionRate: 97.8, avgConfidence: 96.2, topTactic: 'Exfiltration' },
+    { source: 'UNSW-NB15', totalEvents: 175341, malicious: 4523, detectionRate: 94.5, avgConfidence: 93.8, topTactic: 'Lateral Movement' },
+    { source: 'LANL NetFlow', totalEvents: 5243876, malicious: 1876, detectionRate: 96.1, avgConfidence: 95.4, topTactic: 'C2 Communication' },
+  ];
+}
+
+// ── Concept Drift Data (Objective 2) ──────────────────────────────
+export interface DriftPoint {
+  epoch: number;
+  withAdaptation: number;
+  withoutAdaptation: number;
+}
+
+export function generateConceptDriftData(): DriftPoint[] {
+  const data: DriftPoint[] = [];
+  for (let i = 1; i <= 20; i++) {
+    data.push({
+      epoch: i,
+      withAdaptation: Math.round((96.5 - i * 0.15 + rand() * 2) * 10) / 10,
+      withoutAdaptation: Math.round((96.5 - i * 1.8 + rand() * 3) * 10) / 10,
+    });
+  }
+  return data;
+}
+
+// ── Attack Backtracking Chain (Objective 3) ──────────────────────
+export interface AttackChainStep {
+  step: number;
+  event: string;
+  timestamp: string;
+  tactic: string;
+  node: string;
+  evidence: string;
+  attentionWeight: number;
+  confidence: number;
+}
+
+export function generateAttackChain(): AttackChainStep[] {
+  return [
+    { step: 1, event: 'Spear-phishing email delivered', timestamp: '08:14:22', tactic: 'Initial Access', node: '192.168.1.35', evidence: 'Email attachment with .docm macro', attentionWeight: 0.94, confidence: 98.7 },
+    { step: 2, event: 'Malicious macro executed PowerShell', timestamp: '08:15:03', tactic: 'Execution', node: '192.168.1.35', evidence: 'cmd.exe /c powershell -enc ...', attentionWeight: 0.91, confidence: 97.2 },
+    { step: 3, event: 'Registry persistence key created', timestamp: '08:16:11', tactic: 'Persistence', node: '192.168.1.35', evidence: 'HKCU\\...\\Run\\UpdateService', attentionWeight: 0.88, confidence: 96.5 },
+    { step: 4, event: 'Mimikatz credential dump', timestamp: '08:22:47', tactic: 'Credential Access', node: '192.168.1.35', evidence: 'sekurlsa::logonpasswords', attentionWeight: 0.96, confidence: 99.1 },
+    { step: 5, event: 'Lateral movement via WMI', timestamp: '09:01:33', tactic: 'Lateral Movement', node: '192.168.1.35 → 10.0.0.12', evidence: 'wmic /node:10.0.0.12 process call', attentionWeight: 0.92, confidence: 97.8 },
+    { step: 6, event: 'Privilege escalation via token', timestamp: '09:05:18', tactic: 'Privilege Escalation', node: '10.0.0.12', evidence: 'Get-NetworkConnectionInfo token impersonation', attentionWeight: 0.89, confidence: 96.3 },
+    { step: 7, event: 'Data staged in hidden directory', timestamp: '09:45:02', tactic: 'Collection', node: '10.0.0.12', evidence: 'C:\\$RecycleBin\\...\\staging\\', attentionWeight: 0.85, confidence: 95.1 },
+    { step: 8, event: 'DNS tunneling C2 beacon', timestamp: '10:12:55', tactic: 'Command & Control', node: '10.0.0.12 → 23.129.64.100', evidence: 'Long TXT query to 4g2d.evil.com', attentionWeight: 0.97, confidence: 99.3 },
+    { step: 9, event: 'Data exfiltration via HTTPS', timestamp: '11:03:41', tactic: 'Exfiltration', node: '10.0.0.12 → 104.236.198.48', evidence: '2.4GB encrypted POST to /api/v2/upload', attentionWeight: 0.98, confidence: 99.6 },
+  ];
+}
+
+// ── Temporal Explainability (Objective 4) ─────────────────────────
+export interface ExplainabilityEntry {
+  eventId: string;
+  timestamp: string;
+  source: string;
+  tactic: string;
+  attentionWeight: number;
+  temporalContribution: number;
+  graphNeighborhood: number;
+  classification: string;
+  reasoning: string;
+}
+
+export function generateExplainabilityData(): ExplainabilityEntry[] {
+  return [
+    { eventId: 'TGD-0001', timestamp: '08:14:22', source: 'DARPA', tactic: 'Initial Access', attentionWeight: 0.94, temporalContribution: 0.31, graphNeighborhood: 4, classification: 'Malicious', reasoning: 'First event in causal chain — email→endpoint edge with high burst score' },
+    { eventId: 'TGD-0003', timestamp: '08:15:03', source: 'DARPA', tactic: 'Execution', attentionWeight: 0.91, temporalContribution: 0.28, graphNeighborhood: 5, classification: 'Malicious', reasoning: 'Temporal proximity to initial access + unusual process spawn pattern' },
+    { eventId: 'TGD-0005', timestamp: '08:22:47', source: 'DARPA', tactic: 'Credential Access', attentionWeight: 0.96, temporalContribution: 0.42, graphNeighborhood: 7, classification: 'Malicious', reasoning: 'High attention due to rare LSASS access + temporal correlation with lateral movement' },
+    { eventId: 'TGD-0007', timestamp: '09:01:33', source: 'LANL', tactic: 'Lateral Movement', attentionWeight: 0.92, temporalContribution: 0.38, graphNeighborhood: 6, classification: 'Malicious', reasoning: 'Cross-subnet connection matching pass-the-hash pattern + temporal burst' },
+    { eventId: 'TGD-0009', timestamp: '10:12:55', source: 'UNSW', tactic: 'Command & Control', attentionWeight: 0.97, temporalContribution: 0.45, graphNeighborhood: 8, classification: 'Malicious', reasoning: 'Periodic DNS beacon detected via temporal encoding + high rarity score' },
+    { eventId: 'TGD-0012', timestamp: '11:03:41', source: 'UNSW', tactic: 'Exfiltration', attentionWeight: 0.98, temporalContribution: 0.51, graphNeighborhood: 9, classification: 'Malicious', reasoning: 'Large outbound transfer to rare external node + temporal correlation with C2 phase' },
+  ];
+}
+
 export const supportedLogFormats = [
   { name: 'CSV', desc: 'Comma-separated values (columns: src_ip, dst_ip, timestamp, ...)', ext: '.csv', icon: 'table' as const },
   { name: 'JSON Lines', desc: 'One JSON object per line with event fields', ext: '.jsonl', icon: 'braces' as const },
