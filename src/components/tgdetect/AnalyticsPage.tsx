@@ -38,11 +38,7 @@ import {
   GitBranch,
   Search,
   Eye,
-  Zap,
-  Lock,
-  Globe,
   ChevronRight,
-  AlertTriangle,
   Target,
   Layers,
   TrendingUp,
@@ -67,21 +63,12 @@ import type {
   AttackChainStep,
   ExplainabilityEntry,
 } from '@/lib/synthetic-data';
+import { useTheme } from '@/lib/theme-context';
 
 // ── Constants ──────────────────────────────────────────────────────────
 
-const CHART_TOOLTIP_STYLE = {
-  contentStyle: {
-    backgroundColor: '#1f2937',
-    border: '1px solid #374151',
-    borderRadius: 8,
-    fontSize: 12,
-  },
-  labelStyle: { color: '#9ca3af' },
-};
-
 const chartFormatter = (v: number) =>
-  typeof v === 'number' ? (v % 1 === 0 ? v : v.toFixed(3)) : v;
+  typeof v === 'number' ? (v % 1 === 0 ? String(v) : v.toFixed(3)) : String(v);
 
 const TACTIC_COLORS: Record<string, string> = {
   'Reconnaissance': 'text-blue-400',
@@ -138,38 +125,7 @@ const SOURCE_COLORS: Record<string, string> = {
   Fused: '#10b981',
 };
 
-const SOURCE_ACCENT: Record<string, string> = {
-  'DARPA TC': 'blue',
-  'UNSW-NB15': 'purple',
-  'LANL NetFlow': 'cyan',
-};
-
 // ── Helper Components ──────────────────────────────────────────────────
-
-function ObjectiveHeader({
-  number,
-  title,
-  description,
-  icon: Icon,
-}: {
-  number: number;
-  title: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-}) {
-  return (
-    <div className="mb-6">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-400/10 border border-emerald-400/30">
-          <span className="text-emerald-400 font-bold text-sm">{number}</span>
-        </div>
-        <h2 className="text-xl font-semibold text-gray-100">{title}</h2>
-        <Icon className="w-5 h-5 text-emerald-400" />
-      </div>
-      <p className="text-gray-400 text-sm ml-11">{description}</p>
-    </div>
-  );
-}
 
 function SourceIcon({ source }: { source: string }) {
   switch (source) {
@@ -180,7 +136,7 @@ function SourceIcon({ source }: { source: string }) {
     case 'LANL NetFlow':
       return <Activity className="w-4 h-4 text-cyan-400" />;
     default:
-      return <Database className="w-4 h-4 text-gray-400" />;
+      return <Database className="w-4 h-4 text-[var(--text-secondary)]" />;
   }
 }
 
@@ -195,6 +151,18 @@ function formatNumber(n: number): string {
 function SourceAnalysisTab() {
   const sourceMetrics = useMemo(() => generateSourceMetrics(), []);
   const sourceTimeSeries = useMemo(() => generateSourceTimeSeries(), []);
+  const { theme } = useTheme();
+
+  const axisColor = theme === 'dark' ? '#6b7280' : '#64748b';
+  const gridColor = theme === 'dark' ? '#1f2937' : '#e2e8f0';
+  const axisLineColor = theme === 'dark' ? '#374151' : '#cbd5e1';
+  const chartTooltipStyle = theme === 'dark' ? {
+    contentStyle: { backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8, fontSize: 12, color: '#9ca3af' },
+    labelStyle: { color: '#9ca3af' },
+  } : {
+    contentStyle: { backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#475569' },
+    labelStyle: { color: '#475569' },
+  };
 
   // Build stacked bar data
   const stackedBarData = useMemo(() => {
@@ -212,19 +180,19 @@ function SourceAnalysisTab() {
         {sourceMetrics.map((metric: SourceMetric) => (
           <Card
             key={metric.source}
-            className="bg-[#111827]/80 border-gray-800/60"
+            className="bg-[var(--bg-card)] border-[var(--border-primary)]"
           >
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <SourceIcon source={metric.source} />
-                  <CardTitle className="text-sm font-medium text-gray-200">
+                  <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
                     {metric.source}
                   </CardTitle>
                 </div>
                 <Badge
                   variant="outline"
-                  className="text-[10px] border-gray-700 text-gray-400"
+                  className="text-[10px] border-[var(--border-secondary)] text-[var(--text-secondary)]"
                 >
                   {metric.topTactic}
                 </Badge>
@@ -232,16 +200,16 @@ function SourceAnalysisTab() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-[#0d1120]/50 rounded-lg p-3">
-                  <p className="text-[11px] text-gray-500 uppercase tracking-wider">
+                <div className="bg-[var(--bg-input)] rounded-lg p-3">
+                  <p className="text-[11px] text-[var(--text-muted)] uppercase tracking-wider">
                     Total Events
                   </p>
-                  <p className="text-lg font-semibold text-gray-200 mt-1">
+                  <p className="text-lg font-semibold text-[var(--text-secondary)] mt-1">
                     {formatNumber(metric.totalEvents)}
                   </p>
                 </div>
-                <div className="bg-[#0d1120]/50 rounded-lg p-3">
-                  <p className="text-[11px] text-gray-500 uppercase tracking-wider">
+                <div className="bg-[var(--bg-input)] rounded-lg p-3">
+                  <p className="text-[11px] text-[var(--text-muted)] uppercase tracking-wider">
                     Malicious
                   </p>
                   <p className="text-lg font-semibold text-red-400 mt-1">
@@ -251,24 +219,24 @@ function SourceAnalysisTab() {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-500">Detection Rate</span>
+                  <span className="text-[var(--text-muted)]">Detection Rate</span>
                   <span className="text-emerald-400 font-medium">
                     {metric.detectionRate}%
                   </span>
                 </div>
                 <Progress
                   value={metric.detectionRate}
-                  className="h-1.5 bg-gray-800"
+                  className="h-1.5 bg-[var(--bg-input)]"
                 />
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-500">Avg Confidence</span>
+                  <span className="text-[var(--text-muted)]">Avg Confidence</span>
                   <span className="text-blue-400 font-medium">
                     {metric.avgConfidence}%
                   </span>
                 </div>
                 <Progress
                   value={metric.avgConfidence}
-                  className="h-1.5 bg-gray-800"
+                  className="h-1.5 bg-[var(--bg-input)]"
                 />
               </div>
             </CardContent>
@@ -277,12 +245,12 @@ function SourceAnalysisTab() {
       </div>
 
       {/* Multi-line Detection Chart */}
-      <Card className="bg-[#111827]/80 border-gray-800/60">
+      <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-200">
+          <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
             Detection Counts Over 24h — Per Source
           </CardTitle>
-          <CardDescription className="text-xs text-gray-500">
+          <CardDescription className="text-xs text-[var(--text-muted)]">
             Real-time detection counts from each log source over a 24-hour
             window
           </CardDescription>
@@ -296,19 +264,19 @@ function SourceAnalysisTab() {
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="#1f2937"
+                  stroke={gridColor}
                 />
                 <XAxis
                   dataKey="time"
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
-                  axisLine={{ stroke: '#374151' }}
+                  tick={{ fill: axisColor, fontSize: 11 }}
+                  axisLine={{ stroke: axisLineColor }}
                 />
                 <YAxis
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
-                  axisLine={{ stroke: '#374151' }}
-                  formatter={chartFormatter}
+                  tick={{ fill: axisColor, fontSize: 11 }}
+                  axisLine={{ stroke: axisLineColor }}
+                  tickFormatter={chartFormatter}
                 />
-                <Tooltip {...CHART_TOOLTIP_STYLE} />
+                <Tooltip {...chartTooltipStyle} />
                 <Legend
                   wrapperStyle={{ fontSize: 12 }}
                   iconType="line"
@@ -347,9 +315,9 @@ function SourceAnalysisTab() {
       </Card>
 
       {/* Stacked Bar Chart — Total Events */}
-      <Card className="bg-[#111827]/80 border-gray-800/60">
+      <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-200">
+          <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
             Total Event Volume by Source
           </CardTitle>
         </CardHeader>
@@ -362,20 +330,20 @@ function SourceAnalysisTab() {
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="#1f2937"
+                  stroke={gridColor}
                 />
                 <XAxis
                   dataKey="source"
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
-                  axisLine={{ stroke: '#374151' }}
+                  tick={{ fill: axisColor, fontSize: 11 }}
+                  axisLine={{ stroke: axisLineColor }}
                 />
                 <YAxis
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
-                  axisLine={{ stroke: '#374151' }}
+                  tick={{ fill: axisColor, fontSize: 11 }}
+                  axisLine={{ stroke: axisLineColor }}
                   tickFormatter={formatNumber}
                 />
                 <Tooltip
-                  {...CHART_TOOLTIP_STYLE}
+                  {...chartTooltipStyle}
                   formatter={(v: number) => formatNumber(v)}
                 />
                 <Bar
@@ -406,7 +374,7 @@ function SourceAnalysisTab() {
   );
 }
 
-// ── Tab 2: Fused Temporal Graph (Objective 1) ──────────────────────────
+// ── Tab 2: Fused Temporal Graph ─────────────────────────────────────────
 
 function FusedTemporalGraphTab() {
   const sourceTimeSeries = useMemo(
@@ -416,6 +384,18 @@ function FusedTemporalGraphTab() {
   const nodeTypes = useMemo(() => generateNodeTypeDistribution(), []);
   const edgeTypes = useMemo(() => generateEdgeTypeDistribution(), []);
   const sourceMetrics = useMemo(() => generateSourceMetrics(), []);
+  const { theme } = useTheme();
+
+  const axisColor = theme === 'dark' ? '#6b7280' : '#64748b';
+  const gridColor = theme === 'dark' ? '#1f2937' : '#e2e8f0';
+  const axisLineColor = theme === 'dark' ? '#374151' : '#cbd5e1';
+  const chartTooltipStyle = theme === 'dark' ? {
+    contentStyle: { backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8, fontSize: 12, color: '#9ca3af' },
+    labelStyle: { color: '#9ca3af' },
+  } : {
+    contentStyle: { backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#475569' },
+    labelStyle: { color: '#475569' },
+  };
 
   // Source contribution data for pie chart
   const sourceContribution = useMemo(() => {
@@ -443,23 +423,39 @@ function FusedTemporalGraphTab() {
 
   return (
     <div className="space-y-6">
-      <ObjectiveHeader
-        number={1}
-        title="Heterogeneous Continuous-Time TGNN Fusion"
-        description="Fuses DARPA, UNSW, LANL log sources into a unified temporal graph for modeling multi-step cyberattack patterns"
-        icon={Layers}
-      />
+      {/* Detailed Explanation Card */}
+      <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-emerald-400" />
+            <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
+              Heterogeneous Continuous-Time TGNN Fusion
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-3">
+            TGDetect ingests heterogeneous log sources — <span className="text-blue-400 font-medium">DARPA TC v3</span> (enterprise network engagements with full PCAP), <span className="text-purple-400 font-medium">UNW-NB15</span> (labeled network behavior with 9 attack families), and <span className="text-cyan-400 font-medium">LANL NetFlow</span> (unlabeled enterprise traffic with 1.8B+ flows) — each with fundamentally different schemas, event types, and temporal resolutions.
+          </p>
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-3">
+            The TGNN encoder maps all events from every source into a shared embedding space with <span className="text-blue-400 font-medium">embed_dim=64</span>, normalizing across heterogeneous feature sets. Temporal edges are then constructed between events that occur within configurable time windows (default: 300s), creating a unified temporal graph where nodes from different sources can participate in the same temporal neighborhoods.
+          </p>
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+            This fused graph enables cross-source correlation that would be impossible in siloed analysis. For example, a DNS tunneling alert detected in UNSW-NB15 combined with a large outbound data transfer observed in LANL NetFlow within the same temporal window strengthens the detection of a complete C2→Exfiltration chain, increasing the fused graph score beyond what either source could produce independently.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Fused Graph Score Line Chart */}
-      <Card className="bg-[#111827]/80 border-gray-800/60">
+      <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <GitBranch className="w-4 h-4 text-emerald-400" />
-            <CardTitle className="text-sm font-medium text-gray-200">
+            <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
               Fused Temporal Graph — Detection Score Over Time
             </CardTitle>
           </div>
-          <CardDescription className="text-xs text-gray-500">
+          <CardDescription className="text-xs text-[var(--text-muted)]">
             Combined detection signal from all three heterogeneous log sources
             after TGNN fusion
           </CardDescription>
@@ -493,19 +489,19 @@ function FusedTemporalGraphTab() {
                 </defs>
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="#1f2937"
+                  stroke={gridColor}
                 />
                 <XAxis
                   dataKey="time"
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
-                  axisLine={{ stroke: '#374151' }}
+                  tick={{ fill: axisColor, fontSize: 11 }}
+                  axisLine={{ stroke: axisLineColor }}
                 />
                 <YAxis
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
-                  axisLine={{ stroke: '#374151' }}
-                  formatter={chartFormatter}
+                  tick={{ fill: axisColor, fontSize: 11 }}
+                  axisLine={{ stroke: axisLineColor }}
+                  tickFormatter={chartFormatter}
                 />
-                <Tooltip {...CHART_TOOLTIP_STYLE} />
+                <Tooltip {...chartTooltipStyle} />
                 <Legend
                   wrapperStyle={{ fontSize: 12 }}
                 />
@@ -553,9 +549,9 @@ function FusedTemporalGraphTab() {
       {/* Pie + Bar Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Node Type Pie */}
-        <Card className="bg-[#111827]/80 border-gray-800/60">
+        <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-200">
+            <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
               Node Type Distribution
             </CardTitle>
           </CardHeader>
@@ -579,7 +575,7 @@ function FusedTemporalGraphTab() {
                     ))}
                   </Pie>
                   <Tooltip
-                    {...CHART_TOOLTIP_STYLE}
+                    {...chartTooltipStyle}
                     formatter={(v: number) => `${v}%`}
                   />
                   <Legend
@@ -594,9 +590,9 @@ function FusedTemporalGraphTab() {
         </Card>
 
         {/* Edge Type Bar */}
-        <Card className="bg-[#111827]/80 border-gray-800/60">
+        <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-200">
+            <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
               Edge Type Distribution
             </CardTitle>
           </CardHeader>
@@ -615,22 +611,22 @@ function FusedTemporalGraphTab() {
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke="#1f2937"
+                    stroke={gridColor}
                     horizontal={false}
                   />
                   <XAxis
                     type="number"
-                    tick={{ fill: '#6b7280', fontSize: 11 }}
-                    axisLine={{ stroke: '#374151' }}
+                    tick={{ fill: axisColor, fontSize: 11 }}
+                    axisLine={{ stroke: axisLineColor }}
                   />
                   <YAxis
                     type="category"
                     dataKey="name"
-                    tick={{ fill: '#9ca3af', fontSize: 10 }}
-                    axisLine={{ stroke: '#374151' }}
+                    tick={{ fill: theme === 'dark' ? '#9ca3af' : '#475569', fontSize: 10 }}
+                    axisLine={{ stroke: axisLineColor }}
                     width={75}
                   />
-                  <Tooltip {...CHART_TOOLTIP_STYLE} />
+                  <Tooltip {...chartTooltipStyle} />
                   <Bar
                     dataKey="value"
                     name="Count"
@@ -647,9 +643,9 @@ function FusedTemporalGraphTab() {
         </Card>
 
         {/* Source Contribution Pie */}
-        <Card className="bg-[#111827]/80 border-gray-800/60">
+        <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-200">
+            <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
               Source Contribution
             </CardTitle>
           </CardHeader>
@@ -674,7 +670,7 @@ function FusedTemporalGraphTab() {
                     ))}
                   </Pie>
                   <Tooltip
-                    {...CHART_TOOLTIP_STYLE}
+                    {...chartTooltipStyle}
                     formatter={(v: number) => `${v}%`}
                   />
                 </PieChart>
@@ -687,30 +683,35 @@ function FusedTemporalGraphTab() {
   );
 }
 
-// ── Tab 3: Concept Drift (Objective 2) ─────────────────────────────────
+// ── Tab 3: Concept Drift ────────────────────────────────────────────────
 
 function ConceptDriftTab() {
   const driftData = useMemo(() => generateConceptDriftData(), []);
+  const { theme } = useTheme();
+
+  const axisColor = theme === 'dark' ? '#6b7280' : '#64748b';
+  const gridColor = theme === 'dark' ? '#1f2937' : '#e2e8f0';
+  const axisLineColor = theme === 'dark' ? '#374151' : '#cbd5e1';
+  const chartTooltipStyle = theme === 'dark' ? {
+    contentStyle: { backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8, fontSize: 12, color: '#9ca3af' },
+    labelStyle: { color: '#9ca3af' },
+  } : {
+    contentStyle: { backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#475569' },
+    labelStyle: { color: '#475569' },
+  };
 
   return (
     <div className="space-y-6">
-      <ObjectiveHeader
-        number={2}
-        title="Online Concept Drift Adaptation"
-        description="Continuously adapts to evolving attack patterns without degrading accuracy on previously learned patterns"
-        icon={Brain}
-      />
-
       {/* Drift Comparison Chart */}
-      <Card className="bg-[#111827]/80 border-gray-800/60">
+      <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
-            <CardTitle className="text-sm font-medium text-gray-200">
+            <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
               Detection Accuracy Over Training Epochs
             </CardTitle>
           </div>
-          <CardDescription className="text-xs text-gray-500">
+          <CardDescription className="text-xs text-[var(--text-muted)]">
             Comparison of model accuracy with and without concept drift
             adaptation over 20 training epochs
           </CardDescription>
@@ -762,28 +763,28 @@ function ConceptDriftTab() {
                 </defs>
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="#1f2937"
+                  stroke={gridColor}
                 />
                 <XAxis
                   dataKey="epoch"
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
-                  axisLine={{ stroke: '#374151' }}
+                  tick={{ fill: axisColor, fontSize: 11 }}
+                  axisLine={{ stroke: axisLineColor }}
                   label={{
                     value: 'Epoch',
                     position: 'insideBottom',
                     offset: -5,
-                    fill: '#6b7280',
+                    fill: axisColor,
                     fontSize: 11,
                   }}
                 />
                 <YAxis
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
-                  axisLine={{ stroke: '#374151' }}
+                  tick={{ fill: axisColor, fontSize: 11 }}
+                  axisLine={{ stroke: axisLineColor }}
                   domain={[50, 100]}
                   tickFormatter={(v: number) => `${v}%`}
                 />
                 <Tooltip
-                  {...CHART_TOOLTIP_STYLE}
+                  {...chartTooltipStyle}
                   formatter={(v: number) => `${v.toFixed(1)}%`}
                 />
                 <Legend
@@ -815,40 +816,44 @@ function ConceptDriftTab() {
         </CardContent>
       </Card>
 
-      {/* Explanation */}
-      <Card className="bg-[#111827]/80 border-gray-800/60">
+      {/* Detailed Explanation */}
+      <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-gray-200">
+          <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
             How Adaptation Works
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-xs text-gray-400 leading-relaxed mb-4">
-            As network traffic patterns evolve over time, static models
-            experience <span className="text-red-400 font-medium">concept drift</span> —
-            their accuracy degrades because the distribution of normal and
-            malicious behavior shifts. TGDetect addresses this through three
-            complementary mechanisms that enable continuous learning without
-            catastrophic forgetting of previously learned attack signatures.
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-4">
+            In network security, <span className="text-red-400 font-medium">concept drift</span> refers to the phenomenon where the statistical distribution of network traffic changes over time — new attack variants emerge, legitimate traffic patterns shift as organizations evolve, and adversaries continuously adapt their tactics to evade detection. A static model trained on historical data will inevitably degrade in accuracy as the gap between training distribution and operational distribution widens, creating dangerous blind spots that sophisticated threat actors can exploit.
+          </p>
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-4">
+            TGDetect's TGNN addresses this through three complementary mechanisms operating in concert. First, a <span className="text-blue-400 font-medium">Gradient Reversal Layer</span> applies adversarial training by reversing gradient flow from a domain classifier, forcing the shared encoder to learn source-invariant representations that generalize across DARPA, UNSW, and LANL distributions without overfitting to any single source's idiosyncrasies. Second, a <span className="text-purple-400 font-medium">Rehearsal Buffer</span> stores 10% of historical graph snapshots in a circular buffer and replays them alongside new data during each adaptation step, preventing catastrophic forgetting of previously learned attack signatures. Third, <span className="text-cyan-400 font-medium">Supervised Contrastive Loss</span> pulls embeddings of same-class events closer while pushing different-class events apart, creating well-separated temporal neighborhoods that remain stable even as the underlying data distribution shifts.
+          </p>
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-4">
+            The measurable impact is dramatic: as shown in the chart above, V16_Apex with all three mechanisms active maintains <span className="text-emerald-400 font-medium">97%+ accuracy over 20 consecutive training epochs</span>, while an identical architecture without adaptation degrades from 96.5% to approximately 60% as the data distribution drifts. This 37-percentage-point gap represents the difference between a system that remains operationally reliable and one that becomes progressively blind to emerging threats.
+          </p>
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+            For real-world deployment, this capability is essential. Advanced Persistent Threats (APTs) such as APT29, APT41, and Lazarus Group continuously evolve their tooling, infrastructure, and tradecraft — often shifting from one initial access vector to another within weeks. A detector that cannot adapt would require expensive and time-consuming manual retraining cycles, leaving organizations exposed during the gap. TGDetect's online adaptation ensures continuous, autonomous coverage without human intervention.
           </p>
         </CardContent>
       </Card>
 
       {/* Mechanism Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-[#111827]/80 border-gray-800/60">
+        <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-400/10 border border-blue-400/30">
                 <ArrowRightLeft className="w-4 h-4 text-blue-400" />
               </div>
-              <CardTitle className="text-sm font-medium text-gray-200">
+              <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
                 Gradient Reversal Layer
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-gray-400 leading-relaxed">
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
               Adversarial training component that reverses gradient flow from
               the domain classifier, forcing the shared encoder to learn
               <span className="text-blue-400"> source-invariant representations</span>.
@@ -858,19 +863,19 @@ function ConceptDriftTab() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[#111827]/80 border-gray-800/60">
+        <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-400/10 border border-purple-400/30">
                 <RefreshCw className="w-4 h-4 text-purple-400" />
               </div>
-              <CardTitle className="text-sm font-medium text-gray-200">
+              <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
                 Rehearsal Buffer (10% Snapshots)
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-gray-400 leading-relaxed">
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
               Stores 10% of historical graph snapshots in a circular buffer.
               During each adaptation step, stored examples are replayed alongside
               new data, preventing{' '}
@@ -880,19 +885,19 @@ function ConceptDriftTab() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[#111827]/80 border-gray-800/60">
+        <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-400/10 border border-cyan-400/30">
                 <Cpu className="w-4 h-4 text-cyan-400" />
               </div>
-              <CardTitle className="text-sm font-medium text-gray-200">
+              <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
                 Supervised Contrastive Loss
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-gray-400 leading-relaxed">
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
               Pulls embeddings of same-class events closer while pushing
               different-class events apart. This creates{' '}
               <span className="text-cyan-400">well-separated temporal neighborhoods</span>{' '}
@@ -906,10 +911,11 @@ function ConceptDriftTab() {
   );
 }
 
-// ── Tab 4: Attack Backtracking (Objective 3) ───────────────────────────
+// ── Threat Intelligence: Attack Backtracking ────────────────────────────
 
 function AttackBacktrackingTab() {
   const attackChain = useMemo(() => generateAttackChain(), []);
+  const { theme } = useTheme();
 
   const getStepConnectorColor = (tactic: string) => {
     const sev = TACTIC_SEVERITY[tactic] || 'low';
@@ -941,23 +947,39 @@ function AttackBacktrackingTab() {
 
   return (
     <div className="space-y-6">
-      <ObjectiveHeader
-        number={3}
-        title="Attack Chain Backtracking Engine"
-        description="Reconstructs the complete multi-step attack chain from detected alert to initial compromise"
-        icon={Search}
-      />
+      {/* Detailed Explanation Card */}
+      <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Search className="w-4 h-4 text-emerald-400" />
+            <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
+              Attack Chain Backtracking Engine
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-3">
+            The backtracking engine is TGDetect's incident response accelerator. When the TGNN produces a high-confidence detection alert, the engine doesn't just flag the individual event — it traces <span className="text-blue-400 font-medium">backwards through the temporal graph</span> to reconstruct the full attack narrative. Starting from the detected alert (e.g., a data exfiltration event), it follows causal edges in reverse temporal order, identifying the sequence of precursor events that led to the detection.
+          </p>
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-3">
+            The backtracking algorithm leverages the TGNN's learned <span className="text-purple-400 font-medium">attention weights</span> to determine the most likely attack path at each step. At every node in the temporal graph, the engine examines all incoming causal edges and selects the one with the highest attention weight, effectively following the path of strongest causal influence. This produces a ranked chain of events, each annotated with its confidence score, the node it originated from, and the specific evidence (e.g., log artifacts, command strings, network flows) that links it to the attack.
+          </p>
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+            The result is a complete, multi-step attack reconstruction — from initial compromise (e.g., a spear-phishing email) through privilege escalation, lateral movement, command-and-control establishment, and ultimately data exfiltration. Each step includes a confidence score (typically 95–99.7%) and verifiable evidence, enabling analysts to <span className="text-emerald-400 font-medium">immediately understand exactly what happened, when it happened, and on which nodes</span>. This dramatically reduces mean-time-to-respond (MTTR) by eliminating the manual forensic investigation that traditionally follows each alert.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Attack Chain Timeline */}
-      <Card className="bg-[#111827]/80 border-gray-800/60">
+      <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <GitBranch className="w-4 h-4 text-emerald-400" />
-            <CardTitle className="text-sm font-medium text-gray-200">
+            <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
               Reconstructed Attack Chain
             </CardTitle>
           </div>
-          <CardDescription className="text-xs text-gray-500">
+          <CardDescription className="text-xs text-[var(--text-muted)]">
             Auto-reconstructed from alert TGD-0012 back to initial compromise —
             9 steps across 4 nodes
           </CardDescription>
@@ -971,7 +993,7 @@ function AttackBacktrackingTab() {
                   {/* Timeline Connector */}
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold text-gray-900 z-10 shrink-0 shadow-lg ${getStepDotColor(step.tactic)}`}
+                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold z-10 shrink-0 shadow-lg ${getStepDotColor(step.tactic)} ${theme === 'dark' ? 'text-gray-900' : 'text-white'}`}
                     >
                       {step.step}
                     </div>
@@ -984,10 +1006,10 @@ function AttackBacktrackingTab() {
 
                   {/* Step Content */}
                   <div
-                    className={`flex-1 rounded-lg border p-4 mb-2 ${TACTIC_BG_COLORS[step.tactic] || 'bg-gray-800/30 border-gray-700/30'}`}
+                    className={`flex-1 rounded-lg border p-4 mb-2 ${TACTIC_BG_COLORS[step.tactic] || 'bg-[var(--bg-input)] border-[var(--border-secondary)]'}`}
                   >
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className="text-sm font-medium text-gray-200">
+                      <span className="text-sm font-medium text-[var(--text-secondary)]">
                         {step.event}
                       </span>
                       <Badge
@@ -997,39 +1019,38 @@ function AttackBacktrackingTab() {
                         {step.tactic}
                       </Badge>
                     </div>
-
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                       {/* Timestamp */}
                       <div>
-                        <span className="text-gray-500">
+                        <span className="text-[var(--text-muted)]">
                           Timestamp
                         </span>
-                        <p className="text-gray-300 font-mono mt-0.5">
+                        <p className="text-[var(--text-secondary)] font-mono mt-0.5">
                           {step.timestamp}
                         </p>
                       </div>
 
                       {/* Node */}
                       <div>
-                        <span className="text-gray-500">
+                        <span className="text-[var(--text-muted)]">
                           Node
                         </span>
-                        <p className="text-gray-300 font-mono mt-0.5">
+                        <p className="text-[var(--text-secondary)] font-mono mt-0.5">
                           {step.node}
                         </p>
                       </div>
 
                       {/* Attention Weight */}
                       <div>
-                        <span className="text-gray-500">
+                        <span className="text-[var(--text-muted)]">
                           Attention Weight
                         </span>
                         <div className="flex items-center gap-2 mt-1">
                           <Progress
                             value={step.attentionWeight * 100}
-                            className="h-2 bg-gray-800 flex-1"
+                            className="h-2 bg-[var(--bg-input)] flex-1"
                           />
-                          <span className="text-gray-300 font-medium w-10 text-right">
+                          <span className="text-[var(--text-secondary)] font-medium w-10 text-right">
                             {step.attentionWeight.toFixed(2)}
                           </span>
                         </div>
@@ -1037,7 +1058,7 @@ function AttackBacktrackingTab() {
 
                       {/* Confidence */}
                       <div>
-                        <span className="text-gray-500">
+                        <span className="text-[var(--text-muted)]">
                           Confidence
                         </span>
                         <p
@@ -1055,10 +1076,10 @@ function AttackBacktrackingTab() {
                     </div>
 
                     {/* Evidence */}
-                    <div className="mt-3 pt-2 border-t border-gray-700/30">
+                    <div className="mt-3 pt-2 border-t border-[var(--border-secondary)]">
                       <div className="flex items-start gap-1.5">
-                        <Info className="w-3 h-3 text-gray-500 mt-0.5 shrink-0" />
-                        <span className="text-xs text-gray-400 font-mono">
+                        <Info className="w-3 h-3 text-[var(--text-muted)] mt-0.5 shrink-0" />
+                        <span className="text-xs text-[var(--text-secondary)] font-mono">
                           {step.evidence}
                         </span>
                       </div>
@@ -1074,10 +1095,11 @@ function AttackBacktrackingTab() {
   );
 }
 
-// ── Tab 5: Explainability (Objective 4) ─────────────────────────────────
+// ── Threat Intelligence: Explainability ─────────────────────────────────
 
 function ExplainabilityTab() {
   const explainData = useMemo(() => generateExplainabilityData(), []);
+  const { theme } = useTheme();
 
   // MITRE ATT&CK tactic distribution for mini bar chart
   const tacticDistribution = useMemo(() => {
@@ -1099,25 +1121,52 @@ function ExplainabilityTab() {
     '#ef4444',
   ];
 
+  const axisColor = theme === 'dark' ? '#6b7280' : '#64748b';
+  const gridColor = theme === 'dark' ? '#1f2937' : '#e2e8f0';
+  const axisLineColor = theme === 'dark' ? '#374151' : '#cbd5e1';
+  const chartTooltipStyle = theme === 'dark' ? {
+    contentStyle: { backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8, fontSize: 12, color: '#9ca3af' },
+    labelStyle: { color: '#9ca3af' },
+  } : {
+    contentStyle: { backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#475569' },
+    labelStyle: { color: '#475569' },
+  };
+
   return (
     <div className="space-y-6">
-      <ObjectiveHeader
-        number={4}
-        title="Temporal Explainability via MITRE ATT&CK"
-        description="Maps attention weights and temporal contributions to the MITRE ATT&CK framework so analysts understand what, when, how, and why"
-        icon={Eye}
-      />
+      {/* Detailed Explanation Card */}
+      <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Eye className="w-4 h-4 text-emerald-400" />
+            <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
+              Temporal Explainability via MITRE ATT&CK
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-3">
+            Temporal explainability goes beyond simple feature importance — it answers <span className="text-blue-400 font-medium">why each specific event was flagged as malicious</span>, not just that it was flagged. Unlike traditional black-box detectors that output a binary or score, TGDetect's TGNN exposes its internal reasoning through multiple complementary signals: attention weights, temporal contribution scores, and graph neighborhood influence. Each of these metrics is computed per-event and per-detection, giving analysts a multi-dimensional view into the model's decision-making process.
+          </p>
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-3">
+            <span className="text-purple-400 font-medium">Attention weights</span> indicate how strongly each event influenced the final classification decision — a weight of 0.98 means the event was nearly decisive in flagging the detection, while 0.85 indicates strong but not overwhelming influence. <span className="text-cyan-400 font-medium">Temporal contribution</span> measures how much the timing and ordering of events (relative to their neighbors in the temporal graph) contributed to the classification — events that are temporally anomalous (e.g., a DNS query at 3 AM following a lateral movement event) receive higher temporal scores. <span className="text-emerald-400 font-medium">Graph neighborhood</span> counts the number of connected events in the temporal graph that influenced this detection — higher values indicate the detection is supported by a richer context of correlated events across the graph.
+          </p>
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+            Crucially, all of these signals are mapped directly to the <span className="text-amber-400 font-medium">MITRE ATT&CK framework</span>, so analysts can immediately understand which attack stage each event corresponds to — from Initial Access through Exfiltration. This mapping bridges the gap between machine learning outputs and the tactical frameworks that SOC teams already use daily, enabling faster triage, more informed escalation decisions, and clearer communication with stakeholders about the nature and severity of detected threats.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Main Table */}
-      <Card className="bg-[#111827]/80 border-gray-800/60">
+      <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Target className="w-4 h-4 text-emerald-400" />
-            <CardTitle className="text-sm font-medium text-gray-200">
+            <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
               Attention-Weighted Event Explanations
             </CardTitle>
           </div>
-          <CardDescription className="text-xs text-gray-500">
+          <CardDescription className="text-xs text-[var(--text-muted)]">
             Each detection mapped to its MITRE ATT&CK tactic with temporal
             contribution scores and reasoning
           </CardDescription>
@@ -1126,7 +1175,7 @@ function ExplainabilityTab() {
           <div className="overflow-x-auto">
             <div className="min-w-[900px]">
               {/* Table Header */}
-              <div className="grid grid-cols-[80px,70px,65px,110px,110px,110px,60px,80px,1fr] gap-2 pb-2 border-b border-gray-700/50">
+              <div className="grid grid-cols-[80px,70px,65px,110px,110px,110px,60px,80px,1fr] gap-2 pb-2 border-b border-[var(--border-secondary)]">
                 {[
                   'Event ID',
                   'Time',
@@ -1140,7 +1189,7 @@ function ExplainabilityTab() {
                 ].map((h) => (
                   <span
                     key={h}
-                    className="text-[10px] text-gray-500 uppercase tracking-wider font-medium"
+                    className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium"
                   >
                     {h}
                   </span>
@@ -1148,19 +1197,19 @@ function ExplainabilityTab() {
               </div>
 
               {/* Table Rows */}
-              <div className="divide-y divide-gray-800/40">
+              <div className="divide-y divide-[var(--border-secondary)]">
                 {explainData.map((entry: ExplainabilityEntry) => (
                   <div
                     key={entry.eventId}
-                    className="grid grid-cols-[80px,70px,65px,110px,110px,110px,60px,80px,1fr] gap-2 py-3 items-center hover:bg-[#0d1120]/50 transition-colors"
+                    className="grid grid-cols-[80px,70px,65px,110px,110px,110px,60px,80px,1fr] gap-2 py-3 items-center hover:bg-[var(--bg-input)] transition-colors"
                   >
                     {/* Event ID */}
-                    <span className="text-xs text-gray-300 font-mono">
+                    <span className="text-xs text-[var(--text-secondary)] font-mono">
                       {entry.eventId}
                     </span>
 
                     {/* Timestamp */}
-                    <span className="text-xs text-gray-400 font-mono">
+                    <span className="text-xs text-[var(--text-secondary)] font-mono">
                       {entry.timestamp}
                     </span>
 
@@ -1190,9 +1239,9 @@ function ExplainabilityTab() {
                     <div className="flex items-center gap-1.5">
                       <Progress
                         value={entry.attentionWeight * 100}
-                        className="h-2 bg-gray-800 flex-1"
+                        className="h-2 bg-[var(--bg-input)] flex-1"
                       />
-                      <span className="text-[10px] text-gray-400 w-8 text-right font-mono">
+                      <span className="text-[10px] text-[var(--text-secondary)] w-8 text-right font-mono">
                         {entry.attentionWeight.toFixed(2)}
                       </span>
                     </div>
@@ -1201,15 +1250,15 @@ function ExplainabilityTab() {
                     <div className="flex items-center gap-1.5">
                       <Progress
                         value={entry.temporalContribution * 100}
-                        className="h-2 bg-gray-800 flex-1"
+                        className="h-2 bg-[var(--bg-input)] flex-1"
                       />
-                      <span className="text-[10px] text-gray-400 w-8 text-right font-mono">
+                      <span className="text-[10px] text-[var(--text-secondary)] w-8 text-right font-mono">
                         {entry.temporalContribution.toFixed(2)}
                       </span>
                     </div>
 
                     {/* Graph Neighborhood */}
-                    <span className="text-xs text-gray-400 text-center">
+                    <span className="text-xs text-[var(--text-secondary)] text-center">
                       {entry.graphNeighborhood}
                     </span>
 
@@ -1225,7 +1274,7 @@ function ExplainabilityTab() {
                     </Badge>
 
                     {/* Reasoning */}
-                    <span className="text-[11px] text-gray-400 leading-tight">
+                    <span className="text-[11px] text-[var(--text-secondary)] leading-tight">
                       {entry.reasoning}
                     </span>
                   </div>
@@ -1237,12 +1286,12 @@ function ExplainabilityTab() {
       </Card>
 
       {/* Tactic Distribution Mini Chart */}
-      <Card className="bg-[#111827]/80 border-gray-800/60">
+      <Card className="bg-[var(--bg-card)] border-[var(--border-primary)]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-200">
+          <CardTitle className="text-sm font-medium text-[var(--text-secondary)]">
             MITRE ATT&CK Tactic Distribution
           </CardTitle>
-          <CardDescription className="text-xs text-gray-500">
+          <CardDescription className="text-xs text-[var(--text-muted)]">
             Frequency of detected tactics across all analyzed events
           </CardDescription>
         </CardHeader>
@@ -1255,22 +1304,22 @@ function ExplainabilityTab() {
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="#1f2937"
+                  stroke={gridColor}
                 />
                 <XAxis
                   dataKey="tactic"
-                  tick={{ fill: '#9ca3af', fontSize: 10 }}
-                  axisLine={{ stroke: '#374151' }}
+                  tick={{ fill: theme === 'dark' ? '#9ca3af' : '#475569', fontSize: 10 }}
+                  axisLine={{ stroke: axisLineColor }}
                   angle={-20}
                   textAnchor="end"
                   height={60}
                 />
                 <YAxis
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
-                  axisLine={{ stroke: '#374151' }}
+                  tick={{ fill: axisColor, fontSize: 11 }}
+                  axisLine={{ stroke: axisLineColor }}
                   allowDecimals={false}
                 />
-                <Tooltip {...CHART_TOOLTIP_STYLE} />
+                <Tooltip {...chartTooltipStyle} />
                 <Bar
                   dataKey="count"
                   name="Events"
@@ -1299,59 +1348,40 @@ export function AnalyticsPage() {
     <div className="w-full max-w-[1400px] mx-auto space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-100 flex items-center gap-3">
+        <h1 className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-3">
           <BarChart3 className="w-6 h-6 text-emerald-400" />
           Analytics
-          <Badge className="bg-emerald-400/10 text-emerald-400 border-emerald-400/20 hover:bg-emerald-400/15 ml-1">
-            4 Research Objectives
-          </Badge>
         </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Comprehensive analysis across DARPA TC, UNSW-NB15, and LANL NetFlow
-          log sources with TGNN fusion, concept drift adaptation, attack
-          backtracking, and temporal explainability.
+        <p className="text-sm text-[var(--text-muted)] mt-1">
+          Comprehensive detection analytics across DARPA TC, UNSW-NB15, and LANL NetFlow log sources.
         </p>
       </div>
 
-      <Separator className="bg-gray-800/60" />
+      <Separator className="bg-[var(--border-primary)]" />
 
       {/* Tabs */}
       <Tabs defaultValue="sources" className="w-full">
-        <TabsList className="bg-[#111827]/80 border border-gray-800/60 h-auto p-1 flex-wrap">
+        <TabsList className="bg-[var(--bg-card)] border border-[var(--border-primary)] h-auto p-1 flex-wrap">
           <TabsTrigger
             value="sources"
-            className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-gray-400 text-xs px-3 py-2"
+            className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-[var(--text-muted)] text-xs px-3 py-2"
           >
             <Database className="w-3.5 h-3.5 mr-1.5" />
             Source Analysis
           </TabsTrigger>
           <TabsTrigger
             value="fusion"
-            className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-gray-400 text-xs px-3 py-2"
+            className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-[var(--text-muted)] text-xs px-3 py-2"
           >
             <Layers className="w-3.5 h-3.5 mr-1.5" />
             Fused Temporal Graph
           </TabsTrigger>
           <TabsTrigger
             value="drift"
-            className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-gray-400 text-xs px-3 py-2"
+            className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-[var(--text-muted)] text-xs px-3 py-2"
           >
             <Brain className="w-3.5 h-3.5 mr-1.5" />
             Concept Drift
-          </TabsTrigger>
-          <TabsTrigger
-            value="backtrack"
-            className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-gray-400 text-xs px-3 py-2"
-          >
-            <Search className="w-3.5 h-3.5 mr-1.5" />
-            Attack Backtracking
-          </TabsTrigger>
-          <TabsTrigger
-            value="explain"
-            className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-gray-400 text-xs px-3 py-2"
-          >
-            <Eye className="w-3.5 h-3.5 mr-1.5" />
-            Explainability
           </TabsTrigger>
         </TabsList>
 
@@ -1366,15 +1396,43 @@ export function AnalyticsPage() {
         <TabsContent value="drift" className="mt-6">
           <ConceptDriftTab />
         </TabsContent>
-
-        <TabsContent value="backtrack" className="mt-6">
-          <AttackBacktrackingTab />
-        </TabsContent>
-
-        <TabsContent value="explain" className="mt-6">
-          <ExplainabilityTab />
-        </TabsContent>
       </Tabs>
+
+      {/* ─── Threat Intelligence Section ─── */}
+      <div className="pt-6">
+        <Separator className="bg-[var(--border-primary)] mb-6" />
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-400/10 border border-amber-400/30">
+            <Shield className="w-4 h-4 text-amber-400" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Threat Intelligence</h2>
+            <p className="text-xs text-[var(--text-muted)]">Attack reconstruction and temporal explainability for rapid incident response</p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {/* Sub-section: Attack Backtracking */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Search className="w-4 h-4 text-blue-400" />
+              <h3 className="text-sm font-semibold text-[var(--text-secondary)]">Attack Backtracking</h3>
+              <ChevronRight className="w-3 h-3 text-[var(--text-muted)]" />
+            </div>
+            <AttackBacktrackingTab />
+          </div>
+
+          {/* Sub-section: Explainability */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Eye className="w-4 h-4 text-purple-400" />
+              <h3 className="text-sm font-semibold text-[var(--text-secondary)]">Explainability</h3>
+              <ChevronRight className="w-3 h-3 text-[var(--text-muted)]" />
+            </div>
+            <ExplainabilityTab />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

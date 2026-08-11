@@ -1,0 +1,688 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import { useState, useCallback } from 'react';
+     4→     4→import {
+     5→     5→  Shield, LayoutDashboard, BarChart3, Upload, UserCircle,
+     6→     6→  ChevronRight, Activity, Network, Zap, Target, AlertTriangle,
+     7→     7→  CheckCircle2, Clock, ShieldAlert, Brain, Database, Cpu,
+     8→     8→  ArrowUpRight, ArrowDownRight, TrendingUp, Search,
+     9→     9→  Globe, Lock, Eye, FileText, FolderOpen, Plus,
+    10→    10→  Settings, Trash2, Download, FileUp, ChevronDown,
+    11→    11→  Monitor, Terminal, Wifi, Braces, Table, FileJson,
+    12→    12→  GitBranch, RefreshCw, Route, BookOpen,
+    13→    13→  type LucideIcon
+    14→    14→} from 'lucide-react';
+    15→    15→import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+    16→    16→import { Badge } from '@/components/ui/badge';
+    17→    17→import { Button } from '@/components/ui/button';
+    18→    18→import { Progress } from '@/components/ui/progress';
+    19→    19→import { Separator } from '@/components/ui/separator';
+    20→    20→import { Input } from '@/components/ui/input';
+    21→    21→import { Label } from '@/components/ui/label';
+    22→    22→import {
+    23→    23→  AreaChart, Area, BarChart, Bar,
+    24→    24→  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+    25→    25→  ResponsiveContainer,
+    26→    26→} from 'recharts';
+    27→    27→import {
+    28→    28→  generateTimeSeriesData, generateDetectionResults,
+    29→    29→  generateGraphStats, generateNetworkEvents,
+    30→    30→  generateProfiles, generateUploadedDatasets, supportedLogFormats,
+    31→    31→  type DetectionResult, type UserProfile, type UploadedDataset
+    32→    32→} from '@/lib/synthetic-data';
+    33→    33→import { formatTime, formatDate } from '@/lib/date-utils';
+    34→    34→import { AnalyticsPage } from '@/components/tgdetect/AnalyticsPage';
+    35→    35→
+    36→    36→// ─── NAVIGATION ─────────────────────────────────────────────────
+    37→    37→const navItems = [
+    38→    38→  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    39→    39→  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    40→    40→  { id: 'datasets', label: 'Datasets', icon: Database },
+    41→    41→  { id: 'profiles', label: 'Profiles', icon: UserCircle },
+    42→    42→] as const;
+    43→    43→
+    44→    44→type Page = typeof navItems[number]['id'];
+    45→    45→
+    46→    46→// ─── SYNTHETIC DATA ─────────────────────────────────────────────
+    47→    47→const timeSeriesData = generateTimeSeriesData();
+    48→    48→const detectionResults = generateDetectionResults();
+    49→    49→const graphStats = generateGraphStats();
+    50→    50→const networkEvents = generateNetworkEvents(200);
+    51→    51→const initialProfiles = generateProfiles();
+    52→    52→const initialDatasets = generateUploadedDatasets();
+    53→    53→
+    54→    54→const severityColors: Record<string, string> = {
+    55→    55→  Low: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    56→    56→  Medium: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+    57→    57→  High: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
+    58→    58→  Critical: 'bg-red-500/15 text-red-400 border-red-500/30',
+    59→    59→};
+    60→    60→
+    61→    61→const statusIcons: Record<string, LucideIcon> = {
+    62→    62→  Detected: Search,
+    63→    63→  Investigating: Clock,
+    64→    64→  Contained: ShieldAlert,
+    65→    65→};
+    66→    66→
+    67→    67→const CHART_TOOLTIP_STYLE = {
+    68→    68→  contentStyle: { backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8, fontSize: 12 },
+    69→    69→  labelStyle: { color: '#9ca3af' },
+    70→    70→};
+    71→    71→
+    72→    72→const formatIcon: Record<string, LucideIcon> = {
+    73→    73→  table: Table, braces: Braces, 'file-json': FileJson, terminal: Terminal,
+    74→    74→  network: Wifi, shield: Shield, search: Search, globe: Globe,
+    75→    75→  monitor: Monitor, 'file-text': FileText, wifi: Wifi, 'alert-triangle': AlertTriangle,
+    76→    76→};
+    77→    77→
+    78→    78→// ─── MAIN PAGE ──────────────────────────────────────────────────
+    79→    79→export default function Home() {
+    80→    80→  const [activePage, setActivePage] = useState<Page>('dashboard');
+    81→    81→  const [profiles, setProfiles] = useState<UserProfile[]>(initialProfiles);
+    82→    82→  const [datasets, setDatasets] = useState<UploadedDataset[]>(initialDatasets);
+    83→    83→  const [activeProfile, setActiveProfile] = useState<string>(initialProfiles[0].id);
+    84→    84→  const [showCreateProfile, setShowCreateProfile] = useState(false);
+    85→    85→  const [showUploadModal, setShowUploadModal] = useState(false);
+    86→    86→  const [newProfileName, setNewProfileName] = useState('');
+    87→    87→  const [newProfileDesc, setNewProfileDesc] = useState('');
+    88→    88→  const [newProfileDataset, setNewProfileDataset] = useState('');
+    89→    89→  const [dragOver, setDragOver] = useState(false);
+    90→    90→
+    91→    91→  const handleCreateProfile = useCallback(() => {
+    92→    92→    if (!newProfileName.trim()) return;
+    93→    93→    const profile: UserProfile = {
+    94→    94→      id: `prof-${String(profiles.length + 1).padStart(3, '0')}`,
+    95→    95→      name: newProfileName,
+    96→    96→      description: newProfileDesc || 'No description provided.',
+    97→    97→      dataset: newProfileDataset || 'Custom',
+    98→    98→      status: 'inactive',
+    99→    99→      created: new Date().toISOString(),
+   100→   100→      lastModified: new Date().toISOString(),
+   101→   101→      config: { temporalWindow: 300, memoryDim: 64, numHeads: 4, nLayers: 2, embedDim: 64, threshold: 0.75 },
+   102→   102→    };
+   103→   103→    setProfiles(prev => [...prev, profile]);
+   104→   104→    setNewProfileName(''); setNewProfileDesc(''); setNewProfileDataset('');
+   105→   105→    setShowCreateProfile(false);
+   106→   106→  }, [newProfileName, newProfileDesc, newProfileDataset, profiles.length]);
+   107→   107→
+   108→   108→  const handleDeleteProfile = useCallback((id: string) => {
+   109→   109→    setProfiles(prev => prev.filter(p => p.id !== id));
+   110→   110→    if (activeProfile === id && profiles.length > 1) {
+   111→   111→      setActiveProfile(profiles.find(p => p.id !== id)?.id || '');
+   112→   112→    }
+   113→   113→  }, [activeProfile, profiles]);
+   114→   114→
+   115→   115→  const handleSimulateUpload = useCallback(() => {
+   116→   116→    const newDs: UploadedDataset = {
+   117→   117→      id: `ds-${String(datasets.length + 1).padStart(3, '0')}`,
+   118→   118→      name: `synthetic_demo_${Date.now()}.csv`,
+   119→   119→      format: 'CSV', size: '12.4 MB', events: 52340,
+   120→   120→      uploadedAt: new Date().toISOString(),
+   121→   121→      status: 'processed', source: 'Synthetic Demo',
+   122→   122→    };
+   123→   123→    setDatasets(prev => [newDs, ...prev]);
+   124→   124→    setShowUploadModal(false);
+   125→   125→  }, [datasets.length]);
+   126→   126→
+   127→   127→  return (
+   128→   128→    <div className="flex h-screen bg-[#0a0e1a] text-gray-200 overflow-hidden">
+   129→   129→      {/* ─── Sidebar ─── */}
+   130→   130→      <aside className="w-64 flex-shrink-0 border-r border-gray-800/80 bg-[#0d1120] flex flex-col">
+   131→   131→        <div className="p-5 border-b border-gray-800/80">
+   132→   132→          <div className="flex items-center gap-3">
+   133→   133→            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20">
+   134→   134→              <Shield className="w-5 h-5 text-white" />
+   135→   135→            </div>
+   136→   136→            <div>
+   137→   137→              <h1 className="text-base font-bold tracking-tight text-white">TGDetect</h1>
+   138→   138→              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest">V16 Apex TGNN</p>
+   139→   139→            </div>
+   140→   140→          </div>
+   141→   141→        </div>
+   142→   142→
+   143→   143→        <nav className="flex-1 p-3 space-y-1">
+   144→   144→          {navItems.map((item) => {
+   145→   145→            const Icon = item.icon;
+   146→   146→            const isActive = activePage === item.id;
+   147→   147→            return (
+   148→   148→              <button key={item.id} onClick={() => setActivePage(item.id)}
+   149→   149→                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+   150→   150→                  isActive ? 'bg-blue-500/10 text-blue-400 shadow-sm' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/50'
+   151→   151→                }`}
+   152→   152→              >
+   153→   153→                <Icon className={`w-4 h-4 ${isActive ? 'text-blue-400' : ''}`} />
+   154→   154→                {item.label}
+   155→   155→                {isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto text-blue-400/60" />}
+   156→   156→              </button>
+   157→   157→            );
+   158→   158→          })}
+   159→   159→        </nav>
+   160→   160→
+   161→   161→        <div className="px-4 pb-3">
+   162→   162→          <div className="rounded-lg border border-gray-800/60 bg-[#111827]/50 p-3">
+   163→   163→            <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium mb-1.5">Active Profile</p>
+   164→   164→            <div className="flex items-center gap-2">
+   165→   165→              <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+   166→   166→              <span className="text-xs text-gray-300 truncate">
+   167→   167→                {profiles.find(p => p.id === activeProfile)?.name || 'None'}
+   168→   168→              </span>
+   169→   169→            </div>
+   170→   170→          </div>
+   171→   171→        </div>
+   172→   172→
+   173→   173→        <div className="p-4 border-t border-gray-800/80">
+   174→   174→          <div className="flex items-center gap-2 px-2">
+   175→   175→            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+   176→   176→            <span className="text-xs text-gray-500">Demo Mode — Synthetic Data</span>
+   177→   177→          </div>
+   178→   178→        </div>
+   179→   179→      </aside>
+   180→   180→
+   181→   181→      {/* ─── Main Content ─── */}
+   182→   182→      <main className="flex-1 overflow-y-auto">
+   183→   183→        <header className="sticky top-0 z-10 border-b border-gray-800/60 bg-[#0a0e1a]/80 backdrop-blur-xl px-6 py-3 flex items-center justify-between">
+   184→   184→          <div>
+   185→   185→            <h2 className="text-lg font-semibold text-white">
+   186→   186→              {navItems.find(n => n.id === activePage)?.label}
+   187→   187→            </h2>
+   188→   188→            <p className="text-xs text-gray-500 mt-0.5">
+   189→   189→              {activePage === 'dashboard' && 'System overview and key performance indicators'}
+   190→   190→              {activePage === 'analytics' && 'Detection analytics — per-source, fused, and objective analysis'}
+   191→   191→              {activePage === 'datasets' && 'Upload and manage log datasets for analysis'}
+   192→   192→              {activePage === 'profiles' && 'Create and manage analysis profiles'}
+   193→   193→            </p>
+   194→   194→          </div>
+   195→   195→          <div className="flex items-center gap-3">
+   196→   196→            <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-xs px-2.5">
+   197→   197→              <Activity className="w-3 h-3 mr-1" /> V16 Apex
+   198→   198→            </Badge>
+   199→   199→            <Badge variant="outline" className="border-gray-700 text-gray-400 text-xs px-2.5">
+   200→   200→              <Database className="w-3 h-3 mr-1" /> Synthetic Data
+   201→   201→            </Badge>
+   202→   202→          </div>
+   203→   203→        </header>
+   204→   204→
+   205→   205→        <div className="p-6">
+   206→   206→          {activePage === 'dashboard' && <DashboardPage />}
+   207→   207→          {activePage === 'analytics' && <AnalyticsPage />}
+   208→   208→          {activePage === 'datasets' && <DatasetsPage datasets={datasets} onUploadClick={() => setShowUploadModal(true)} />}
+   209→   209→          {activePage === 'profiles' && <ProfilesPage profiles={profiles} activeProfile={activeProfile} onSelectProfile={setActiveProfile} onCreateClick={() => setShowCreateProfile(true)} onDeleteProfile={handleDeleteProfile} />}
+   210→   210→        </div>
+   211→   211→      </main>
+   212→   212→
+   213→   213→      {/* ─── Upload Modal ─── */}
+   214→   214→      {showUploadModal && (
+   215→   215→        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowUploadModal(false)}>
+   216→   216→          <div className="bg-[#111827] border border-gray-800/80 rounded-2xl w-full max-w-2xl shadow-2xl mx-4" onClick={e => e.stopPropagation()}>
+   217→   217→            <div className="flex items-center justify-between p-5 border-b border-gray-800/60">
+   218→   218→              <div>
+   219→   219→                <h3 className="text-sm font-semibold text-white">Upload Log Dataset</h3>
+   220→   220→                <p className="text-xs text-gray-500 mt-0.5">Select a file or drag & drop your log data</p>
+   221→   221→              </div>
+   222→   222→              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white" onClick={() => setShowUploadModal(false)}>✕</Button>
+   223→   223→            </div>
+   224→   224→            <div className="p-5 space-y-5">
+   225→   225→              <div className={`rounded-xl border-2 border-dashed p-8 text-center transition-all cursor-pointer ${dragOver ? 'border-blue-400 bg-blue-500/5' : 'border-gray-700 hover:border-gray-600'}`}
+   226→   226→                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+   227→   227→                onDragLeave={() => setDragOver(false)}
+   228→   228→                onDrop={e => { e.preventDefault(); setDragOver(false); handleSimulateUpload(); }}
+   229→   229→                onClick={handleSimulateUpload}
+   230→   230→              >
+   231→   231→                <Upload className={`w-10 h-10 mx-auto mb-3 ${dragOver ? 'text-blue-400' : 'text-gray-600'}`} />
+   232→   232→                <p className="text-sm text-gray-300 font-medium">{dragOver ? 'Drop your file here' : 'Drag & drop your log file, or click to browse'}</p>
+   233→   233→                <p className="text-xs text-gray-500 mt-1">Supports CSV, JSON, Syslog, NetFlow, Wazuh, and more</p>
+   234→   234→              </div>
+   235→   235→              <div>
+   236→   236→                <p className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-3">Supported Log Formats</p>
+   237→   237→                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+   238→   238→                  {supportedLogFormats.slice(0, 9).map((fmt, i) => {
+   239→   239→                    const FmtIcon = formatIcon[fmt.icon] || FileText;
+   240→   240→                    return (
+   241→   241→                      <div key={i} className="flex items-center gap-2 rounded-lg border border-gray-800/40 bg-[#0d1120]/50 px-3 py-2">
+   242→   242→                        <FmtIcon className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+   243→   243→                        <div>
+   244→   244→                          <p className="text-[11px] font-medium text-gray-300">{fmt.name}</p>
+   245→   245→                          <p className="text-[9px] text-gray-600">{fmt.ext}</p>
+   246→   246→                        </div>
+   247→   247→                      </div>
+   248→   248→                    );
+   249→   249→                  })}
+   250→   250→                </div>
+   251→   251→              </div>
+   252→   252→            </div>
+   253→   253→            <div className="flex items-center justify-end gap-2 px-5 pb-5">
+   254→   254→              <Button variant="ghost" size="sm" className="text-gray-400" onClick={() => setShowUploadModal(false)}>Cancel</Button>
+   255→   255→              <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white" onClick={handleSimulateUpload}>
+   256→   256→                <Upload className="w-3.5 h-3.5 mr-1.5" /> Upload Dataset
+   257→   257→              </Button>
+   258→   258→            </div>
+   259→   259→          </div>
+   260→   260→        </div>
+   261→   261→      )}
+   262→   262→
+   263→   263→      {/* ─── Create Profile Modal ─── */}
+   264→   264→      {showCreateProfile && (
+   265→   265→        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowCreateProfile(false)}>
+   266→   266→          <div className="bg-[#111827] border border-gray-800/80 rounded-2xl w-full max-w-lg shadow-2xl mx-4" onClick={e => e.stopPropagation()}>
+   267→   267→            <div className="flex items-center justify-between p-5 border-b border-gray-800/60">
+   268→   268→              <div>
+   269→   269→                <h3 className="text-sm font-semibold text-white">Create New Profile</h3>
+   270→   270→                <p className="text-xs text-gray-500 mt-0.5">Set up a new analysis profile for your dataset</p>
+   271→   271→              </div>
+   272→   272→              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white" onClick={() => setShowCreateProfile(false)}>✕</Button>
+   273→   273→            </div>
+   274→   274→            <div className="p-5 space-y-4">
+   275→   275→              <div className="space-y-2">
+   276→   276→                <Label className="text-xs text-gray-400">Profile Name</Label>
+   277→   277→                <Input placeholder="e.g., DARPA Engagement Analysis" value={newProfileName} onChange={e => setNewProfileName(e.target.value)}
+   278→   278→                  className="bg-[#0d1120] border-gray-800/60 text-sm text-gray-200 placeholder:text-gray-600" />
+   279→   279→              </div>
+   280→   280→              <div className="space-y-2">
+   281→   281→                <Label className="text-xs text-gray-400">Description</Label>
+   282→   282→                <Input placeholder="Brief description..." value={newProfileDesc} onChange={e => setNewProfileDesc(e.target.value)}
+   283→   283→                  className="bg-[#0d1120] border-gray-800/60 text-sm text-gray-200 placeholder:text-gray-600" />
+   284→   284→              </div>
+   285→   285→              <div className="space-y-2">
+   286→   286→                <Label className="text-xs text-gray-400">Dataset Type</Label>
+   287→   287→                <Input placeholder="e.g., DARPA TC, UNSW-NB15, LANL..." value={newProfileDataset} onChange={e => setNewProfileDataset(e.target.value)}
+   288→   288→                  className="bg-[#0d1120] border-gray-800/60 text-sm text-gray-200 placeholder:text-gray-600" />
+   289→   289→              </div>
+   290→   290→              <div className="rounded-lg border border-gray-800/40 bg-[#0d1120]/50 p-3">
+   291→   291→                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium mb-2">Default V16 Apex Configuration</p>
+   292→   292→                <div className="grid grid-cols-2 gap-2">
+   293→   293→                  {[{ label: 'Temporal Window', value: '300s' }, { label: 'Memory Dim', value: '64' }, { label: 'Attention Heads', value: '4' }, { label: 'GNN Layers', value: '2' }, { label: 'Embed Dim', value: '64' }, { label: 'Threshold', value: '0.75' }].map((c, i) => (
+   294→   294→                    <div key={i} className="flex justify-between text-[11px]">
+   295→   295→                      <span className="text-gray-500">{c.label}</span>
+   296→   296→                      <span className="text-blue-400 font-mono">{c.value}</span>
+   297→   297→                    </div>
+   298→   298→                  ))}
+   299→   299→                </div>
+   300→   300→              </div>
+   301→   301→            </div>
+   302→   302→            <div className="flex items-center justify-end gap-2 px-5 pb-5">
+   303→   303→              <Button variant="ghost" size="sm" className="text-gray-400" onClick={() => setShowCreateProfile(false)}>Cancel</Button>
+   304→   304→              <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white" onClick={handleCreateProfile}>
+   305→   305→                <Plus className="w-3.5 h-3.5 mr-1.5" /> Create Profile
+   306→   306→              </Button>
+   307→   307→            </div>
+   308→   308→          </div>
+   309→   309→        </div>
+   310→   310→      )}
+   311→   311→    </div>
+   312→   312→  );
+   313→   313→}
+   314→   314→
+   315→   315→// ═══════════════════════════════════════════════════════════════════
+   316→   316→// DASHBOARD
+   317→   317→// ═══════════════════════════════════════════════════════════════════
+   318→   318→function DashboardPage() {
+   319→   319→  const totalThreats = detectionResults.length;
+   320→   320→  const criticalCount = detectionResults.filter(d => d.severity === 'Critical').length;
+   321→   321→  const contained = detectionResults.filter(d => d.status === 'Contained').length;
+   322→   322→  const avgConfidence = Math.round(detectionResults.reduce((a, d) => a + d.confidence, 0) / detectionResults.length * 10) / 10;
+   323→   323→
+   324→   324→  const objectives = [
+   325→   325→    { num: 1, title: 'Heterogeneous TGNN Fusion', desc: 'Fuses DARPA, UNSW, LANL into a unified temporal graph', icon: GitBranch, color: 'blue', location: 'Analytics → Fused Temporal Graph' },
+   326→   326→    { num: 2, title: 'Concept Drift Adaptation', desc: 'Online continuous learning without accuracy degradation', icon: RefreshCw, color: 'emerald', location: 'Analytics → Concept Drift' },
+   327→   327→    { num: 3, title: 'Attack Backtracking Engine', desc: 'Reconstructs multi-step attack chains from alert to compromise', icon: Route, color: 'amber', location: 'Analytics → Attack Backtracking' },
+   328→   328→    { num: 4, title: 'Temporal Explainability', desc: 'Maps detections to MITRE ATT&CK with attention weights', icon: BookOpen, color: 'purple', location: 'Analytics → Explainability' },
+   329→   329→  ];
+   330→   330→
+   331→   331→  const objColorMap: Record<string, { bg: string; text: string; border: string }> = {
+   332→   332→    blue: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20' },
+   333→   333→    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20' },
+   334→   334→    amber: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20' },
+   335→   335→    purple: { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/20' },
+   336→   336→  };
+   337→   337→
+   338→   338→  return (
+   339→   339→    <div className="space-y-6">
+   340→   340→      {/* KPI Cards */}
+   341→   341→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   342→   342→        <StatCard title="Total Detections" value={totalThreats.toString()} subtitle="Last 24 hours" icon={ShieldAlert} trend="up" trendValue="+12%" color="blue" />
+   343→   343→        <StatCard title="Critical Alerts" value={criticalCount.toString()} subtitle="Requires attention" icon={AlertTriangle} trend="up" trendValue="+3" color="red" />
+   344→   344→        <StatCard title="Threats Contained" value={contained.toString()} subtitle={`${Math.round(contained / totalThreats * 100)}% containment rate`} icon={CheckCircle2} trend="up" trendValue="+8%" color="emerald" />
+   345→   345→        <StatCard title="Avg. Confidence" value={`${avgConfidence}%`} subtitle="V16 Apex model confidence" icon={Brain} trend="stable" trendValue="0.989 F1" color="purple" />
+   346→   346→      </div>
+   347→   347→
+   348→   348→      {/* Research Objectives */}
+   349→   349→      <Card className="bg-[#111827]/80 border-gray-800/60">
+   350→   350→        <CardHeader className="pb-2">
+   351→   351→          <CardTitle className="text-sm font-semibold text-gray-300">Research Objectives</CardTitle>
+   352→   352→          <CardDescription className="text-xs text-gray-500">4 core objectives — each implemented and visualized in the Analytics section</CardDescription>
+   353→   353→        </CardHeader>
+   354→   354→        <CardContent>
+   355→   355→          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+   356→   356→            {objectives.map((obj) => {
+   357→   357→              const Icon = obj.icon;
+   358→   358→              const c = objColorMap[obj.color];
+   359→   359→              return (
+   360→   360→                <div key={obj.num} className={`rounded-lg border ${c.border} ${c.bg} p-3`}>
+   361→   361→                  <div className="flex items-center gap-2 mb-2">
+   362→   362→                    <div className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold text-white bg-gradient-to-br ${
+   363→   363→                      obj.color === 'blue' ? 'from-blue-500 to-cyan-400' : obj.color === 'emerald' ? 'from-emerald-500 to-teal-400' : obj.color === 'amber' ? 'from-amber-500 to-orange-400' : 'from-purple-500 to-violet-400'
+   364→   364→                    }`}>
+   365→   365→                      {obj.num}
+   366→   366→                    </div>
+   367→   367→                    <Icon className={`w-3.5 h-3.5 ${c.text}`} />
+   368→   368→                  </div>
+   369→   369→                  <p className="text-[11px] font-medium text-gray-200 leading-tight">{obj.title}</p>
+   370→   370→                  <p className="text-[10px] text-gray-500 mt-1 leading-relaxed">{obj.desc}</p>
+   371→   371→                  <p className={`text-[9px] ${c.text} mt-2 font-medium`}>→ {obj.location}</p>
+   372→   372→                </div>
+   373→   373→              );
+   374→   374→            })}
+   375→   375→          </div>
+   376→   376→        </CardContent>
+   377→   377→      </Card>
+   378→   378→
+   379→   379→      {/* Main Grid */}
+   380→   380→      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+   381→   381→        {/* Traffic Overview */}
+   382→   382→        <Card className="lg:col-span-2 bg-[#111827]/80 border-gray-800/60">
+   383→   383→          <CardHeader className="pb-2">
+   384→   384→            <CardTitle className="text-sm font-semibold text-gray-300">Network Traffic Overview</CardTitle>
+   385→   385→            <CardDescription className="text-xs text-gray-500">24-hour event distribution by type (all sources fused)</CardDescription>
+   386→   386→          </CardHeader>
+   387→   387→          <CardContent>
+   388→   388→            <div className="h-72">
+   389→   389→              <ResponsiveContainer width="100%" height="100%">
+   390→   390→                <AreaChart data={timeSeriesData}>
+   391→   391→                  <defs>
+   392→   392→                    <linearGradient id="gradNormal" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} /><stop offset="100%" stopColor="#3b82f6" stopOpacity={0} /></linearGradient>
+   393→   393→                    <linearGradient id="gradSuspicious" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} /><stop offset="100%" stopColor="#f59e0b" stopOpacity={0} /></linearGradient>
+   394→   394→                    <linearGradient id="gradMalicious" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ef4444" stopOpacity={0.3} /><stop offset="100%" stopColor="#ef4444" stopOpacity={0} /></linearGradient>
+   395→   395→                  </defs>
+   396→   396→                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+   397→   397→                  <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
+   398→   398→                  <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} />
+   399→   399→                  <Tooltip {...CHART_TOOLTIP_STYLE} />
+   400→   400→                  <Legend wrapperStyle={{ fontSize: 11 }} />
+   401→   401→                  <Area type="monotone" dataKey="normal" stackId="1" stroke="#3b82f6" fill="url(#gradNormal)" strokeWidth={2} name="Normal" />
+   402→   402→                  <Area type="monotone" dataKey="suspicious" stackId="1" stroke="#f59e0b" fill="url(#gradSuspicious)" strokeWidth={2} name="Suspicious" />
+   403→   403→                  <Area type="monotone" dataKey="malicious" stackId="1" stroke="#ef4444" fill="url(#gradMalicious)" strokeWidth={2} name="Malicious" />
+   404→   404→                </AreaChart>
+   405→   405→              </ResponsiveContainer>
+   406→   406→            </div>
+   407→   407→          </CardContent>
+   408→   408→        </Card>
+   409→   409→
+   410→   410→        {/* Graph Statistics */}
+   411→   411→        <Card className="bg-[#111827]/80 border-gray-800/60">
+   412→   412→          <CardHeader className="pb-2">
+   413→   413→            <CardTitle className="text-sm font-semibold text-gray-300">Graph Statistics</CardTitle>
+   414→   414→            <CardDescription className="text-xs text-gray-500">V16 Apex temporal graph snapshot</CardDescription>
+   415→   415→          </CardHeader>
+   416→   416→          <CardContent className="space-y-3">
+   417→   417→            <GraphStatItem label="Total Nodes" value={graphStats.totalNodes.toString()} icon={Globe} color="blue" />
+   418→   418→            <GraphStatItem label="Total Edges" value={graphStats.totalEdges.toLocaleString()} icon={Network} color="cyan" />
+   419→   419→            <GraphStatItem label="Temporal Windows" value={graphStats.temporalWindows.toString()} icon={Clock} color="amber" />
+   420→   420→            <GraphStatItem label="Clustering Coeff." value={graphStats.avgClusteringCoeff.toFixed(3)} icon={Target} color="purple" />
+   421→   421→            <GraphStatItem label="Graph Density" value={graphStats.graphDensity.toFixed(4)} icon={Zap} color="emerald" />
+   422→   422→            <Separator className="bg-gray-800/60" />
+   423→   423→            <div className="pt-1">
+   424→   424→              <div className="flex justify-between text-xs mb-1.5">
+   425→   425→                <span className="text-gray-400">Processing Load</span>
+   426→   426→                <span className="text-emerald-400 font-medium">34%</span>
+   427→   427→              </div>
+   428→   428→              <Progress value={34} className="h-2 bg-gray-800 [&>div]:bg-gradient-to-r [&>div]:from-blue-500 [&>div]:to-cyan-400" />
+   429→   429→            </div>
+   430→   430→          </CardContent>
+   431→   431→        </Card>
+   432→   432→      </div>
+   433→   433→
+   434→   434→      {/* Recent Detections Table */}
+   435→   435→      <Card className="bg-[#111827]/80 border-gray-800/60">
+   436→   436→        <CardHeader className="pb-2">
+   437→   437→          <div className="flex items-center justify-between">
+   438→   438→            <div>
+   439→   439→              <CardTitle className="text-sm font-semibold text-gray-300">Recent Detections</CardTitle>
+   440→   440→              <CardDescription className="text-xs text-gray-500">Latest V16 Apex threat detection results</CardDescription>
+   441→   441→            </div>
+   442→   442→            <Badge variant="outline" className="border-gray-700 text-gray-400 text-xs">{detectionResults.length} total</Badge>
+   443→   443→          </div>
+   444→   444→        </CardHeader>
+   445→   445→        <CardContent>
+   446→   446→          <div className="overflow-x-auto">
+   447→   447→            <table className="w-full text-xs">
+   448→   448→              <thead>
+   449→   449→                <tr className="border-b border-gray-800/60">
+   450→   450→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">ID</th>
+   451→   451→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Timestamp</th>
+   452→   452→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">MITRE Tactic</th>
+   453→   453→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Severity</th>
+   454→   454→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Source</th>
+   455→   455→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Confidence</th>
+   456→   456→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Graph Score</th>
+   457→   457→                  <th className="text-left text-gray-500 font-medium py-2">Status</th>
+   458→   458→                </tr>
+   459→   459→              </thead>
+   460→   460→              <tbody>
+   461→   461→                {detectionResults.slice(0, 8).map((d) => {
+   462→   462→                  const StatusIcon = statusIcons[d.status] || CheckCircle2;
+   463→   463→                  return (
+   464→   464→                    <tr key={d.id} className="border-b border-gray-800/30 hover:bg-gray-800/20 transition-colors">
+   465→   465→                      <td className="py-2 pr-4 font-mono text-blue-400">{d.id}</td>
+   466→   466→                      <td className="py-2 pr-4 text-gray-400 font-mono">{formatTime(d.timestamp)}</td>
+   467→   467→                      <td className="py-2 pr-4">
+   468→   468→                        <span className="text-gray-300">{d.tactic}</span>
+   469→   469→                        <span className="text-gray-600 ml-1.5">({d.attackType})</span>
+   470→   470→                      </td>
+   471→   471→                      <td className="py-2 pr-4">
+   472→   472→                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${severityColors[d.severity]}`}>{d.severity}</Badge>
+   473→   473→                      </td>
+   474→   474→                      <td className="py-2 pr-4 font-mono text-gray-400">{d.sourceNode}</td>
+   475→   475→                      <td className="py-2 pr-4">
+   476→   476→                        <div className="flex items-center gap-1.5">
+   477→   477→                          <Progress value={d.confidence} className="w-12 h-1.5 bg-gray-800 [&>div]:bg-blue-500" />
+   478→   478→                          <span className="text-gray-400">{d.confidence}%</span>
+   479→   479→                        </div>
+   480→   480→                      </td>
+   481→   481→                      <td className="py-2 pr-4">
+   482→   482→                        <div className="flex items-center gap-1.5">
+   483→   483→                          <Progress value={d.graphScore} className="w-12 h-1.5 bg-gray-800 [&>div]:bg-purple-500" />
+   484→   484→                          <span className="text-gray-400">{d.graphScore}%</span>
+   485→   485→                        </div>
+   486→   486→                      </td>
+   487→   487→                      <td className="py-2">
+   488→   488→                        <div className="flex items-center gap-1">
+   489→   489→                          <StatusIcon className={`w-3 h-3 ${d.status === 'Detected' ? 'text-amber-400' : d.status === 'Investigating' ? 'text-blue-400' : 'text-emerald-400'}`} />
+   490→   490→                          <span className="text-gray-400">{d.status}</span>
+   491→   491→                        </div>
+   492→   492→                      </td>
+   493→   493→                    </tr>
+   494→   494→                  );
+   495→   495→                })}
+   496→   496→              </tbody>
+   497→   497→            </table>
+   498→   498→          </div>
+   499→   499→        </CardContent>
+   500→   500→      </Card>
+   501→   501→    </div>
+   502→   502→  );
+   503→   503→}
+   504→   504→
+   505→   505→// ─── SHARED COMPONENTS ────────────────────────────────────────────
+   506→   506→function StatCard({ title, value, subtitle, icon: Icon, trend, trendValue, color }: {
+   507→   507→  title: string; value: string; subtitle: string; icon: LucideIcon;
+   508→   508→  trend: 'up' | 'down' | 'stable'; trendValue: string; color: string;
+   509→   509→}) {
+   510→   510→  const colorMap: Record<string, { bg: string; text: string; shadow: string }> = {
+   511→   511→    blue: { bg: 'bg-blue-500/10', text: 'text-blue-400', shadow: 'shadow-blue-500/10' },
+   512→   512→    red: { bg: 'bg-red-500/10', text: 'text-red-400', shadow: 'shadow-red-500/10' },
+   513→   513→    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', shadow: 'shadow-emerald-500/10' },
+   514→   514→    purple: { bg: 'bg-purple-500/10', text: 'text-purple-400', shadow: 'shadow-purple-500/10' },
+   515→   515→  };
+   516→   516→  const c = colorMap[color] || colorMap.blue;
+   517→   517→  return (
+   518→   518→    <Card className="bg-[#111827]/80 border-gray-800/60 hover:border-gray-700/60 transition-colors">
+   519→   519→      <CardContent className="p-4">
+   520→   520→        <div className="flex items-start justify-between">
+   521→   521→          <div>
+   522→   522→            <p className="text-xs text-gray-500 font-medium">{title}</p>
+   523→   523→            <p className="text-2xl font-bold text-white mt-1">{value}</p>
+   524→   524→            <p className="text-[11px] text-gray-500 mt-1">{subtitle}</p>
+   525→   525→          </div>
+   526→   526→          <div className={`w-10 h-10 rounded-lg ${c.bg} flex items-center justify-center shadow-lg ${c.shadow}`}>
+   527→   527→            <Icon className={`w-5 h-5 ${c.text}`} />
+   528→   528→          </div>
+   529→   529→        </div>
+   530→   530→        <div className="flex items-center gap-1 mt-3 text-xs">
+   531→   531→          {trend === 'up' ? <ArrowUpRight className="w-3 h-3 text-emerald-400" /> :
+   532→   532→           trend === 'down' ? <ArrowDownRight className="w-3 h-3 text-red-400" /> :
+   533→   533→           <TrendingUp className="w-3 h-3 text-gray-400" />}
+   534→   534→          <span className={trend === 'up' ? 'text-emerald-400' : trend === 'down' ? 'text-red-400' : 'text-gray-400'}>{trendValue}</span>
+   535→   535→          <span className="text-gray-600 ml-1">vs last period</span>
+   536→   536→        </div>
+   537→   537→      </CardContent>
+   538→   538→    </Card>
+   539→   539→  );
+   540→   540→}
+   541→   541→
+   542→   542→function GraphStatItem({ label, value, icon: Icon, color }: {
+   543→   543→  label: string; value: string; icon: LucideIcon; color: string;
+   544→   544→}) {
+   545→   545→  const colorMap: Record<string, string> = { blue: 'text-blue-400', cyan: 'text-cyan-400', amber: 'text-amber-400', purple: 'text-purple-400', emerald: 'text-emerald-400' };
+   546→   546→  return (
+   547→   547→    <div className="flex items-center justify-between py-1.5">
+   548→   548→      <div className="flex items-center gap-2">
+   549→   549→        <Icon className={`w-3.5 h-3.5 ${colorMap[color] || 'text-gray-400'}`} />
+   550→   550→        <span className="text-xs text-gray-400">{label}</span>
+   551→   551→      </div>
+   552→   552→      <span className="text-xs font-semibold text-white">{value}</span>
+   553→   553→    </div>
+   554→   554→  );
+   555→   555→}
+   556→   556→
+   557→   557→// ═══════════════════════════════════════════════════════════════════
+   558→   558→// DATASETS PAGE
+   559→   559→// ═══════════════════════════════════════════════════════════════════
+   560→   560→function DatasetsPage({ datasets, onUploadClick }: { datasets: UploadedDataset[]; onUploadClick: () => void }) {
+   561→   561→  return (
+   562→   562→    <div className="space-y-6">
+   563→   563→      <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20">
+   564→   564→        <CardContent className="p-5 flex items-center justify-between">
+   565→   565→          <div className="flex items-center gap-4">
+   566→   566→            <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center"><Upload className="w-6 h-6 text-blue-400" /></div>
+   567→   567→            <div>
+   568→   568→              <h3 className="text-sm font-semibold text-white">Upload Log Dataset</h3>
+   569→   569→              <p className="text-xs text-gray-400 mt-0.5">Upload network logs in CSV, JSON, Syslog, NetFlow, Wazuh, Zeek, or other supported formats for TGNN analysis.</p>
+   570→   570→            </div>
+   571→   571→          </div>
+   572→   572→          <Button className="bg-blue-500 hover:bg-blue-600 text-white" onClick={onUploadClick}><FileUp className="w-4 h-4 mr-2" /> Upload Dataset</Button>
+   573→   573→        </CardContent>
+   574→   574→      </Card>
+   575→   575→
+   576→   576→      <Card className="bg-[#111827]/80 border-gray-800/60">
+   577→   577→        <CardHeader className="pb-2">
+   578→   578→          <CardTitle className="text-sm font-semibold text-gray-300">Supported Log Formats</CardTitle>
+   579→   579→          <CardDescription className="text-xs text-gray-500">TGDetect V16 Apex supports the following data ingestion formats</CardDescription>
+   580→   580→        </CardHeader>
+   581→   581→        <CardContent>
+   582→   582→          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+   583→   583→            {supportedLogFormats.map((fmt, i) => {
+   584→   584→              const FmtIcon = formatIcon[fmt.icon] || FileText;
+   585→   585→              return (
+   586→   586→                <div key={i} className="rounded-lg border border-gray-800/40 bg-[#0d1120]/50 p-3 hover:border-gray-700/60 transition-colors">
+   587→   587→                  <div className="flex items-center gap-2 mb-1.5"><FmtIcon className="w-3.5 h-3.5 text-blue-400" /><span className="text-xs font-medium text-gray-300">{fmt.name}</span></div>
+   588→   588→                  <p className="text-[10px] text-gray-500 leading-relaxed">{fmt.desc}</p>
+   589→   589→                  <p className="text-[9px] text-blue-400/60 mt-1 font-mono">{fmt.ext}</p>
+   590→   590→                </div>
+   591→   591→              );
+   592→   592→            })}
+   593→   593→          </div>
+   594→   594→        </CardContent>
+   595→   595→      </Card>
+   596→   596→
+   597→   597→      <Card className="bg-[#111827]/80 border-gray-800/60">
+   598→   598→        <CardHeader className="pb-2">
+   599→   599→          <div className="flex items-center justify-between">
+   600→   600→            <div><CardTitle className="text-sm font-semibold text-gray-300">Loaded Datasets</CardTitle><CardDescription className="text-xs text-gray-500">Currently loaded log datasets for analysis</CardDescription></div>
+   601→   601→            <Badge variant="outline" className="border-gray-700 text-gray-400 text-xs">{datasets.length} datasets</Badge>
+   602→   602→          </div>
+   603→   603→        </CardHeader>
+   604→   604→        <CardContent>
+   605→   605→          <div className="overflow-x-auto">
+   606→   606→            <table className="w-full text-xs">
+   607→   607→              <thead>
+   608→   608→                <tr className="border-b border-gray-800/60">
+   609→   609→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Dataset</th>
+   610→   610→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Format</th>
+   611→   611→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Size</th>
+   612→   612→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Events</th>
+   613→   613→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Source</th>
+   614→   614→                  <th className="text-left text-gray-500 font-medium py-2 pr-4">Uploaded</th>
+   615→   615→                  <th className="text-left text-gray-500 font-medium py-2">Status</th>
+   616→   616→                </tr>
+   617→   617→              </thead>
+   618→   618→              <tbody>
+   619→   619→                {datasets.map((ds) => (
+   620→   620→                  <tr key={ds.id} className="border-b border-gray-800/30 hover:bg-gray-800/20 transition-colors">
+   621→   621→                    <td className="py-2.5 pr-4"><div className="flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-gray-500" /><span className="text-gray-300 font-medium">{ds.name}</span></div></td>
+   622→   622→                    <td className="py-2.5 pr-4"><Badge variant="outline" className="border-gray-700 text-gray-400 text-[10px] px-1.5">{ds.format}</Badge></td>
+   623→   623→                    <td className="py-2.5 pr-4 text-gray-400">{ds.size}</td>
+   624→   624→                    <td className="py-2.5 pr-4 text-gray-400">{ds.events.toLocaleString()}</td>
+   625→   625→                    <td className="py-2.5 pr-4 text-gray-400">{ds.source}</td>
+   626→   626→                    <td className="py-2.5 pr-4 text-gray-400">{formatDate(ds.uploadedAt)}</td>
+   627→   627→                    <td className="py-2.5"><div className="flex items-center gap-1.5"><div className={`w-1.5 h-1.5 rounded-full ${ds.status === 'processed' ? 'bg-emerald-400' : ds.status === 'pending' ? 'bg-amber-400' : 'bg-red-400'}`} /><span className="text-gray-400 capitalize">{ds.status}</span></div></td>
+   628→   628→                  </tr>
+   629→   629→                ))}
+   630→   630→              </tbody>
+   631→   631→            </table>
+   632→   632→          </div>
+   633→   633→        </CardContent>
+   634→   634→      </Card>
+   635→   635→    </div>
+   636→   636→  );
+   637→   637→}
+   638→   638→
+   639→   639→// ═══════════════════════════════════════════════════════════════════
+   640→   640→// PROFILES PAGE
+   641→   641→// ═══════════════════════════════════════════════════════════════════
+   642→   642→function ProfilesPage({ profiles, activeProfile, onSelectProfile, onCreateClick, onDeleteProfile }: {
+   643→   643→  profiles: UserProfile[]; activeProfile: string; onSelectProfile: (id: string) => void; onCreateClick: () => void; onDeleteProfile: (id: string) => void;
+   644→   644→}) {
+   645→   645→  return (
+   646→   646→    <div className="space-y-6">
+   647→   647→      <div className="flex items-center justify-between">
+   648→   648→        <div><h3 className="text-sm font-semibold text-white">Analysis Profiles</h3><p className="text-xs text-gray-500 mt-0.5">Create profiles to manage different datasets and configurations</p></div>
+   649→   649→        <Button className="bg-blue-500 hover:bg-blue-600 text-white" onClick={onCreateClick}><Plus className="w-4 h-4 mr-1.5" /> Create Profile</Button>
+   650→   650→      </div>
+   651→   651→      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+   652→   652→        {profiles.map((profile) => {
+   653→   653→          const isActive = profile.id === activeProfile;
+   654→   654→          return (
+   655→   655→            <Card key={profile.id} className={`bg-[#111827]/80 border transition-colors ${isActive ? 'border-blue-500/40 shadow-lg shadow-blue-500/5' : 'border-gray-800/60 hover:border-gray-700/60'}`}>
+   656→   656→              <CardHeader className="pb-2">
+   657→   657→                <div className="flex items-start justify-between">
+   658→   658→                  <div className="flex items-center gap-2"><UserCircle className={`w-4 h-4 ${isActive ? 'text-blue-400' : 'text-gray-600'}`} /><CardTitle className="text-sm font-semibold text-gray-200">{profile.name}</CardTitle></div>
+   659→   659→                  {isActive && <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 text-[9px]">Active</Badge>}
+   660→   660→                </div>
+   661→   661→                <CardDescription className="text-[11px] text-gray-500">{profile.description}</CardDescription>
+   662→   662→              </CardHeader>
+   663→   663→              <CardContent className="space-y-3">
+   664→   664→                <div className="grid grid-cols-2 gap-2">
+   665→   665→                  <div className="rounded-lg bg-[#0d1120]/50 border border-gray-800/30 px-2.5 py-1.5"><p className="text-[9px] text-gray-600 uppercase">Dataset</p><p className="text-[11px] text-gray-300 font-medium">{profile.dataset}</p></div>
+   666→   666→                  <div className="rounded-lg bg-[#0d1120]/50 border border-gray-800/30 px-2.5 py-1.5"><p className="text-[9px] text-gray-600 uppercase">Modified</p><p className="text-[11px] text-gray-300 font-medium">{formatDate(profile.lastModified)}</p></div>
+   667→   667→                </div>
+   668→   668→                <div>
+   669→   669→                  <p className="text-[9px] text-gray-600 uppercase tracking-wider mb-1.5">V16 Apex Config</p>
+   670→   670→                  <div className="grid grid-cols-3 gap-1.5">
+   671→   671→                    {[{ label: 'Window', value: `${profile.config.temporalWindow}s` }, { label: 'Heads', value: profile.config.numHeads.toString() }, { label: 'Layers', value: profile.config.nLayers.toString() }, { label: 'Memory', value: profile.config.memoryDim.toString() }, { label: 'Embed', value: profile.config.embedDim.toString() }, { label: 'Threshold', value: profile.config.threshold.toString() }].map((c, i) => (
+   672→   672→                      <div key={i} className="rounded bg-[#0a0e1a] px-1.5 py-1 text-center"><p className="text-[8px] text-gray-600">{c.label}</p><p className="text-[10px] text-blue-400 font-mono">{c.value}</p></div>
+   673→   673→                    ))}
+   674→   674→                  </div>
+   675→   675→                </div>
+   676→   676→                <div className="flex items-center gap-2 pt-1">
+   677→   677→                  <Button variant="outline" size="sm" className={`flex-1 text-[10px] h-7 ${isActive ? 'border-blue-500/30 text-blue-400 bg-blue-500/5' : 'border-gray-700 text-gray-400'}`} onClick={() => onSelectProfile(profile.id)}>{isActive ? 'Currently Active' : 'Set Active'}</Button>
+   678→   678→                  <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-400 h-7 w-7 p-0" onClick={() => onDeleteProfile(profile.id)}><Trash2 className="w-3 h-3" /></Button>
+   679→   679→                </div>
+   680→   680→              </CardContent>
+   681→   681→            </Card>
+   682→   682→          );
+   683→   683→        })}
+   684→   684→      </div>
+   685→   685→    </div>
+   686→   686→  );
+   687→   687→}
+   688→   688→
