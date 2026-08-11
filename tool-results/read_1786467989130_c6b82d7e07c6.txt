@@ -1,0 +1,1381 @@
+     1→'use client';
+     2→
+     3→import { useMemo } from 'react';
+     4→import {
+     5→  Card,
+     6→  CardContent,
+     7→  CardDescription,
+     8→  CardHeader,
+     9→  CardTitle,
+    10→} from '@/components/ui/card';
+    11→import { Badge } from '@/components/ui/badge';
+    12→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+    13→import { Progress } from '@/components/ui/progress';
+    14→import { Separator } from '@/components/ui/separator';
+    15→import {
+    16→  AreaChart,
+    17→  Area,
+    18→  BarChart,
+    19→  Bar,
+    20→  LineChart,
+    21→  Line,
+    22→  XAxis,
+    23→  YAxis,
+    24→  CartesianGrid,
+    25→  Tooltip,
+    26→  Legend,
+    27→  ResponsiveContainer,
+    28→  PieChart,
+    29→  Pie,
+    30→  Cell,
+    31→} from 'recharts';
+    32→import {
+    33→  Database,
+    34→  Network,
+    35→  Activity,
+    36→  Shield,
+    37→  Brain,
+    38→  GitBranch,
+    39→  Search,
+    40→  Eye,
+    41→  Zap,
+    42→  Lock,
+    43→  Globe,
+    44→  ChevronRight,
+    45→  AlertTriangle,
+    46→  Target,
+    47→  Layers,
+    48→  TrendingUp,
+    49→  Info,
+    50→  Cpu,
+    51→  RefreshCw,
+    52→  BarChart3,
+    53→  ArrowRightLeft,
+    54→} from 'lucide-react';
+    55→import {
+    56→  generateSourceTimeSeries,
+    57→  generateSourceMetrics,
+    58→  generateConceptDriftData,
+    59→  generateAttackChain,
+    60→  generateExplainabilityData,
+    61→  generateNodeTypeDistribution,
+    62→  generateEdgeTypeDistribution,
+    63→} from '@/lib/synthetic-data';
+    64→import type {
+    65→  SourceTimeSeriesPoint,
+    66→  SourceMetric,
+    67→  AttackChainStep,
+    68→  ExplainabilityEntry,
+    69→} from '@/lib/synthetic-data';
+    70→
+    71→// ── Constants ──────────────────────────────────────────────────────────
+    72→
+    73→const CHART_TOOLTIP_STYLE = {
+    74→  contentStyle: {
+    75→    backgroundColor: '#1f2937',
+    76→    border: '1px solid #374151',
+    77→    borderRadius: 8,
+    78→    fontSize: 12,
+    79→  },
+    80→  labelStyle: { color: '#9ca3af' },
+    81→};
+    82→
+    83→const chartFormatter = (v: number) =>
+    84→  typeof v === 'number' ? (v % 1 === 0 ? v : v.toFixed(3)) : v;
+    85→
+    86→const TACTIC_COLORS: Record<string, string> = {
+    87→  'Reconnaissance': 'text-blue-400',
+    88→  'Initial Access': 'text-amber-400',
+    89→  'Execution': 'text-orange-400',
+    90→  'Persistence': 'text-yellow-400',
+    91→  'Privilege Escalation': 'text-red-400',
+    92→  'Defense Evasion': 'text-purple-400',
+    93→  'Credential Access': 'text-rose-400',
+    94→  'Discovery': 'text-cyan-400',
+    95→  'Lateral Movement': 'text-emerald-400',
+    96→  'Collection': 'text-teal-400',
+    97→  'Command & Control': 'text-pink-400',
+    98→  'Exfiltration': 'text-red-500',
+    99→  'Impact': 'text-red-600',
+   100→};
+   101→
+   102→const TACTIC_BG_COLORS: Record<string, string> = {
+   103→  'Reconnaissance': 'bg-blue-400/10 border-blue-400/30',
+   104→  'Initial Access': 'bg-amber-400/10 border-amber-400/30',
+   105→  'Execution': 'bg-orange-400/10 border-orange-400/30',
+   106→  'Persistence': 'bg-yellow-400/10 border-yellow-400/30',
+   107→  'Privilege Escalation': 'bg-red-400/10 border-red-400/30',
+   108→  'Defense Evasion': 'bg-purple-400/10 border-purple-400/30',
+   109→  'Credential Access': 'bg-rose-400/10 border-rose-400/30',
+   110→  'Discovery': 'bg-cyan-400/10 border-cyan-400/30',
+   111→  'Lateral Movement': 'bg-emerald-400/10 border-emerald-400/30',
+   112→  'Collection': 'bg-teal-400/10 border-teal-400/30',
+   113→  'Command & Control': 'bg-pink-400/10 border-pink-400/30',
+   114→  'Exfiltration': 'bg-red-500/10 border-red-500/30',
+   115→  'Impact': 'bg-red-600/10 border-red-600/30',
+   116→};
+   117→
+   118→const TACTIC_SEVERITY: Record<string, 'low' | 'medium' | 'high' | 'critical'> = {
+   119→  'Reconnaissance': 'low',
+   120→  'Initial Access': 'medium',
+   121→  'Execution': 'medium',
+   122→  'Persistence': 'medium',
+   123→  'Privilege Escalation': 'high',
+   124→  'Defense Evasion': 'high',
+   125→  'Credential Access': 'high',
+   126→  'Discovery': 'medium',
+   127→  'Lateral Movement': 'high',
+   128→  'Collection': 'medium',
+   129→  'Command & Control': 'high',
+   130→  'Exfiltration': 'critical',
+   131→  'Impact': 'critical',
+   132→};
+   133→
+   134→const SOURCE_COLORS: Record<string, string> = {
+   135→  DARPA: '#3b82f6',
+   136→  UNSW: '#8b5cf6',
+   137→  LANL: '#06b6d4',
+   138→  Fused: '#10b981',
+   139→};
+   140→
+   141→const SOURCE_ACCENT: Record<string, string> = {
+   142→  'DARPA TC': 'blue',
+   143→  'UNSW-NB15': 'purple',
+   144→  'LANL NetFlow': 'cyan',
+   145→};
+   146→
+   147→// ── Helper Components ──────────────────────────────────────────────────
+   148→
+   149→function ObjectiveHeader({
+   150→  number,
+   151→  title,
+   152→  description,
+   153→  icon: Icon,
+   154→}: {
+   155→  number: number;
+   156→  title: string;
+   157→  description: string;
+   158→  icon: React.ComponentType<{ className?: string }>;
+   159→}) {
+   160→  return (
+   161→    <div className="mb-6">
+   162→      <div className="flex items-center gap-3 mb-2">
+   163→        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-400/10 border border-emerald-400/30">
+   164→          <span className="text-emerald-400 font-bold text-sm">{number}</span>
+   165→        </div>
+   166→        <h2 className="text-xl font-semibold text-gray-100">{title}</h2>
+   167→        <Icon className="w-5 h-5 text-emerald-400" />
+   168→      </div>
+   169→      <p className="text-gray-400 text-sm ml-11">{description}</p>
+   170→    </div>
+   171→  );
+   172→}
+   173→
+   174→function SourceIcon({ source }: { source: string }) {
+   175→  switch (source) {
+   176→    case 'DARPA TC':
+   177→      return <Shield className="w-4 h-4 text-blue-400" />;
+   178→    case 'UNSW-NB15':
+   179→      return <Network className="w-4 h-4 text-purple-400" />;
+   180→    case 'LANL NetFlow':
+   181→      return <Activity className="w-4 h-4 text-cyan-400" />;
+   182→    default:
+   183→      return <Database className="w-4 h-4 text-gray-400" />;
+   184→  }
+   185→}
+   186→
+   187→function formatNumber(n: number): string {
+   188→  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+   189→  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
+   190→  return n.toLocaleString();
+   191→}
+   192→
+   193→// ── Tab 1: Source Analysis ─────────────────────────────────────────────
+   194→
+   195→function SourceAnalysisTab() {
+   196→  const sourceMetrics = useMemo(() => generateSourceMetrics(), []);
+   197→  const sourceTimeSeries = useMemo(() => generateSourceTimeSeries(), []);
+   198→
+   199→  // Build stacked bar data
+   200→  const stackedBarData = useMemo(() => {
+   201→    const totals = sourceMetrics.map((m) => ({
+   202→      source: m.source,
+   203→      total: m.totalEvents,
+   204→    }));
+   205→    return totals;
+   206→  }, [sourceMetrics]);
+   207→
+   208→  return (
+   209→    <div className="space-y-6">
+   210→      {/* Metric Cards */}
+   211→      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+   212→        {sourceMetrics.map((metric: SourceMetric) => (
+   213→          <Card
+   214→            key={metric.source}
+   215→            className="bg-[#111827]/80 border-gray-800/60"
+   216→          >
+   217→            <CardHeader className="pb-3">
+   218→              <div className="flex items-center justify-between">
+   219→                <div className="flex items-center gap-2">
+   220→                  <SourceIcon source={metric.source} />
+   221→                  <CardTitle className="text-sm font-medium text-gray-200">
+   222→                    {metric.source}
+   223→                  </CardTitle>
+   224→                </div>
+   225→                <Badge
+   226→                  variant="outline"
+   227→                  className="text-[10px] border-gray-700 text-gray-400"
+   228→                >
+   229→                  {metric.topTactic}
+   230→                </Badge>
+   231→              </div>
+   232→            </CardHeader>
+   233→            <CardContent className="space-y-3">
+   234→              <div className="grid grid-cols-2 gap-3">
+   235→                <div className="bg-[#0d1120]/50 rounded-lg p-3">
+   236→                  <p className="text-[11px] text-gray-500 uppercase tracking-wider">
+   237→                    Total Events
+   238→                  </p>
+   239→                  <p className="text-lg font-semibold text-gray-200 mt-1">
+   240→                    {formatNumber(metric.totalEvents)}
+   241→                  </p>
+   242→                </div>
+   243→                <div className="bg-[#0d1120]/50 rounded-lg p-3">
+   244→                  <p className="text-[11px] text-gray-500 uppercase tracking-wider">
+   245→                    Malicious
+   246→                  </p>
+   247→                  <p className="text-lg font-semibold text-red-400 mt-1">
+   248→                    {formatNumber(metric.malicious)}
+   249→                  </p>
+   250→                </div>
+   251→              </div>
+   252→              <div className="space-y-2">
+   253→                <div className="flex items-center justify-between text-xs">
+   254→                  <span className="text-gray-500">Detection Rate</span>
+   255→                  <span className="text-emerald-400 font-medium">
+   256→                    {metric.detectionRate}%
+   257→                  </span>
+   258→                </div>
+   259→                <Progress
+   260→                  value={metric.detectionRate}
+   261→                  className="h-1.5 bg-gray-800"
+   262→                />
+   263→                <div className="flex items-center justify-between text-xs">
+   264→                  <span className="text-gray-500">Avg Confidence</span>
+   265→                  <span className="text-blue-400 font-medium">
+   266→                    {metric.avgConfidence}%
+   267→                  </span>
+   268→                </div>
+   269→                <Progress
+   270→                  value={metric.avgConfidence}
+   271→                  className="h-1.5 bg-gray-800"
+   272→                />
+   273→              </div>
+   274→            </CardContent>
+   275→          </Card>
+   276→        ))}
+   277→      </div>
+   278→
+   279→      {/* Multi-line Detection Chart */}
+   280→      <Card className="bg-[#111827]/80 border-gray-800/60">
+   281→        <CardHeader className="pb-2">
+   282→          <CardTitle className="text-sm font-medium text-gray-200">
+   283→            Detection Counts Over 24h — Per Source
+   284→          </CardTitle>
+   285→          <CardDescription className="text-xs text-gray-500">
+   286→            Real-time detection counts from each log source over a 24-hour
+   287→            window
+   288→          </CardDescription>
+   289→        </CardHeader>
+   290→        <CardContent>
+   291→          <div className="h-80">
+   292→            <ResponsiveContainer width="100%" height="100%">
+   293→              <LineChart
+   294→                data={sourceTimeSeries}
+   295→                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+   296→              >
+   297→                <CartesianGrid
+   298→                  strokeDasharray="3 3"
+   299→                  stroke="#1f2937"
+   300→                />
+   301→                <XAxis
+   302→                  dataKey="time"
+   303→                  tick={{ fill: '#6b7280', fontSize: 11 }}
+   304→                  axisLine={{ stroke: '#374151' }}
+   305→                />
+   306→                <YAxis
+   307→                  tick={{ fill: '#6b7280', fontSize: 11 }}
+   308→                  axisLine={{ stroke: '#374151' }}
+   309→                  formatter={chartFormatter}
+   310→                />
+   311→                <Tooltip {...CHART_TOOLTIP_STYLE} />
+   312→                <Legend
+   313→                  wrapperStyle={{ fontSize: 12 }}
+   314→                  iconType="line"
+   315→                />
+   316→                <Line
+   317→                  type="monotone"
+   318→                  dataKey="darpa"
+   319→                  name="DARPA"
+   320→                  stroke={SOURCE_COLORS.DARPA}
+   321→                  strokeWidth={2}
+   322→                  dot={false}
+   323→                  activeDot={{ r: 4 }}
+   324→                />
+   325→                <Line
+   326→                  type="monotone"
+   327→                  dataKey="unsw"
+   328→                  name="UNSW"
+   329→                  stroke={SOURCE_COLORS.UNSW}
+   330→                  strokeWidth={2}
+   331→                  dot={false}
+   332→                  activeDot={{ r: 4 }}
+   333→                />
+   334→                <Line
+   335→                  type="monotone"
+   336→                  dataKey="lanl"
+   337→                  name="LANL"
+   338→                  stroke={SOURCE_COLORS.LANL}
+   339→                  strokeWidth={2}
+   340→                  dot={false}
+   341→                  activeDot={{ r: 4 }}
+   342→                />
+   343→              </LineChart>
+   344→            </ResponsiveContainer>
+   345→          </div>
+   346→        </CardContent>
+   347→      </Card>
+   348→
+   349→      {/* Stacked Bar Chart — Total Events */}
+   350→      <Card className="bg-[#111827]/80 border-gray-800/60">
+   351→        <CardHeader className="pb-2">
+   352→          <CardTitle className="text-sm font-medium text-gray-200">
+   353→            Total Event Volume by Source
+   354→          </CardTitle>
+   355→        </CardHeader>
+   356→        <CardContent>
+   357→          <div className="h-64">
+   358→            <ResponsiveContainer width="100%" height="100%">
+   359→              <BarChart
+   360→                data={stackedBarData}
+   361→                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+   362→              >
+   363→                <CartesianGrid
+   364→                  strokeDasharray="3 3"
+   365→                  stroke="#1f2937"
+   366→                />
+   367→                <XAxis
+   368→                  dataKey="source"
+   369→                  tick={{ fill: '#6b7280', fontSize: 11 }}
+   370→                  axisLine={{ stroke: '#374151' }}
+   371→                />
+   372→                <YAxis
+   373→                  tick={{ fill: '#6b7280', fontSize: 11 }}
+   374→                  axisLine={{ stroke: '#374151' }}
+   375→                  tickFormatter={formatNumber}
+   376→                />
+   377→                <Tooltip
+   378→                  {...CHART_TOOLTIP_STYLE}
+   379→                  formatter={(v: number) => formatNumber(v)}
+   380→                />
+   381→                <Bar
+   382→                  dataKey="total"
+   383→                  name="Total Events"
+   384→                  fill="#10b981"
+   385→                  radius={[4, 4, 0, 0]}
+   386→                >
+   387→                  {stackedBarData.map((_, idx) => (
+   388→                    <Cell
+   389→                      key={idx}
+   390→                      fill={
+   391→                        [
+   392→                          SOURCE_COLORS.DARPA,
+   393→                          SOURCE_COLORS.UNSW,
+   394→                          SOURCE_COLORS.LANL,
+   395→                        ][idx]
+   396→                      }
+   397→                    />
+   398→                  ))}
+   399→                </Bar>
+   400→              </BarChart>
+   401→            </ResponsiveContainer>
+   402→          </div>
+   403→        </CardContent>
+   404→      </Card>
+   405→    </div>
+   406→  );
+   407→}
+   408→
+   409→// ── Tab 2: Fused Temporal Graph (Objective 1) ──────────────────────────
+   410→
+   411→function FusedTemporalGraphTab() {
+   412→  const sourceTimeSeries = useMemo(
+   413→    () => generateSourceTimeSeries(),
+   414→    []
+   415→  );
+   416→  const nodeTypes = useMemo(() => generateNodeTypeDistribution(), []);
+   417→  const edgeTypes = useMemo(() => generateEdgeTypeDistribution(), []);
+   418→  const sourceMetrics = useMemo(() => generateSourceMetrics(), []);
+   419→
+   420→  // Source contribution data for pie chart
+   421→  const sourceContribution = useMemo(() => {
+   422→    const total = sourceMetrics.reduce((s, m) => s + m.totalEvents, 0);
+   423→    return sourceMetrics.map((m) => ({
+   424→      name: m.source,
+   425→      value: Math.round((m.totalEvents / total) * 100),
+   426→    }));
+   427→  }, [sourceMetrics]);
+   428→
+   429→  const sourcePieColors = [
+   430→    SOURCE_COLORS.DARPA,
+   431→    SOURCE_COLORS.UNSW,
+   432→    SOURCE_COLORS.LANL,
+   433→  ];
+   434→
+   435→  const edgeColors = [
+   436→    '#3b82f6',
+   437→    '#8b5cf6',
+   438→    '#06b6d4',
+   439→    '#f59e0b',
+   440→    '#10b981',
+   441→    '#ec4899',
+   442→  ];
+   443→
+   444→  return (
+   445→    <div className="space-y-6">
+   446→      <ObjectiveHeader
+   447→        number={1}
+   448→        title="Heterogeneous Continuous-Time TGNN Fusion"
+   449→        description="Fuses DARPA, UNSW, LANL log sources into a unified temporal graph for modeling multi-step cyberattack patterns"
+   450→        icon={Layers}
+   451→      />
+   452→
+   453→      {/* Fused Graph Score Line Chart */}
+   454→      <Card className="bg-[#111827]/80 border-gray-800/60">
+   455→        <CardHeader className="pb-2">
+   456→          <div className="flex items-center gap-2">
+   457→            <GitBranch className="w-4 h-4 text-emerald-400" />
+   458→            <CardTitle className="text-sm font-medium text-gray-200">
+   459→              Fused Temporal Graph — Detection Score Over Time
+   460→            </CardTitle>
+   461→          </div>
+   462→          <CardDescription className="text-xs text-gray-500">
+   463→            Combined detection signal from all three heterogeneous log sources
+   464→            after TGNN fusion
+   465→          </CardDescription>
+   466→        </CardHeader>
+   467→        <CardContent>
+   468→          <div className="h-72">
+   469→            <ResponsiveContainer width="100%" height="100%">
+   470→              <AreaChart
+   471→                data={sourceTimeSeries}
+   472→                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+   473→              >
+   474→                <defs>
+   475→                  <linearGradient
+   476→                    id="fusedGradient"
+   477→                    x1="0"
+   478→                    y1="0"
+   479→                    x2="0"
+   480→                    y2="1"
+   481→                  >
+   482→                    <stop
+   483→                      offset="5%"
+   484→                      stopColor={SOURCE_COLORS.Fused}
+   485→                      stopOpacity={0.3}
+   486→                    />
+   487→                    <stop
+   488→                      offset="95%"
+   489→                      stopColor={SOURCE_COLORS.Fused}
+   490→                      stopOpacity={0}
+   491→                    />
+   492→                  </linearGradient>
+   493→                </defs>
+   494→                <CartesianGrid
+   495→                  strokeDasharray="3 3"
+   496→                  stroke="#1f2937"
+   497→                />
+   498→                <XAxis
+   499→                  dataKey="time"
+   500→                  tick={{ fill: '#6b7280', fontSize: 11 }}
+   501→                  axisLine={{ stroke: '#374151' }}
+   502→                />
+   503→                <YAxis
+   504→                  tick={{ fill: '#6b7280', fontSize: 11 }}
+   505→                  axisLine={{ stroke: '#374151' }}
+   506→                  formatter={chartFormatter}
+   507→                />
+   508→                <Tooltip {...CHART_TOOLTIP_STYLE} />
+   509→                <Legend
+   510→                  wrapperStyle={{ fontSize: 12 }}
+   511→                />
+   512→                <Area
+   513→                  type="monotone"
+   514→                  dataKey="fused"
+   515→                  name="Fused Score"
+   516→                  stroke={SOURCE_COLORS.Fused}
+   517→                  strokeWidth={2}
+   518→                  fill="url(#fusedGradient)"
+   519→                />
+   520→                <Line
+   521→                  type="monotone"
+   522→                  dataKey="darpa"
+   523→                  name="DARPA"
+   524→                  stroke={SOURCE_COLORS.DARPA}
+   525→                  strokeWidth={1.5}
+   526→                  strokeDasharray="4 2"
+   527→                  dot={false}
+   528→                />
+   529→                <Line
+   530→                  type="monotone"
+   531→                  dataKey="unsw"
+   532→                  name="UNSW"
+   533→                  stroke={SOURCE_COLORS.UNSW}
+   534→                  strokeWidth={1.5}
+   535→                  strokeDasharray="4 2"
+   536→                  dot={false}
+   537→                />
+   538→                <Line
+   539→                  type="monotone"
+   540→                  dataKey="lanl"
+   541→                  name="LANL"
+   542→                  stroke={SOURCE_COLORS.LANL}
+   543→                  strokeWidth={1.5}
+   544→                  strokeDasharray="4 2"
+   545→                  dot={false}
+   546→                />
+   547→              </AreaChart>
+   548→            </ResponsiveContainer>
+   549→          </div>
+   550→        </CardContent>
+   551→      </Card>
+   552→
+   553→      {/* Pie + Bar Row */}
+   554→      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+   555→        {/* Node Type Pie */}
+   556→        <Card className="bg-[#111827]/80 border-gray-800/60">
+   557→          <CardHeader className="pb-2">
+   558→            <CardTitle className="text-sm font-medium text-gray-200">
+   559→              Node Type Distribution
+   560→            </CardTitle>
+   561→          </CardHeader>
+   562→          <CardContent>
+   563→            <div className="h-64">
+   564→              <ResponsiveContainer width="100%" height="100%">
+   565→                <PieChart>
+   566→                  <Pie
+   567→                    data={nodeTypes}
+   568→                    dataKey="value"
+   569→                    nameKey="name"
+   570→                    cx="50%"
+   571→                    cy="50%"
+   572→                    outerRadius={80}
+   573→                    innerRadius={45}
+   574→                    paddingAngle={2}
+   575→                    stroke="none"
+   576→                  >
+   577→                    {nodeTypes.map((entry, idx) => (
+   578→                      <Cell key={idx} fill={entry.color} />
+   579→                    ))}
+   580→                  </Pie>
+   581→                  <Tooltip
+   582→                    {...CHART_TOOLTIP_STYLE}
+   583→                    formatter={(v: number) => `${v}%`}
+   584→                  />
+   585→                  <Legend
+   586→                    wrapperStyle={{ fontSize: 11 }}
+   587→                    iconType="circle"
+   588→                    iconSize={8}
+   589→                  />
+   590→                </PieChart>
+   591→              </ResponsiveContainer>
+   592→            </div>
+   593→          </CardContent>
+   594→        </Card>
+   595→
+   596→        {/* Edge Type Bar */}
+   597→        <Card className="bg-[#111827]/80 border-gray-800/60">
+   598→          <CardHeader className="pb-2">
+   599→            <CardTitle className="text-sm font-medium text-gray-200">
+   600→              Edge Type Distribution
+   601→            </CardTitle>
+   602→          </CardHeader>
+   603→          <CardContent>
+   604→            <div className="h-64">
+   605→              <ResponsiveContainer width="100%" height="100%">
+   606→                <BarChart
+   607→                  data={edgeTypes}
+   608→                  layout="vertical"
+   609→                  margin={{
+   610→                    top: 5,
+   611→                    right: 20,
+   612→                    left: 80,
+   613→                    bottom: 5,
+   614→                  }}
+   615→                >
+   616→                  <CartesianGrid
+   617→                    strokeDasharray="3 3"
+   618→                    stroke="#1f2937"
+   619→                    horizontal={false}
+   620→                  />
+   621→                  <XAxis
+   622→                    type="number"
+   623→                    tick={{ fill: '#6b7280', fontSize: 11 }}
+   624→                    axisLine={{ stroke: '#374151' }}
+   625→                  />
+   626→                  <YAxis
+   627→                    type="category"
+   628→                    dataKey="name"
+   629→                    tick={{ fill: '#9ca3af', fontSize: 10 }}
+   630→                    axisLine={{ stroke: '#374151' }}
+   631→                    width={75}
+   632→                  />
+   633→                  <Tooltip {...CHART_TOOLTIP_STYLE} />
+   634→                  <Bar
+   635→                    dataKey="value"
+   636→                    name="Count"
+   637→                    radius={[0, 4, 4, 0]}
+   638→                  >
+   639→                    {edgeTypes.map((_, idx) => (
+   640→                      <Cell key={idx} fill={edgeColors[idx % edgeColors.length]} />
+   641→                    ))}
+   642→                  </Bar>
+   643→                </BarChart>
+   644→              </ResponsiveContainer>
+   645→            </div>
+   646→          </CardContent>
+   647→        </Card>
+   648→
+   649→        {/* Source Contribution Pie */}
+   650→        <Card className="bg-[#111827]/80 border-gray-800/60">
+   651→          <CardHeader className="pb-2">
+   652→            <CardTitle className="text-sm font-medium text-gray-200">
+   653→              Source Contribution
+   654→            </CardTitle>
+   655→          </CardHeader>
+   656→          <CardContent>
+   657→            <div className="h-64">
+   658→              <ResponsiveContainer width="100%" height="100%">
+   659→                <PieChart>
+   660→                  <Pie
+   661→                    data={sourceContribution}
+   662→                    dataKey="value"
+   663→                    nameKey="name"
+   664→                    cx="50%"
+   665→                    cy="50%"
+   666→                    outerRadius={80}
+   667→                    innerRadius={45}
+   668→                    paddingAngle={3}
+   669→                    stroke="none"
+   670→                    label={({ name, value }) => `${name} ${value}%`}
+   671→                  >
+   672→                    {sourceContribution.map((_, idx) => (
+   673→                      <Cell key={idx} fill={sourcePieColors[idx]} />
+   674→                    ))}
+   675→                  </Pie>
+   676→                  <Tooltip
+   677→                    {...CHART_TOOLTIP_STYLE}
+   678→                    formatter={(v: number) => `${v}%`}
+   679→                  />
+   680→                </PieChart>
+   681→              </ResponsiveContainer>
+   682→            </div>
+   683→          </CardContent>
+   684→        </Card>
+   685→      </div>
+   686→    </div>
+   687→  );
+   688→}
+   689→
+   690→// ── Tab 3: Concept Drift (Objective 2) ─────────────────────────────────
+   691→
+   692→function ConceptDriftTab() {
+   693→  const driftData = useMemo(() => generateConceptDriftData(), []);
+   694→
+   695→  return (
+   696→    <div className="space-y-6">
+   697→      <ObjectiveHeader
+   698→        number={2}
+   699→        title="Online Concept Drift Adaptation"
+   700→        description="Continuously adapts to evolving attack patterns without degrading accuracy on previously learned patterns"
+   701→        icon={Brain}
+   702→      />
+   703→
+   704→      {/* Drift Comparison Chart */}
+   705→      <Card className="bg-[#111827]/80 border-gray-800/60">
+   706→        <CardHeader className="pb-2">
+   707→          <div className="flex items-center gap-2">
+   708→            <TrendingUp className="w-4 h-4 text-emerald-400" />
+   709→            <CardTitle className="text-sm font-medium text-gray-200">
+   710→              Detection Accuracy Over Training Epochs
+   711→            </CardTitle>
+   712→          </div>
+   713→          <CardDescription className="text-xs text-gray-500">
+   714→            Comparison of model accuracy with and without concept drift
+   715→            adaptation over 20 training epochs
+   716→          </CardDescription>
+   717→        </CardHeader>
+   718→        <CardContent>
+   719→          <div className="h-80">
+   720→            <ResponsiveContainer width="100%" height="100%">
+   721→              <LineChart
+   722→                data={driftData}
+   723→                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+   724→              >
+   725→                <defs>
+   726→                  <linearGradient
+   727→                    id="adaptGradient"
+   728→                    x1="0"
+   729→                    y1="0"
+   730→                    x2="0"
+   731→                    y2="1"
+   732→                  >
+   733→                    <stop
+   734→                      offset="5%"
+   735→                      stopColor="#10b981"
+   736→                      stopOpacity={0.2}
+   737→                    />
+   738→                    <stop
+   739→                      offset="95%"
+   740→                      stopColor="#10b981"
+   741→                      stopOpacity={0}
+   742→                    />
+   743→                  </linearGradient>
+   744→                  <linearGradient
+   745→                    id="noAdaptGradient"
+   746→                    x1="0"
+   747→                    y1="0"
+   748→                    x2="0"
+   749→                    y2="1"
+   750→                  >
+   751→                    <stop
+   752→                      offset="5%"
+   753→                      stopColor="#ef4444"
+   754→                      stopOpacity={0.2}
+   755→                    />
+   756→                    <stop
+   757→                      offset="95%"
+   758→                      stopColor="#ef4444"
+   759→                      stopOpacity={0}
+   760→                    />
+   761→                  </linearGradient>
+   762→                </defs>
+   763→                <CartesianGrid
+   764→                  strokeDasharray="3 3"
+   765→                  stroke="#1f2937"
+   766→                />
+   767→                <XAxis
+   768→                  dataKey="epoch"
+   769→                  tick={{ fill: '#6b7280', fontSize: 11 }}
+   770→                  axisLine={{ stroke: '#374151' }}
+   771→                  label={{
+   772→                    value: 'Epoch',
+   773→                    position: 'insideBottom',
+   774→                    offset: -5,
+   775→                    fill: '#6b7280',
+   776→                    fontSize: 11,
+   777→                  }}
+   778→                />
+   779→                <YAxis
+   780→                  tick={{ fill: '#6b7280', fontSize: 11 }}
+   781→                  axisLine={{ stroke: '#374151' }}
+   782→                  domain={[50, 100]}
+   783→                  tickFormatter={(v: number) => `${v}%`}
+   784→                />
+   785→                <Tooltip
+   786→                  {...CHART_TOOLTIP_STYLE}
+   787→                  formatter={(v: number) => `${v.toFixed(1)}%`}
+   788→                />
+   789→                <Legend
+   790→                  wrapperStyle={{ fontSize: 12 }}
+   791→                />
+   792→                <Area
+   793→                  type="monotone"
+   794→                  dataKey="withAdaptation"
+   795→                  name="With Adaptation"
+   796→                  stroke="#10b981"
+   797→                  strokeWidth={2.5}
+   798→                  fill="url(#adaptGradient)"
+   799→                  dot={false}
+   800→                  activeDot={{ r: 5 }}
+   801→                />
+   802→                <Area
+   803→                  type="monotone"
+   804→                  dataKey="withoutAdaptation"
+   805→                  name="Without Adaptation"
+   806→                  stroke="#ef4444"
+   807→                  strokeWidth={2.5}
+   808→                  fill="url(#noAdaptGradient)"
+   809→                  dot={false}
+   810→                  activeDot={{ r: 5 }}
+   811→                />
+   812→              </LineChart>
+   813→            </ResponsiveContainer>
+   814→          </div>
+   815→        </CardContent>
+   816→      </Card>
+   817→
+   818→      {/* Explanation */}
+   819→      <Card className="bg-[#111827]/80 border-gray-800/60">
+   820→        <CardHeader className="pb-3">
+   821→          <CardTitle className="text-sm font-medium text-gray-200">
+   822→            How Adaptation Works
+   823→          </CardTitle>
+   824→        </CardHeader>
+   825→        <CardContent>
+   826→          <p className="text-xs text-gray-400 leading-relaxed mb-4">
+   827→            As network traffic patterns evolve over time, static models
+   828→            experience <span className="text-red-400 font-medium">concept drift</span> —
+   829→            their accuracy degrades because the distribution of normal and
+   830→            malicious behavior shifts. TGDetect addresses this through three
+   831→            complementary mechanisms that enable continuous learning without
+   832→            catastrophic forgetting of previously learned attack signatures.
+   833→          </p>
+   834→        </CardContent>
+   835→      </Card>
+   836→
+   837→      {/* Mechanism Cards */}
+   838→      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+   839→        <Card className="bg-[#111827]/80 border-gray-800/60">
+   840→          <CardHeader className="pb-3">
+   841→            <div className="flex items-center gap-2">
+   842→              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-400/10 border border-blue-400/30">
+   843→                <ArrowRightLeft className="w-4 h-4 text-blue-400" />
+   844→              </div>
+   845→              <CardTitle className="text-sm font-medium text-gray-200">
+   846→                Gradient Reversal Layer
+   847→              </CardTitle>
+   848→            </div>
+   849→          </CardHeader>
+   850→          <CardContent>
+   851→            <p className="text-xs text-gray-400 leading-relaxed">
+   852→              Adversarial training component that reverses gradient flow from
+   853→              the domain classifier, forcing the shared encoder to learn
+   854→              <span className="text-blue-400"> source-invariant representations</span>.
+   855→              This ensures the model generalizes across DARPA, UNSW, and LANL
+   856→              distributions without overfitting to any single source.
+   857→            </p>
+   858→          </CardContent>
+   859→        </Card>
+   860→
+   861→        <Card className="bg-[#111827]/80 border-gray-800/60">
+   862→          <CardHeader className="pb-3">
+   863→            <div className="flex items-center gap-2">
+   864→              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-400/10 border border-purple-400/30">
+   865→                <RefreshCw className="w-4 h-4 text-purple-400" />
+   866→              </div>
+   867→              <CardTitle className="text-sm font-medium text-gray-200">
+   868→                Rehearsal Buffer (10% Snapshots)
+   869→              </CardTitle>
+   870→            </div>
+   871→          </CardHeader>
+   872→          <CardContent>
+   873→            <p className="text-xs text-gray-400 leading-relaxed">
+   874→              Stores 10% of historical graph snapshots in a circular buffer.
+   875→              During each adaptation step, stored examples are replayed alongside
+   876→              new data, preventing{' '}
+   877→              <span className="text-purple-400">catastrophic forgetting</span>{' '}
+   878→              while preserving detection accuracy on legacy attack patterns.
+   879→            </p>
+   880→          </CardContent>
+   881→        </Card>
+   882→
+   883→        <Card className="bg-[#111827]/80 border-gray-800/60">
+   884→          <CardHeader className="pb-3">
+   885→            <div className="flex items-center gap-2">
+   886→              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-400/10 border border-cyan-400/30">
+   887→                <Cpu className="w-4 h-4 text-cyan-400" />
+   888→              </div>
+   889→              <CardTitle className="text-sm font-medium text-gray-200">
+   890→                Supervised Contrastive Loss
+   891→              </CardTitle>
+   892→            </div>
+   893→          </CardHeader>
+   894→          <CardContent>
+   895→            <p className="text-xs text-gray-400 leading-relaxed">
+   896→              Pulls embeddings of same-class events closer while pushing
+   897→              different-class events apart. This creates{' '}
+   898→              <span className="text-cyan-400">well-separated temporal neighborhoods</span>{' '}
+   899→              that remain stable even as the underlying data distribution
+   900→              shifts, ensuring robust classification boundaries.
+   901→            </p>
+   902→          </CardContent>
+   903→        </Card>
+   904→      </div>
+   905→    </div>
+   906→  );
+   907→}
+   908→
+   909→// ── Tab 4: Attack Backtracking (Objective 3) ───────────────────────────
+   910→
+   911→function AttackBacktrackingTab() {
+   912→  const attackChain = useMemo(() => generateAttackChain(), []);
+   913→
+   914→  const getStepConnectorColor = (tactic: string) => {
+   915→    const sev = TACTIC_SEVERITY[tactic] || 'low';
+   916→    switch (sev) {
+   917→      case 'critical':
+   918→        return 'bg-red-500';
+   919→      case 'high':
+   920→        return 'bg-orange-400';
+   921→      case 'medium':
+   922→        return 'bg-amber-400';
+   923→      default:
+   924→        return 'bg-blue-400';
+   925→    }
+   926→  };
+   927→
+   928→  const getStepDotColor = (tactic: string) => {
+   929→    const sev = TACTIC_SEVERITY[tactic] || 'low';
+   930→    switch (sev) {
+   931→      case 'critical':
+   932→        return 'bg-red-400 border-red-500 shadow-red-500/30';
+   933→      case 'high':
+   934→        return 'bg-orange-400 border-orange-500 shadow-orange-500/30';
+   935→      case 'medium':
+   936→        return 'bg-amber-400 border-amber-500 shadow-amber-500/30';
+   937→      default:
+   938→        return 'bg-blue-400 border-blue-500 shadow-blue-500/30';
+   939→    }
+   940→  };
+   941→
+   942→  return (
+   943→    <div className="space-y-6">
+   944→      <ObjectiveHeader
+   945→        number={3}
+   946→        title="Attack Chain Backtracking Engine"
+   947→        description="Reconstructs the complete multi-step attack chain from detected alert to initial compromise"
+   948→        icon={Search}
+   949→      />
+   950→
+   951→      {/* Attack Chain Timeline */}
+   952→      <Card className="bg-[#111827]/80 border-gray-800/60">
+   953→        <CardHeader className="pb-3">
+   954→          <div className="flex items-center gap-2">
+   955→            <GitBranch className="w-4 h-4 text-emerald-400" />
+   956→            <CardTitle className="text-sm font-medium text-gray-200">
+   957→              Reconstructed Attack Chain
+   958→            </CardTitle>
+   959→          </div>
+   960→          <CardDescription className="text-xs text-gray-500">
+   961→            Auto-reconstructed from alert TGD-0012 back to initial compromise —
+   962→            9 steps across 4 nodes
+   963→          </CardDescription>
+   964→        </CardHeader>
+   965→        <CardContent>
+   966→          <div className="relative">
+   967→            {attackChain.map((step: AttackChainStep, idx: number) => {
+   968→              const isLast = idx === attackChain.length - 1;
+   969→              return (
+   970→                <div key={step.step} className="relative flex gap-4 pb-6">
+   971→                  {/* Timeline Connector */}
+   972→                  <div className="flex flex-col items-center">
+   973→                    <div
+   974→                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold text-gray-900 z-10 shrink-0 shadow-lg ${getStepDotColor(step.tactic)}`}
+   975→                    >
+   976→                      {step.step}
+   977→                    </div>
+   978→                    {!isLast && (
+   979→                      <div
+   980→                        className={`w-0.5 flex-1 mt-1 ${getStepConnectorColor(step.tactic)}`}
+   981→                      />
+   982→                    )}
+   983→                  </div>
+   984→
+   985→                  {/* Step Content */}
+   986→                  <div
+   987→                    className={`flex-1 rounded-lg border p-4 mb-2 ${TACTIC_BG_COLORS[step.tactic] || 'bg-gray-800/30 border-gray-700/30'}`}
+   988→                  >
+   989→                    <div className="flex flex-wrap items-center gap-2 mb-2">
+   990→                      <span className="text-sm font-medium text-gray-200">
+   991→                        {step.event}
+   992→                      </span>
+   993→                      <Badge
+   994→                        variant="outline"
+   995→                        className={`text-[10px] ${TACTIC_COLORS[step.tactic]} border-current/30`}
+   996→                      >
+   997→                        {step.tactic}
+   998→                      </Badge>
+   999→                    </div>
+  1000→
+  1001→                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+  1002→                      {/* Timestamp */}
+  1003→                      <div>
+  1004→                        <span className="text-gray-500">
+  1005→                          Timestamp
+  1006→                        </span>
+  1007→                        <p className="text-gray-300 font-mono mt-0.5">
+  1008→                          {step.timestamp}
+  1009→                        </p>
+  1010→                      </div>
+  1011→
+  1012→                      {/* Node */}
+  1013→                      <div>
+  1014→                        <span className="text-gray-500">
+  1015→                          Node
+  1016→                        </span>
+  1017→                        <p className="text-gray-300 font-mono mt-0.5">
+  1018→                          {step.node}
+  1019→                        </p>
+  1020→                      </div>
+  1021→
+  1022→                      {/* Attention Weight */}
+  1023→                      <div>
+  1024→                        <span className="text-gray-500">
+  1025→                          Attention Weight
+  1026→                        </span>
+  1027→                        <div className="flex items-center gap-2 mt-1">
+  1028→                          <Progress
+  1029→                            value={step.attentionWeight * 100}
+  1030→                            className="h-2 bg-gray-800 flex-1"
+  1031→                          />
+  1032→                          <span className="text-gray-300 font-medium w-10 text-right">
+  1033→                            {step.attentionWeight.toFixed(2)}
+  1034→                          </span>
+  1035→                        </div>
+  1036→                      </div>
+  1037→
+  1038→                      {/* Confidence */}
+  1039→                      <div>
+  1040→                        <span className="text-gray-500">
+  1041→                          Confidence
+  1042→                        </span>
+  1043→                        <p
+  1044→                          className={`font-medium mt-0.5 ${
+  1045→                            step.confidence >= 98
+  1046→                              ? 'text-emerald-400'
+  1047→                              : step.confidence >= 96
+  1048→                                ? 'text-blue-400'
+  1049→                                : 'text-amber-400'
+  1050→                          }`}
+  1051→                        >
+  1052→                          {step.confidence}%
+  1053→                        </p>
+  1054→                      </div>
+  1055→                    </div>
+  1056→
+  1057→                    {/* Evidence */}
+  1058→                    <div className="mt-3 pt-2 border-t border-gray-700/30">
+  1059→                      <div className="flex items-start gap-1.5">
+  1060→                        <Info className="w-3 h-3 text-gray-500 mt-0.5 shrink-0" />
+  1061→                        <span className="text-xs text-gray-400 font-mono">
+  1062→                          {step.evidence}
+  1063→                        </span>
+  1064→                      </div>
+  1065→                    </div>
+  1066→                  </div>
+  1067→                </div>
+  1068→              );
+  1069→            })}
+  1070→          </div>
+  1071→        </CardContent>
+  1072→      </Card>
+  1073→    </div>
+  1074→  );
+  1075→}
+  1076→
+  1077→// ── Tab 5: Explainability (Objective 4) ─────────────────────────────────
+  1078→
+  1079→function ExplainabilityTab() {
+  1080→  const explainData = useMemo(() => generateExplainabilityData(), []);
+  1081→
+  1082→  // MITRE ATT&CK tactic distribution for mini bar chart
+  1083→  const tacticDistribution = useMemo(() => {
+  1084→    const counts: Record<string, number> = {};
+  1085→    explainData.forEach((e: ExplainabilityEntry) => {
+  1086→      counts[e.tactic] = (counts[e.tactic] || 0) + 1;
+  1087→    });
+  1088→    return Object.entries(counts)
+  1089→      .map(([tactic, count]) => ({ tactic, count }))
+  1090→      .sort((a, b) => b.count - a.count);
+  1091→  }, [explainData]);
+  1092→
+  1093→  const tacticBarColors = [
+  1094→    '#10b981',
+  1095→    '#3b82f6',
+  1096→    '#8b5cf6',
+  1097→    '#06b6d4',
+  1098→    '#f59e0b',
+  1099→    '#ef4444',
+  1100→  ];
+  1101→
+  1102→  return (
+  1103→    <div className="space-y-6">
+  1104→      <ObjectiveHeader
+  1105→        number={4}
+  1106→        title="Temporal Explainability via MITRE ATT&CK"
+  1107→        description="Maps attention weights and temporal contributions to the MITRE ATT&CK framework so analysts understand what, when, how, and why"
+  1108→        icon={Eye}
+  1109→      />
+  1110→
+  1111→      {/* Main Table */}
+  1112→      <Card className="bg-[#111827]/80 border-gray-800/60">
+  1113→        <CardHeader className="pb-3">
+  1114→          <div className="flex items-center gap-2">
+  1115→            <Target className="w-4 h-4 text-emerald-400" />
+  1116→            <CardTitle className="text-sm font-medium text-gray-200">
+  1117→              Attention-Weighted Event Explanations
+  1118→            </CardTitle>
+  1119→          </div>
+  1120→          <CardDescription className="text-xs text-gray-500">
+  1121→            Each detection mapped to its MITRE ATT&CK tactic with temporal
+  1122→            contribution scores and reasoning
+  1123→          </CardDescription>
+  1124→        </CardHeader>
+  1125→        <CardContent>
+  1126→          <div className="overflow-x-auto">
+  1127→            <div className="min-w-[900px]">
+  1128→              {/* Table Header */}
+  1129→              <div className="grid grid-cols-[80px,70px,65px,110px,110px,110px,60px,80px,1fr] gap-2 pb-2 border-b border-gray-700/50">
+  1130→                {[
+  1131→                  'Event ID',
+  1132→                  'Time',
+  1133→                  'Source',
+  1134→                  'Tactic',
+  1135→                  'Attention Wt',
+  1136→                  'Temporal Ctrb',
+  1137→                  'Graph Nbhd',
+  1138→                  'Class.',
+  1139→                  'Reasoning',
+  1140→                ].map((h) => (
+  1141→                  <span
+  1142→                    key={h}
+  1143→                    className="text-[10px] text-gray-500 uppercase tracking-wider font-medium"
+  1144→                  >
+  1145→                    {h}
+  1146→                  </span>
+  1147→                ))}
+  1148→              </div>
+  1149→
+  1150→              {/* Table Rows */}
+  1151→              <div className="divide-y divide-gray-800/40">
+  1152→                {explainData.map((entry: ExplainabilityEntry) => (
+  1153→                  <div
+  1154→                    key={entry.eventId}
+  1155→                    className="grid grid-cols-[80px,70px,65px,110px,110px,110px,60px,80px,1fr] gap-2 py-3 items-center hover:bg-[#0d1120]/50 transition-colors"
+  1156→                  >
+  1157→                    {/* Event ID */}
+  1158→                    <span className="text-xs text-gray-300 font-mono">
+  1159→                      {entry.eventId}
+  1160→                    </span>
+  1161→
+  1162→                    {/* Timestamp */}
+  1163→                    <span className="text-xs text-gray-400 font-mono">
+  1164→                      {entry.timestamp}
+  1165→                    </span>
+  1166→
+  1167→                    {/* Source */}
+  1168→                    <Badge
+  1169→                      variant="outline"
+  1170→                      className={`text-[10px] justify-center ${
+  1171→                        entry.source === 'DARPA'
+  1172→                          ? 'border-blue-400/30 text-blue-400'
+  1173→                          : entry.source === 'UNSW'
+  1174→                            ? 'border-purple-400/30 text-purple-400'
+  1175→                            : 'border-cyan-400/30 text-cyan-400'
+  1176→                      }`}
+  1177→                    >
+  1178→                      {entry.source}
+  1179→                    </Badge>
+  1180→
+  1181→                    {/* Tactic */}
+  1182→                    <Badge
+  1183→                      variant="outline"
+  1184→                      className={`text-[10px] ${TACTIC_COLORS[entry.tactic]} border-current/30`}
+  1185→                    >
+  1186→                      {entry.tactic}
+  1187→                    </Badge>
+  1188→
+  1189→                    {/* Attention Weight Bar */}
+  1190→                    <div className="flex items-center gap-1.5">
+  1191→                      <Progress
+  1192→                        value={entry.attentionWeight * 100}
+  1193→                        className="h-2 bg-gray-800 flex-1"
+  1194→                      />
+  1195→                      <span className="text-[10px] text-gray-400 w-8 text-right font-mono">
+  1196→                        {entry.attentionWeight.toFixed(2)}
+  1197→                      </span>
+  1198→                    </div>
+  1199→
+  1200→                    {/* Temporal Contribution Bar */}
+  1201→                    <div className="flex items-center gap-1.5">
+  1202→                      <Progress
+  1203→                        value={entry.temporalContribution * 100}
+  1204→                        className="h-2 bg-gray-800 flex-1"
+  1205→                      />
+  1206→                      <span className="text-[10px] text-gray-400 w-8 text-right font-mono">
+  1207→                        {entry.temporalContribution.toFixed(2)}
+  1208→                      </span>
+  1209→                    </div>
+  1210→
+  1211→                    {/* Graph Neighborhood */}
+  1212→                    <span className="text-xs text-gray-400 text-center">
+  1213→                      {entry.graphNeighborhood}
+  1214→                    </span>
+  1215→
+  1216→                    {/* Classification */}
+  1217→                    <Badge
+  1218→                      className={`text-[10px] ${
+  1219→                        entry.classification === 'Malicious'
+  1220→                          ? 'bg-red-400/10 text-red-400 border-red-400/20'
+  1221→                          : 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20'
+  1222→                      }`}
+  1223→                    >
+  1224→                      {entry.classification}
+  1225→                    </Badge>
+  1226→
+  1227→                    {/* Reasoning */}
+  1228→                    <span className="text-[11px] text-gray-400 leading-tight">
+  1229→                      {entry.reasoning}
+  1230→                    </span>
+  1231→                  </div>
+  1232→                ))}
+  1233→              </div>
+  1234→            </div>
+  1235→          </div>
+  1236→        </CardContent>
+  1237→      </Card>
+  1238→
+  1239→      {/* Tactic Distribution Mini Chart */}
+  1240→      <Card className="bg-[#111827]/80 border-gray-800/60">
+  1241→        <CardHeader className="pb-2">
+  1242→          <CardTitle className="text-sm font-medium text-gray-200">
+  1243→            MITRE ATT&CK Tactic Distribution
+  1244→          </CardTitle>
+  1245→          <CardDescription className="text-xs text-gray-500">
+  1246→            Frequency of detected tactics across all analyzed events
+  1247→          </CardDescription>
+  1248→        </CardHeader>
+  1249→        <CardContent>
+  1250→          <div className="h-48">
+  1251→            <ResponsiveContainer width="100%" height="100%">
+  1252→              <BarChart
+  1253→                data={tacticDistribution}
+  1254→                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+  1255→              >
+  1256→                <CartesianGrid
+  1257→                  strokeDasharray="3 3"
+  1258→                  stroke="#1f2937"
+  1259→                />
+  1260→                <XAxis
+  1261→                  dataKey="tactic"
+  1262→                  tick={{ fill: '#9ca3af', fontSize: 10 }}
+  1263→                  axisLine={{ stroke: '#374151' }}
+  1264→                  angle={-20}
+  1265→                  textAnchor="end"
+  1266→                  height={60}
+  1267→                />
+  1268→                <YAxis
+  1269→                  tick={{ fill: '#6b7280', fontSize: 11 }}
+  1270→                  axisLine={{ stroke: '#374151' }}
+  1271→                  allowDecimals={false}
+  1272→                />
+  1273→                <Tooltip {...CHART_TOOLTIP_STYLE} />
+  1274→                <Bar
+  1275→                  dataKey="count"
+  1276→                  name="Events"
+  1277→                  radius={[4, 4, 0, 0]}
+  1278→                >
+  1279→                  {tacticDistribution.map((_, idx) => (
+  1280→                    <Cell
+  1281→                      key={idx}
+  1282→                      fill={tacticBarColors[idx % tacticBarColors.length]}
+  1283→                    />
+  1284→                  ))}
+  1285→                </Bar>
+  1286→              </BarChart>
+  1287→            </ResponsiveContainer>
+  1288→          </div>
+  1289→        </CardContent>
+  1290→      </Card>
+  1291→    </div>
+  1292→  );
+  1293→}
+  1294→
+  1295→// ── Main Component ─────────────────────────────────────────────────────
+  1296→
+  1297→export function AnalyticsPage() {
+  1298→  return (
+  1299→    <div className="w-full max-w-[1400px] mx-auto space-y-6">
+  1300→      {/* Page Header */}
+  1301→      <div>
+  1302→        <h1 className="text-2xl font-bold text-gray-100 flex items-center gap-3">
+  1303→          <BarChart3 className="w-6 h-6 text-emerald-400" />
+  1304→          Analytics
+  1305→          <Badge className="bg-emerald-400/10 text-emerald-400 border-emerald-400/20 hover:bg-emerald-400/15 ml-1">
+  1306→            4 Research Objectives
+  1307→          </Badge>
+  1308→        </h1>
+  1309→        <p className="text-sm text-gray-500 mt-1">
+  1310→          Comprehensive analysis across DARPA TC, UNSW-NB15, and LANL NetFlow
+  1311→          log sources with TGNN fusion, concept drift adaptation, attack
+  1312→          backtracking, and temporal explainability.
+  1313→        </p>
+  1314→      </div>
+  1315→
+  1316→      <Separator className="bg-gray-800/60" />
+  1317→
+  1318→      {/* Tabs */}
+  1319→      <Tabs defaultValue="sources" className="w-full">
+  1320→        <TabsList className="bg-[#111827]/80 border border-gray-800/60 h-auto p-1 flex-wrap">
+  1321→          <TabsTrigger
+  1322→            value="sources"
+  1323→            className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-gray-400 text-xs px-3 py-2"
+  1324→          >
+  1325→            <Database className="w-3.5 h-3.5 mr-1.5" />
+  1326→            Source Analysis
+  1327→          </TabsTrigger>
+  1328→          <TabsTrigger
+  1329→            value="fusion"
+  1330→            className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-gray-400 text-xs px-3 py-2"
+  1331→          >
+  1332→            <Layers className="w-3.5 h-3.5 mr-1.5" />
+  1333→            Fused Temporal Graph
+  1334→          </TabsTrigger>
+  1335→          <TabsTrigger
+  1336→            value="drift"
+  1337→            className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-gray-400 text-xs px-3 py-2"
+  1338→          >
+  1339→            <Brain className="w-3.5 h-3.5 mr-1.5" />
+  1340→            Concept Drift
+  1341→          </TabsTrigger>
+  1342→          <TabsTrigger
+  1343→            value="backtrack"
+  1344→            className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-gray-400 text-xs px-3 py-2"
+  1345→          >
+  1346→            <Search className="w-3.5 h-3.5 mr-1.5" />
+  1347→            Attack Backtracking
+  1348→          </TabsTrigger>
+  1349→          <TabsTrigger
+  1350→            value="explain"
+  1351→            className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-gray-400 text-xs px-3 py-2"
+  1352→          >
+  1353→            <Eye className="w-3.5 h-3.5 mr-1.5" />
+  1354→            Explainability
+  1355→          </TabsTrigger>
+  1356→        </TabsList>
+  1357→
+  1358→        <TabsContent value="sources" className="mt-6">
+  1359→          <SourceAnalysisTab />
+  1360→        </TabsContent>
+  1361→
+  1362→        <TabsContent value="fusion" className="mt-6">
+  1363→          <FusedTemporalGraphTab />
+  1364→        </TabsContent>
+  1365→
+  1366→        <TabsContent value="drift" className="mt-6">
+  1367→          <ConceptDriftTab />
+  1368→        </TabsContent>
+  1369→
+  1370→        <TabsContent value="backtrack" className="mt-6">
+  1371→          <AttackBacktrackingTab />
+  1372→        </TabsContent>
+  1373→
+  1374→        <TabsContent value="explain" className="mt-6">
+  1375→          <ExplainabilityTab />
+  1376→        </TabsContent>
+  1377→      </Tabs>
+  1378→    </div>
+  1379→  );
+  1380→}
+  1381→
