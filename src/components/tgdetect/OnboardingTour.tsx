@@ -1,11 +1,12 @@
 'use client';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Shield, LayoutDashboard, BarChart3, Upload, UserCircle,
-  ChevronRight, X,
+  ChevronRight, ChevronLeft, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useTheme } from '@/lib/theme-context';
 
 interface TourStep {
   targetId: string;
@@ -77,10 +78,25 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
-  const animationRef = useRef<number | null>(null);
+  const { theme } = useTheme();
   const PADDING = 10;
 
   const step = TOUR_STEPS[currentStep];
+
+  // Theme-aware colors
+  const isDark = theme === 'dark';
+  const overlayBg = isDark ? 'rgba(0, 0, 0, 0.75)' : 'rgba(15, 23, 42, 0.55)';
+  const overlayBackdrop = isDark ? 'blur(1px)' : 'blur(3px)';
+  const highlightBorder = isDark ? 'rgba(96, 165, 250, 0.8)' : 'rgba(37, 99, 235, 0.7)';
+  const highlightGlow = isDark
+    ? '0 0 0 1px rgba(96, 165, 250, 0.3), 0 0 16px rgba(96, 165, 250, 0.15), 0 0 40px rgba(96, 165, 250, 0.08)'
+    : '0 0 0 1px rgba(37, 99, 235, 0.2), 0 0 12px rgba(37, 99, 235, 0.1)';
+  const highlightBg = isDark
+    ? 'rgba(96, 165, 250, 0.04)'
+    : 'rgba(37, 99, 235, 0.03)';
+  const cornerColor = isDark ? 'rgb(147, 197, 253)' : 'rgb(59, 130, 246)';
+  const accentColor = isDark ? 'rgb(96, 165, 250)' : 'rgb(37, 99, 235)';
+  const accentBg = isDark ? 'rgba(96, 165, 250, 0.1)' : 'rgba(37, 99, 235, 0.08)';
 
   // Measure the target element and position the tooltip
   const measureTarget = useCallback(() => {
@@ -124,23 +140,27 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
   }, [step]);
 
   useEffect(() => {
-    measureTarget();
-    // Re-measure on resize
+    // Small delay to let the DOM settle after step change
+    const timer = setTimeout(measureTarget, 50);
     window.addEventListener('resize', measureTarget);
-    return () => window.removeEventListener('resize', measureTarget);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', measureTarget);
+    };
   }, [measureTarget]);
 
-  const nextStep = useCallback(() => {
-    if (currentStep < TOUR_STEPS.length - 1) {
-      setIsTransitioning(true);
-      setTargetRect(null);
-      setTimeout(() => {
-        setCurrentStep(prev => prev + 1);
-        setIsTransitioning(false);
-      }, 250);
-    } else {
-      onComplete();
+  const goToStep = useCallback((direction: 1 | -1) => {
+    const nextIdx = currentStep + direction;
+    if (nextIdx < 0 || nextIdx >= TOUR_STEPS.length) {
+      if (direction === 1) onComplete();
+      return;
     }
+    setIsTransitioning(true);
+    setTargetRect(null);
+    setTimeout(() => {
+      setCurrentStep(nextIdx);
+      setIsTransitioning(false);
+    }, 250);
   }, [currentStep, onComplete]);
 
   const skipTour = useCallback(() => {
@@ -151,26 +171,19 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') skipTour();
-      if (e.key === 'ArrowRight' || e.key === 'Enter') nextStep();
-      if (e.key === 'ArrowLeft' && currentStep > 0) {
-        setIsTransitioning(true);
-        setTargetRect(null);
-        setTimeout(() => {
-          setCurrentStep(prev => prev - 1);
-          setIsTransitioning(false);
-        }, 250);
-      }
+      if (e.key === 'ArrowRight' || e.key === 'Enter') goToStep(1);
+      if (e.key === 'ArrowLeft') goToStep(-1);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [nextStep, skipTour, currentStep]);
+  }, [goToStep, skipTour]);
 
   if (!isVisible) return null;
 
-  // For center position (welcome step), show centered modal
+  // ─── Center modal (welcome step) ──────────────────────────────────
   if (step.position === 'center') {
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center" style={{ background: overlayBg, backdropFilter: overlayBackdrop }}>
         <div className={`bg-[var(--bg-card)] border border-[var(--border-primary)] rounded-2xl w-full max-w-lg shadow-2xl mx-4 transition-all duration-300 ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
           <div className="p-8 text-center">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-blue-500/20">
@@ -181,15 +194,15 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
             <div className="flex items-center justify-center gap-2 mb-6">
               {TOUR_STEPS.map((_, i) => (
                 <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === currentStep ? 'w-8 bg-emerald-400' : 'w-2 bg-[var(--bg-input)]'
-                }`} />
+                  i === currentStep ? 'w-8' : 'w-2'
+                }`} style={{ backgroundColor: i === currentStep ? accentColor : 'var(--bg-input)' }} />
               ))}
             </div>
             <div className="flex items-center justify-between">
               <Button variant="ghost" size="sm" className="text-[var(--text-muted)]" onClick={skipTour}>
                 Skip Tour
               </Button>
-              <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white" onClick={nextStep}>
+              <Button size="sm" className="text-white" style={{ backgroundColor: accentColor }} onClick={() => goToStep(1)}>
                 Get Started <ChevronRight className="w-3.5 h-3.5 ml-1" />
               </Button>
             </div>
@@ -199,36 +212,24 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
     );
   }
 
-  // Build SVG spotlight path that creates a "hole" around the target element
-  const spotlightPath = targetRect
-    ? `M0,0 H${window.innerWidth} V${window.innerHeight} H0 Z
-       M${targetRect.left},${targetRect.top}
-       h${targetRect.width} v${targetRect.height}
-       h-${targetRect.width} Z`
-    : '';
-
-  const spotlightRadius = targetRect
-    ? Math.max(targetRect.width, targetRect.height) / 2 + 20
-    : 0;
-
+  // ─── Spotlight steps ─────────────────────────────────────────────
   return (
     <div className="fixed inset-0 z-[100]">
-      {/* SVG Spotlight Overlay — the black area with a transparent hole */}
+      {/* SVG Overlay with cutout hole */}
       <svg
-        className="absolute inset-0 w-full h-full pointer-events-auto"
-        style={{ filter: 'blur(0.5px)' }}
+        className="absolute inset-0 w-full h-full"
+        style={{ pointerEvents: 'auto' }}
       >
         <defs>
           <mask id="tour-spotlight">
             <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            {/* Cut out the target area */}
             {targetRect && (
               <rect
                 x={targetRect.left}
                 y={targetRect.top}
                 width={targetRect.width}
                 height={targetRect.height}
-                rx="8"
+                rx="10"
                 fill="black"
               />
             )}
@@ -237,58 +238,70 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
         <rect
           x="0" y="0"
           width="100%" height="100%"
-          fill="rgba(0, 0, 0, 0.7)"
+          fill={overlayBg}
           mask="url(#tour-spotlight)"
+          style={{ backdropFilter: overlayBackdrop }}
         />
       </svg>
 
-      {/* Pulsing highlight ring around the target */}
+      {/* Highlight ring around the target — subtle, theme-aware */}
       {targetRect && (
         <div
           className="absolute pointer-events-none transition-all duration-300"
           style={{
-            top: targetRect.top - 4,
-            left: targetRect.left - 4,
-            width: targetRect.width + 8,
-            height: targetRect.height + 8,
+            top: targetRect.top,
+            left: targetRect.left,
+            width: targetRect.width,
+            height: targetRect.height,
+            borderRadius: '10px',
+            border: `1.5px solid ${highlightBorder}`,
+            boxShadow: highlightGlow,
+            background: highlightBg,
           }}
         >
-          {/* Outer pulsing ring */}
-          <div className="absolute inset-0 rounded-lg border-2 border-emerald-400/60 animate-pulse" />
-          {/* Inner bright ring */}
-          <div className="absolute inset-0 rounded-lg border-[3px] border-emerald-400/90" />
-          {/* Corner accents */}
-          <div className="absolute -top-0.5 -left-0.5 w-4 h-4 border-t-[3px] border-l-[3px] border-emerald-300 rounded-tl-lg" />
-          <div className="absolute -top-0.5 -right-0.5 w-4 h-4 border-t-[3px] border-r-[3px] border-emerald-300 rounded-tr-lg" />
-          <div className="absolute -bottom-0.5 -left-0.5 w-4 h-4 border-b-[3px] border-l-[3px] border-emerald-300 rounded-bl-lg" />
-          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 border-b-[3px] border-r-[3px] border-emerald-300 rounded-br-lg" />
-          {/* Soft glow */}
-          <div className="absolute inset-0 rounded-lg shadow-[0_0_20px_rgba(52,211,153,0.3),0_0_40px_rgba(52,211,153,0.1)]" />
+          {/* Animated scanning line */}
+          <div
+            className="absolute left-0 right-0 h-[1px] opacity-40"
+            style={{
+              top: '0%',
+              background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`,
+              animation: 'tour-scan 2.5s ease-in-out infinite',
+            }}
+          />
         </div>
       )}
 
       {/* Tooltip */}
       <div
-        className={`absolute pointer-events-auto transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-3' : 'opacity-100 translate-y-0'}`}
+        className={`absolute pointer-events-auto transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
         style={{
           top: tooltipPos.top,
           left: tooltipPos.left,
         }}
       >
-        {/* Connector arrow pointing to the target */}
+        {/* Connector line to target */}
         {step.position === 'right' && targetRect && (
           <div
-            className="absolute -left-2 top-[60px] w-0 h-0 border-t-[6px] border-b-[6px] border-r-[8px] border-t-transparent border-b-transparent border-r-[var(--bg-card)]"
-            style={{ filter: 'drop-shadow(-2px 0 2px rgba(0,0,0,0.3))' }}
+            className="absolute -left-6 top-[72px] w-6 h-[1px]"
+            style={{ background: `${accentColor}40` }}
+          />
+        )}
+        {step.position === 'bottom' && targetRect && (
+          <div
+            className="absolute left-1/2 -translate-x-1/2 -top-6 w-[1px] h-6"
+            style={{ background: `${accentColor}40` }}
           />
         )}
 
-        <div className="bg-[var(--bg-card)] border border-[var(--border-primary)] rounded-xl w-80 shadow-2xl shadow-black/40">
+        <div className="bg-[var(--bg-card)] border border-[var(--border-primary)] rounded-xl w-80 shadow-2xl" style={isDark ? { boxShadow: '0 25px 50px rgba(0,0,0,0.5)' } : { boxShadow: '0 20px 40px rgba(0,0,0,0.12)' }}>
           <div className="p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-400/10 border border-emerald-400/30 flex items-center justify-center">
-                  <step.icon className="w-4 h-4 text-emerald-400" />
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ background: accentBg, border: `1px solid ${accentColor}30` }}
+                >
+                  <step.icon className="w-4 h-4" style={{ color: accentColor }} />
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-[var(--text-primary)]">{step.title}</h3>
@@ -307,8 +320,8 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
               <div className="flex items-center gap-1.5">
                 {TOUR_STEPS.map((_, i) => (
                   <div key={i} className={`h-1 rounded-full transition-all duration-300 ${
-                    i === currentStep ? 'w-4 bg-emerald-400' : 'w-1.5 bg-[var(--bg-input)]'
-                  }`} />
+                    i === currentStep ? 'w-4' : 'w-1.5'
+                  }`} style={{ backgroundColor: i === currentStep ? accentColor : 'var(--bg-input)' }} />
                 ))}
               </div>
               <div className="flex items-center gap-2">
@@ -316,23 +329,16 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-[10px] text-[var(--text-muted)] h-7"
-                    onClick={() => {
-                      setIsTransitioning(true);
-                      setTargetRect(null);
-                      setTimeout(() => {
-                        setCurrentStep(prev => prev - 1);
-                        setIsTransitioning(false);
-                      }, 250);
-                    }}
+                    className="text-[10px] text-[var(--text-muted)] h-7 gap-0.5"
+                    onClick={() => goToStep(-1)}
                   >
-                    Back
+                    <ChevronLeft className="w-3 h-3" /> Back
                   </Button>
                 )}
                 <Button variant="ghost" size="sm" className="text-[10px] text-[var(--text-muted)] h-7" onClick={skipTour}>
                   Skip
                 </Button>
-                <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white h-7 text-xs" onClick={nextStep}>
+                <Button size="sm" className="text-white h-7 text-xs" style={{ backgroundColor: accentColor }} onClick={() => goToStep(1)}>
                   {currentStep === TOUR_STEPS.length - 1 ? 'Finish' : 'Next'}
                   <ChevronRight className="w-3 h-3 ml-1" />
                 </Button>
@@ -341,6 +347,16 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
           </div>
         </div>
       </div>
+
+      {/* Keyframe animation for the scan line */}
+      <style jsx>{`
+        @keyframes tour-scan {
+          0%, 100% { top: 5%; opacity: 0; }
+          10% { opacity: 0.5; }
+          90% { opacity: 0.5; }
+          50% { top: 95%; }
+        }
+      `}</style>
     </div>
   );
 }
