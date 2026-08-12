@@ -72,7 +72,7 @@ export function useLiveStream() {
       const template = templates[Math.floor(Math.random() * templates.length)];
       counterRef.current += 1;
       const item = {
-        id: `feed-${Date.now()}-${counterRef.current}`,
+        id: crypto.randomUUID(),
         ...template,
         timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }),
       };
@@ -85,7 +85,7 @@ export function useLiveStream() {
       counterRef.current += 1;
       const d = new Date(Date.now() - (5 - i) * 8000);
       setFeedItems(prev => [{
-        id: `feed-${Date.now()}-${counterRef.current}`,
+        id: crypto.randomUUID(),
         ...template,
         timestamp: d.toLocaleTimeString('en-US', { hour12: false }),
       }, ...prev]);
