@@ -50,5 +50,12 @@ test
 prompt
 
 server.log
+
+# Workspace artifacts
+/scripts/
+/worklog.md
+/download/
+/upgrade-file.txt
+
 # Skills directory
 /skills/
