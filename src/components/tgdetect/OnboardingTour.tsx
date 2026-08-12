@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Shield, LayoutDashboard, BarChart3, Upload, UserCircle,
   ChevronRight, X,
@@ -26,7 +26,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     targetId: 'tour-dashboard',
     title: 'Dashboard Overview',
-    description: 'Get a real-time view of your detection pipeline. Monitor live event ingestion, threat metrics, network traffic patterns, and recent detection alerts \u2014 all powered by the V16 Apex TGNN model.',
+    description: 'Get a real-time view of your detection pipeline. Monitor live event ingestion, threat metrics, network traffic patterns, and recent detection alerts — all powered by the V16 Apex TGNN model.',
     position: 'right',
     icon: LayoutDashboard,
   },
@@ -47,7 +47,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     targetId: 'tour-profiles',
     title: 'Analysis Profiles',
-    description: 'Create dedicated profiles for different datasets and investigations. Each profile maintains its own V16 Apex configuration \u2014 temporal window, memory dimensions, attention heads, and detection thresholds.',
+    description: 'Create dedicated profiles for different datasets and investigations. Each profile maintains its own V16 Apex configuration — temporal window, memory dimensions, attention heads, and detection thresholds.',
     position: 'right',
     icon: UserCircle,
   },
@@ -64,20 +64,80 @@ interface OnboardingTourProps {
   onComplete: () => void;
 }
 
+interface TargetRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
 export function OnboardingTour({ onComplete }: OnboardingTourProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const animationRef = useRef<number | null>(null);
+  const PADDING = 10;
 
   const step = TOUR_STEPS[currentStep];
+
+  // Measure the target element and position the tooltip
+  const measureTarget = useCallback(() => {
+    if (step.position === 'center') {
+      setTargetRect(null);
+      return;
+    }
+    const el = document.getElementById(step.targetId);
+    if (!el) {
+      setTargetRect(null);
+      return;
+    }
+    const rect = el.getBoundingClientRect();
+    setTargetRect({
+      top: rect.top - PADDING,
+      left: rect.left - PADDING,
+      width: rect.width + PADDING * 2,
+      height: rect.height + PADDING * 2,
+    });
+
+    // Position the tooltip relative to the target
+    let tooltipTop = 0;
+    let tooltipLeft = 0;
+
+    if (step.position === 'right') {
+      tooltipTop = rect.top + rect.height / 2 - 60;
+      tooltipLeft = rect.right + PADDING + 16;
+    } else if (step.position === 'bottom') {
+      tooltipTop = rect.bottom + PADDING + 16;
+      tooltipLeft = rect.left + rect.width / 2 - 160;
+    } else if (step.position === 'left') {
+      tooltipTop = rect.top + rect.height / 2 - 60;
+      tooltipLeft = rect.left - PADDING - 336;
+    }
+
+    // Clamp tooltip within viewport
+    tooltipLeft = Math.max(12, Math.min(tooltipLeft, window.innerWidth - 340));
+    tooltipTop = Math.max(12, Math.min(tooltipTop, window.innerHeight - 200));
+
+    setTooltipPos({ top: tooltipTop, left: tooltipLeft });
+  }, [step]);
+
+  useEffect(() => {
+    measureTarget();
+    // Re-measure on resize
+    window.addEventListener('resize', measureTarget);
+    return () => window.removeEventListener('resize', measureTarget);
+  }, [measureTarget]);
 
   const nextStep = useCallback(() => {
     if (currentStep < TOUR_STEPS.length - 1) {
       setIsTransitioning(true);
+      setTargetRect(null);
       setTimeout(() => {
         setCurrentStep(prev => prev + 1);
         setIsTransitioning(false);
-      }, 200);
+      }, 250);
     } else {
       onComplete();
     }
@@ -94,10 +154,11 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
       if (e.key === 'ArrowRight' || e.key === 'Enter') nextStep();
       if (e.key === 'ArrowLeft' && currentStep > 0) {
         setIsTransitioning(true);
+        setTargetRect(null);
         setTimeout(() => {
           setCurrentStep(prev => prev - 1);
           setIsTransitioning(false);
-        }, 200);
+        }, 250);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -138,15 +199,91 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
     );
   }
 
-  // For other steps, show spotlight-style tooltip
+  // Build SVG spotlight path that creates a "hole" around the target element
+  const spotlightPath = targetRect
+    ? `M0,0 H${window.innerWidth} V${window.innerHeight} H0 Z
+       M${targetRect.left},${targetRect.top}
+       h${targetRect.width} v${targetRect.height}
+       h-${targetRect.width} Z`
+    : '';
+
+  const spotlightRadius = targetRect
+    ? Math.max(targetRect.width, targetRect.height) / 2 + 20
+    : 0;
+
   return (
-    <div className="fixed inset-0 z-[100] pointer-events-none">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto" onClick={skipTour} />
-      
+    <div className="fixed inset-0 z-[100]">
+      {/* SVG Spotlight Overlay — the black area with a transparent hole */}
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-auto"
+        style={{ filter: 'blur(0.5px)' }}
+      >
+        <defs>
+          <mask id="tour-spotlight">
+            <rect x="0" y="0" width="100%" height="100%" fill="white" />
+            {/* Cut out the target area */}
+            {targetRect && (
+              <rect
+                x={targetRect.left}
+                y={targetRect.top}
+                width={targetRect.width}
+                height={targetRect.height}
+                rx="8"
+                fill="black"
+              />
+            )}
+          </mask>
+        </defs>
+        <rect
+          x="0" y="0"
+          width="100%" height="100%"
+          fill="rgba(0, 0, 0, 0.7)"
+          mask="url(#tour-spotlight)"
+        />
+      </svg>
+
+      {/* Pulsing highlight ring around the target */}
+      {targetRect && (
+        <div
+          className="absolute pointer-events-none transition-all duration-300"
+          style={{
+            top: targetRect.top - 4,
+            left: targetRect.left - 4,
+            width: targetRect.width + 8,
+            height: targetRect.height + 8,
+          }}
+        >
+          {/* Outer pulsing ring */}
+          <div className="absolute inset-0 rounded-lg border-2 border-emerald-400/60 animate-pulse" />
+          {/* Inner bright ring */}
+          <div className="absolute inset-0 rounded-lg border-[3px] border-emerald-400/90" />
+          {/* Corner accents */}
+          <div className="absolute -top-0.5 -left-0.5 w-4 h-4 border-t-[3px] border-l-[3px] border-emerald-300 rounded-tl-lg" />
+          <div className="absolute -top-0.5 -right-0.5 w-4 h-4 border-t-[3px] border-r-[3px] border-emerald-300 rounded-tr-lg" />
+          <div className="absolute -bottom-0.5 -left-0.5 w-4 h-4 border-b-[3px] border-l-[3px] border-emerald-300 rounded-bl-lg" />
+          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 border-b-[3px] border-r-[3px] border-emerald-300 rounded-br-lg" />
+          {/* Soft glow */}
+          <div className="absolute inset-0 rounded-lg shadow-[0_0_20px_rgba(52,211,153,0.3),0_0_40px_rgba(52,211,153,0.1)]" />
+        </div>
+      )}
+
       {/* Tooltip */}
-      <div className={`absolute ${getPositionClasses(step.position, step.targetId)} pointer-events-auto transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
-        <div className="bg-[var(--bg-card)] border border-[var(--border-primary)] rounded-xl w-80 shadow-2xl">
+      <div
+        className={`absolute pointer-events-auto transition-all duration-300 ${isTransitioning ? 'opacity-0 translate-y-3' : 'opacity-100 translate-y-0'}`}
+        style={{
+          top: tooltipPos.top,
+          left: tooltipPos.left,
+        }}
+      >
+        {/* Connector arrow pointing to the target */}
+        {step.position === 'right' && targetRect && (
+          <div
+            className="absolute -left-2 top-[60px] w-0 h-0 border-t-[6px] border-b-[6px] border-r-[8px] border-t-transparent border-b-transparent border-r-[var(--bg-card)]"
+            style={{ filter: 'drop-shadow(-2px 0 2px rgba(0,0,0,0.3))' }}
+          />
+        )}
+
+        <div className="bg-[var(--bg-card)] border border-[var(--border-primary)] rounded-xl w-80 shadow-2xl shadow-black/40">
           <div className="p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
@@ -165,7 +302,7 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
               </button>
             </div>
             <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-4">{step.description}</p>
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 {TOUR_STEPS.map((_, i) => (
@@ -175,6 +312,23 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
                 ))}
               </div>
               <div className="flex items-center gap-2">
+                {currentStep > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[10px] text-[var(--text-muted)] h-7"
+                    onClick={() => {
+                      setIsTransitioning(true);
+                      setTargetRect(null);
+                      setTimeout(() => {
+                        setCurrentStep(prev => prev - 1);
+                        setIsTransitioning(false);
+                      }, 250);
+                    }}
+                  >
+                    Back
+                  </Button>
+                )}
                 <Button variant="ghost" size="sm" className="text-[10px] text-[var(--text-muted)] h-7" onClick={skipTour}>
                   Skip
                 </Button>
@@ -189,15 +343,4 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
       </div>
     </div>
   );
-}
-
-function getPositionClasses(position: string, targetId: string): string {
-  switch (position) {
-    case 'right':
-      return 'top-1/3 left-[300px]';
-    case 'bottom':
-      return 'top-[200px] left-1/2 -translate-x-1/2';
-    default:
-      return 'top-1/2 left-1/2 -translate-x-1/2';
-  }
 }
