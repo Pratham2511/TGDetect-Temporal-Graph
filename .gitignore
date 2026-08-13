@@ -23,6 +23,7 @@ node_modules
 # misc
 .DS_Store
 *.pem
+Thumbs.db
 
 # debug
 npm-debug.log*
@@ -30,32 +31,48 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
 
 # vercel
 .vercel
 
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# logs
+*.log
+dev.log
+server.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+
+# Workspace artifacts (not part of the project)
+/scripts/
+/download/
+/worklog.md
+/upgrade-file.txt
+/upload/
+
+# Skills directory (AI framework internal)
+/skills/
+
+# Research data (not part of the repo)
+/docs/research/
+
+# Tool outputs
+/tool-results/
+/.zscripts/
+/test/
+/prompt
 local-*
 .claude
 .z-ai-config
-*.log
-dev.log
-dev.out.log
-test
-prompt
-
-server.log
-
-# Workspace artifacts
-/scripts/
-/worklog.md
-/download/
-/upgrade-file.txt
-
-# Skills directory
-/skills/

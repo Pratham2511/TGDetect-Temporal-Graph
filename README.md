@@ -25,7 +25,7 @@ TGDetect is a threat detection platform that leverages **Temporal Graph Neural N
 - **Smart Column Mapping** — Auto-detects and maps CSV/JSON/Syslog/NetFlow columns to TGDetect's expected schema
 - **12+ Log Format Support** — CSV, JSON, Syslog, NetFlow v5/v9, Zeek JSON, Suricata EVE, Apache Access, Windows Event, AWS CloudTrail, CEF, and custom delimited formats
 - **Dark/Light Theme** — Full theme switching with CSS custom properties for all components
-- **Interactive Onboarding Tour** — Step-by-step guided walkthrough for first-time users
+- **Interactive Onboarding Tour** — Step-by-step guided walkthrough with spotlight highlighting for first-time users
 
 ---
 
@@ -49,27 +49,61 @@ TGDetect is a threat detection platform that leverages **Temporal Graph Neural N
 
 ```
 tgdetect/
-├── src/
+├── src/                          # Application source code
 │   ├── app/
-│   │   ├── page.tsx              # Main SPA with Dashboard, Datasets, Profiles
+│   │   ├── api/route.ts          # API health-check endpoint
+│   │   ├── globals.css           # CSS variables for dark/light themes
 │   │   ├── layout.tsx            # Root layout with ThemeProvider
-│   │   └── globals.css           # CSS variables for dark/light themes
+│   │   └── page.tsx              # Main SPA (Dashboard, Datasets, Profiles)
+│   │
 │   ├── components/
-│   │   ├── tgdetect/
-│   │   │   ├── AnalyticsPage.tsx  # Deep analytics: source analysis, graph fusion,
-│   │   │   │                      # concept drift, backtracking, explainability
-│   │   │   ├── OnboardingTour.tsx # Guided tour overlay with spotlight highlighting
-│   │   │   ├── ColumnMapper.tsx   # Drag-and-drop column mapping for uploads
-│   │   │   └── TimeRangePicker.tsx # Time range selector (1h/6h/24h/7d/30d)
-│   │   └── ui/                   # shadcn/ui components
-│   ├── hooks/
-│   │   └── useLiveStream.ts      # Real-time metrics & feed item streaming
-│   └── lib/
-│       ├── theme-context.tsx     # Dark/light theme context with localStorage
-│       ├── date-utils.ts         # Hydration-safe date formatting
-│       └── synthetic-data.ts    # Demo data generators for charts & feeds
-├── public/
-└── package.json
+│   │   ├── tgdetect/             # TGDetect-specific components
+│   │   │   ├── AnalyticsPage.tsx  #   Analytics: source analysis, graph fusion,
+│   │   │   │                      #   concept drift, backtracking, explainability
+│   │   │   ├── ColumnMappingModal.tsx  #   Drag-and-drop column mapping for uploads
+│   │   │   ├── OnboardingTour.tsx      #   Guided tour overlay with spotlight
+│   │   │   └── TimeRangePicker.tsx      #   Time range selector (1h/6h/24h/7d/30d)
+│   │   └── ui/                   # shadcn/ui base components (40+)
+│   │       ├── accordion.tsx
+│   │       ├── badge.tsx
+│   │       ├── button.tsx
+│   │       ├── card.tsx
+│   │       ├── dialog.tsx
+│   │       ├── input.tsx
+│   │       ├── select.tsx
+│   │       ├── table.tsx
+│   │       ├── tabs.tsx
+│   │       └── ... (40+ more)
+│   │
+│   ├── hooks/                    # Custom React hooks
+│   │   ├── useLiveStream.ts      #   Real-time metrics & feed streaming
+│   │   ├── use-mobile.ts         #   Mobile viewport detection
+│   │   └── use-toast.ts          #   Toast notification hook
+│   │
+│   └── lib/                      # Utilities and configuration
+│       ├── date-utils.ts         #   Hydration-safe date formatting
+│       ├── db.ts                 #   Prisma database client
+│       ├── synthetic-data.ts     #   Demo data generators for all charts
+│       ├── theme-context.tsx     #   Dark/light theme context (localStorage)
+│       └── utils.ts              #   General utilities (cn, etc.)
+│
+├── public/                       # Static assets
+│   ├── logo.svg
+│   └── robots.txt
+│
+├── prisma/                       # Database schema
+│   └── schema.prisma
+│
+├── .gitignore                    # Git ignore rules
+├── components.json                # shadcn/ui configuration
+├── eslint.config.mjs             # ESLint configuration
+├── LICENSE                       # MIT License
+├── next.config.ts                # Next.js configuration
+├── package.json                  # Dependencies and scripts
+├── postcss.config.mjs            # PostCSS configuration
+├── README.md                     # This file
+├── tailwind.config.ts            # Tailwind CSS configuration
+└── tsconfig.json                 # TypeScript configuration
 ```
 
 ---
@@ -184,7 +218,7 @@ pm2 startup
 
 ### Dashboard
 - Real-time stat cards with trend indicators (total events, threats, graph edges, memory)
-- Time-series area chart for event throughput
+- Time-series area chart for event throughput with time range picker
 - Detection results bar chart by severity
 - MITRE ATT&CK tactic distribution radar chart
 - Network event type pie chart
@@ -259,7 +293,7 @@ Input: Network event stream → Node features (IP, port, protocol, bytes, packet
 
 ## Environment Variables
 
-This is a frontend-only demo. No environment variables are required for the basic deployment. The following optional variables can be configured:
+This is a frontend-only demo. No environment variables are required for the basic deployment.
 
 ```env
 # Port (default: 3000)
