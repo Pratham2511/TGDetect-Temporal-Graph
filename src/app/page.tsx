@@ -189,8 +189,8 @@ export default function Home() {
               <Shield className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-base font-bold tracking-tight text-[hsl(var(--sidebar-text-active))]">TGDetect</h1>
-              <p className="text-[10px] font-medium text-[hsl(var(--sidebar-logo-sub))] uppercase tracking-widest">V16 Apex TGNN</p>
+              <h1 className="text-base font-bold tracking-tight" style={{ color: 'hsl(var(--sidebar-logo-text))' }}>TGDetect</h1>
+              <p className="text-[10px] font-medium uppercase tracking-widest" style={{ color: 'hsl(var(--sidebar-logo-sub))' }}>V16 Apex TGNN</p>
             </div>
           </div>
         </div>
@@ -266,10 +266,10 @@ export default function Home() {
             <button onClick={toggleTheme} className="p-2 rounded-lg border transition-all hover:bg-[hsl(var(--card-hover))]" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
               {theme === 'dark' ? <Sun className="w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} /> : <Moon className="w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />}
             </button>
-            <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-xs px-2.5">
+            <Badge variant="outline" className="text-xs px-2.5" style={{ borderColor: 'hsl(var(--success) / 0.3)', color: 'hsl(var(--success))' }}>
               <Activity className="w-3 h-3 mr-1" /> V16 Apex
             </Badge>
-            <Badge variant="outline" className="border-[hsl(var(--border-light))] text-[hsl(var(--muted-foreground))] text-xs px-2.5">
+            <Badge variant="outline" className="text-xs px-2.5" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}>
               <Database className="w-3 h-3 mr-1" /> Synthetic Data
             </Badge>
           </div>
@@ -817,6 +817,17 @@ function ProfilesPage({ profiles, activeProfile, onSelectProfile, onCreateClick,
             </Card>
           );
         })}
+      </div>
+      <div className="tg-card p-5 mt-4">
+        <h3 className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--foreground))' }}>V16 Apex Configuration Reference</h3>
+        <div className="grid grid-cols-2 gap-3 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          <div><span className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>Window</span> — Temporal neighborhood size in seconds</div>
+          <div><span className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>Heads</span> — Attention heads in Causal Attention</div>
+          <div><span className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>Layers</span> — Graph convolution depth</div>
+          <div><span className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>Memory</span> — MemBank GRU state dimension</div>
+          <div><span className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>Embed</span> — Node embedding dimension</div>
+          <div><span className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>Threshold</span> — Alert confidence cutoff</div>
+        </div>
       </div>
     </div>
   );

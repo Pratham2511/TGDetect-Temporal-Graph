@@ -240,11 +240,11 @@ function SourceAnalysisTab() {
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-[hsl(var(--secondary))] rounded-lg p-3">
-                  <p className="text-[11px] text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Total Events</p>
+                  <p className="text-[11px] text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Events</p>
                   <p className="text-lg font-semibold text-[hsl(var(--muted-foreground))] mt-1">{formatNumber(metric.totalEvents)}</p>
                 </div>
                 <div className="bg-[hsl(var(--secondary))] rounded-lg p-3">
-                  <p className="text-[11px] text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Malicious</p>
+                  <p className="text-[11px] text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Detections</p>
                   <p className="text-lg font-semibold text-red-400 mt-1">{formatNumber(metric.malicious)}</p>
                 </div>
               </div>
@@ -255,7 +255,7 @@ function SourceAnalysisTab() {
                 </div>
                 <Progress value={metric.detectionRate} className="h-1.5 bg-[hsl(var(--secondary))]" />
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-[hsl(var(--muted-foreground))]">Avg Confidence</span>
+                  <span className="text-[hsl(var(--muted-foreground))]">Confidence</span>
                   <span className="text-blue-400 font-medium">{metric.avgConfidence}%</span>
                 </div>
                 <Progress value={metric.avgConfidence} className="h-1.5 bg-[hsl(var(--secondary))]" />
@@ -265,10 +265,10 @@ function SourceAnalysisTab() {
         ))}
       </div>
 
-      {/* GAP C1 — Log Source Type Breakdown */}
+      {/* GAP C1 — Ingestion Breakdown */}
       <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Log Source Type Breakdown</CardTitle>
+          <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Ingestion Breakdown</CardTitle>
           <CardDescription className="text-xs text-[hsl(var(--muted-foreground))]">Distribution of ingested event types across all sources</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -313,7 +313,7 @@ function SourceAnalysisTab() {
         </CardContent>
       </Card>
 
-      {/* Stacked Bar Chart — Total Events (BUG B2: log scale) */}
+      {/* Stacked Bar Chart — Events (BUG B2: log scale) */}
       <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))]">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Total Event Volume by Source</CardTitle>
@@ -326,7 +326,7 @@ function SourceAnalysisTab() {
                 <XAxis {...CHART_AXIS_STYLE} dataKey="source" />
                 <YAxis {...CHART_AXIS_STYLE} scale="log" domain={['auto', 'auto']} tickFormatter={formatLogNumber} />
                 <Tooltip {...CHART_TOOLTIP_STYLE} formatter={(v: number) => formatNumber(v)} />
-                <Bar dataKey="total" name="Total Events" fill={CHART_COLORS.green} radius={[4, 4, 0, 0]}>
+                <Bar dataKey="total" name="Events" fill={CHART_COLORS.green} radius={[4, 4, 0, 0]}>
                   {stackedBarData.map((_, idx) => (
                     <Cell key={idx} fill={[SOURCE_COLORS.DARPA, SOURCE_COLORS.UNSW, SOURCE_COLORS.LANL][idx]} />
                   ))}
@@ -363,26 +363,7 @@ function FusedTemporalGraphTab() {
 
   return (
     <div className="space-y-6">
-      {/* Detailed Explanation Card */}
-      <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))]">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-emerald-400" />
-            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Heterogeneous Continuous-Time TGNN Fusion</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed mb-3">
-            TGDetect ingests heterogeneous log sources — <span className="text-blue-400 font-medium">DARPA TC v3</span> (enterprise network engagements with full PCAP), <span className="text-purple-400 font-medium">UNSW-NB15</span> (labeled network behavior with 9 attack families), and <span className="text-cyan-400 font-medium">LANL NetFlow</span> (unlabeled enterprise traffic with 1.8B+ flows) — each with fundamentally different schemas, event types, and temporal resolutions.
-          </p>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed mb-3">
-            The TGNN encoder maps all events from every source into a shared embedding space with <span className="text-blue-400 font-medium">embed_dim=64</span>, normalizing across heterogeneous feature sets. Temporal edges are then constructed between events that occur within configurable time windows (default: 300s), creating a unified temporal graph where nodes from different sources can participate in the same temporal neighborhoods.
-          </p>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
-            This fused graph enables cross-source correlation that would be impossible in siloed analysis. For example, a DNS tunneling alert detected in UNSW-NB15 combined with a large outbound data transfer observed in LANL NetFlow within the same temporal window strengthens the detection of a complete C2→Exfiltration chain.
-          </p>
-        </CardContent>
-      </Card>
+      <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Fused detection signal from DARPA TC, UNSW-NB15, and LANL NetFlow sources</p>
 
       {/* GAP C2 — UniversalEncoder Feature Weights */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -394,18 +375,18 @@ function FusedTemporalGraphTab() {
         ))}
       </div>
 
-      {/* GAP C3 — MultiResTimeEncoder Spec */}
+      {/* GAP C3 — Time Encoding Spec */}
       <div className="tg-card p-3 flex flex-wrap items-center gap-4 text-xs">
-        <span className="section-title">MultiResTimeEncoder</span>
+        <span className="section-title">Time Encoding</span>
         <span style={{ color: 'hsl(var(--muted-foreground))' }}>TIME_DIM: <span className="font-mono text-[hsl(var(--foreground))]">32</span></span>
         <span style={{ color: 'hsl(var(--muted-foreground))' }}>Fine: <span className="font-mono text-[hsl(var(--foreground))]">0.1–10Hz</span></span>
         <span style={{ color: 'hsl(var(--muted-foreground))' }}>Coarse: <span className="font-mono text-[hsl(var(--foreground))]">0.001–0.1Hz</span></span>
         <span style={{ color: 'hsl(var(--muted-foreground))' }}>Encoding: <span className="font-mono text-[hsl(var(--foreground))]">Cosine sinusoidal</span></span>
       </div>
 
-      {/* GAP C4 — CausalHTAConv Callout */}
+      {/* GAP C4 — Causal Temporal Attention Callout */}
       <div className="rounded-lg p-3 text-xs leading-relaxed" style={{ borderLeft: '3px solid hsl(var(--warning))', background: 'hsl(var(--warning-bg))', color: 'hsl(var(--muted-foreground))' }}>
-        <strong style={{ color: 'hsl(var(--warning))' }}>CausalHTAConv</strong> — Hierarchical Temporal Attention enforces a strict causal attention boundary: each event can only attend to events that occurred <em>before</em> it in the temporal sequence. This prevents information leakage from future events and ensures the model learns truly predictive (not post-hoc) temporal patterns.
+        <strong style={{ color: 'hsl(var(--warning))' }}>Causal Temporal Attention</strong> — Hierarchical Temporal Attention enforces a strict causal attention boundary: each event can only attend to events that occurred <em>before</em> it in the temporal sequence. This prevents information leakage from future events and ensures the model learns truly predictive (not post-hoc) temporal patterns.
       </div>
 
       {/* D1 — Graph Stats Row */}
@@ -433,7 +414,7 @@ function FusedTemporalGraphTab() {
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <GitBranch className="w-4 h-4 text-emerald-400" />
-            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Fused Temporal Graph — Detection Score Over Time</CardTitle>
+            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Combined Detection Score</CardTitle>
           </div>
           <CardDescription className="text-xs text-[hsl(var(--muted-foreground))]">Combined detection signal from all three heterogeneous log sources after TGNN fusion</CardDescription>
         </CardHeader>
@@ -467,7 +448,7 @@ function FusedTemporalGraphTab() {
         {/* Node Type Pie */}
         <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Node Type Distribution</CardTitle>
+            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Node Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-64">
@@ -489,7 +470,7 @@ function FusedTemporalGraphTab() {
         {/* Edge Type Bar */}
         <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Edge Type Distribution</CardTitle>
+            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Connection Types</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-64">
@@ -510,10 +491,10 @@ function FusedTemporalGraphTab() {
           </CardContent>
         </Card>
 
-        {/* Source Contribution Pie */}
+        {/* Dataset Share Pie */}
         <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Source Contribution</CardTitle>
+            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Dataset Share</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-64">
@@ -535,7 +516,7 @@ function FusedTemporalGraphTab() {
       {/* D2 — Cross-Source Correlation Table */}
       <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Cross-Source Correlations</CardTitle>
+          <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Cross-Dataset Signals</CardTitle>
           <CardDescription className="text-xs text-[hsl(var(--muted-foreground))]">High-confidence correlations detected across heterogeneous sources</CardDescription>
         </CardHeader>
         <CardContent>
@@ -582,7 +563,7 @@ function ConceptDriftTab() {
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
-            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Detection Accuracy Over Training Epochs</CardTitle>
+            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Model Accuracy vs. Drift</CardTitle>
           </div>
           <CardDescription className="text-xs text-[hsl(var(--muted-foreground))]">Comparison of V16 Apex with and without adaptation mechanisms</CardDescription>
         </CardHeader>
@@ -597,8 +578,8 @@ function ConceptDriftTab() {
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <ReferenceLine x={6} stroke={CHART_COLORS.amber} strokeDasharray="6 3" label={{ value: 'Drift Onset', position: 'top', fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
                 <Line type="monotone" dataKey="v16Apex" name="V16 Apex" stroke={CHART_COLORS.green} strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
-                <Line type="monotone" dataKey="noRehearsal" name="No Rehearsal" stroke={CHART_COLORS.violet} strokeWidth={2} strokeDasharray="5 3" dot={false} activeDot={{ r: 4 }} />
-                <Line type="monotone" dataKey="baseline" name="Baseline" stroke={CHART_COLORS.red} strokeWidth={2} strokeDasharray="2 2" dot={false} activeDot={{ r: 4 }} />
+                <Line type="monotone" dataKey="noRehearsal" name="No Memory Replay" stroke={CHART_COLORS.violet} strokeWidth={2} strokeDasharray="5 3" dot={false} activeDot={{ r: 4 }} />
+                <Line type="monotone" dataKey="baseline" name="No Adaptation" stroke={CHART_COLORS.red} strokeWidth={2} strokeDasharray="2 2" dot={false} activeDot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -641,24 +622,6 @@ function ConceptDriftTab() {
         </div>
       </div>
 
-      {/* Detailed Explanation */}
-      <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))]">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">How Adaptation Works</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed mb-4">
-            In network security, <span className="text-red-400 font-medium">concept drift</span> refers to the phenomenon where the statistical distribution of network traffic changes over time. A static model trained on historical data will inevitably degrade in accuracy as the gap between training distribution and operational distribution widens.
-          </p>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed mb-4">
-            TGDetect's TGNN addresses this through three complementary mechanisms. First, a <span className="text-blue-400 font-medium">Gradient Reversal Layer</span> applies adversarial training. Second, a <span className="text-purple-400 font-medium">Rehearsal Buffer</span> stores 10% of historical graph snapshots. Third, <span className="text-cyan-400 font-medium">Supervised Contrastive Loss</span> pulls embeddings of same-class events closer.
-          </p>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
-            The measurable impact is dramatic: V16_Apex maintains <span className="text-emerald-400 font-medium">97%+ accuracy over 20 consecutive training epochs</span>, while an identical architecture without adaptation degrades to approximately 60%. This 37-percentage-point gap represents the difference between operational reliability and progressive blindness.
-          </p>
-        </CardContent>
-      </Card>
-
       {/* Mechanism Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Gradient Reversal + C5 Domain Invariance */}
@@ -668,11 +631,11 @@ function ConceptDriftTab() {
               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-400/10 border border-blue-400/30">
                 <ArrowRightLeft className="w-4 h-4 text-blue-400" />
               </div>
-              <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Gradient Reversal Layer</CardTitle>
+              <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Domain Generalization</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            {/* C5 Domain Invariance Monitor */}
+            {/* C5 GRL Domain Confusion */}
             <p className="text-[10px] text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-2">Domain Confusion Score</p>
             <p className="metric-value-sm" style={{ color: 'hsl(var(--primary))' }}>{domainConfusionScore}%</p>
             <div className="space-y-2 mt-3">
@@ -694,18 +657,18 @@ function ConceptDriftTab() {
           </CardContent>
         </Card>
 
-        {/* Rehearsal Buffer + C7 */}
+        {/* Memory Replay Buffer + C7 */}
         <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))]">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-400/10 border border-purple-400/30">
                 <RefreshCw className="w-4 h-4 text-purple-400" />
               </div>
-              <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Rehearsal Buffer</CardTitle>
+              <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Memory Replay Buffer</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            {/* C7 Rehearsal Buffer Status */}
+            {/* C7 Memory Replay Buffer Status */}
             <p className="text-[10px] text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-2">Capacity</p>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-sm font-semibold tabular-nums text-[hsl(var(--foreground))]">{rehearsalBufferData.capacity.toLocaleString()}</span>
@@ -741,7 +704,7 @@ function ConceptDriftTab() {
               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-400/10 border border-cyan-400/30">
                 <Cpu className="w-4 h-4 text-cyan-400" />
               </div>
-              <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Supervised Contrastive Loss</CardTitle>
+              <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Tactic Clustering</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -806,24 +769,6 @@ function AttackBacktrackingTab() {
           <p className="metric-value-sm text-emerald-400">{Math.max(...attackChainPathScores).toFixed(3)}</p>
         </div>
       </div>
-
-      {/* Detailed Explanation Card */}
-      <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))]">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Search className="w-4 h-4 text-emerald-400" />
-            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Attack Chain Backtracking Engine</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed mb-3">
-            The backtracking engine is TGDetect's incident response accelerator. When the TGNN produces a high-confidence detection alert, the engine traces <span className="text-blue-400 font-medium">backwards through the temporal graph</span> to reconstruct the full attack narrative.
-          </p>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
-            The result is a complete, multi-step attack reconstruction — from initial compromise through privilege escalation, lateral movement, C2, and data exfiltration. Each step includes a confidence score and verifiable evidence, enabling analysts to <span className="text-emerald-400 font-medium">immediately understand what happened, when, and on which nodes</span>.
-          </p>
-        </CardContent>
-      </Card>
 
       {/* Attack Chain Timeline */}
       <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))]">
@@ -950,28 +895,10 @@ function ExplainabilityTab() {
         </CardContent>
       </Card>
 
-      {/* Detailed Explanation Card */}
-      <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))]">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Target className="w-4 h-4 text-emerald-400" />
-            <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Temporal Explainability via MITRE ATT&CK</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed mb-3">
-            Temporal explainability goes beyond simple feature importance — it answers <span className="text-blue-400 font-medium">why each specific event was flagged as malicious</span>. TGDetect's TGNN exposes its internal reasoning through attention weights, temporal contribution scores, and graph neighborhood influence.
-          </p>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
-            All signals are mapped directly to the <span className="text-amber-400 font-medium">MITRE ATT&CK framework</span>, enabling faster triage and clearer communication with stakeholders.
-          </p>
-        </CardContent>
-      </Card>
-
       {/* BUG B3 — Explainability Table (proper table) */}
       <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))]">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Attention-Weighted Event Explanations</CardTitle>
+          <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Event Attribution Table</CardTitle>
           <CardDescription className="text-xs text-[hsl(var(--muted-foreground))]">Each detection mapped to its MITRE ATT&CK tactic with temporal contribution scores</CardDescription>
         </CardHeader>
         <CardContent>
@@ -1013,7 +940,7 @@ function ExplainabilityTab() {
                     </td>
                     <td className="py-3 px-4 text-xs tabular-nums text-right">{entry.graphNeighborhood}</td>
                     <td className="py-3 px-4">
-                      <span className={entry.classification === 'Malicious' ? 'badge-danger' : 'badge-success'} style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '9999px' }}>{entry.classification}</span>
+                      <span className={entry.classification === 'Detections' ? 'badge-danger' : 'badge-success'} style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '9999px' }}>{entry.classification}</span>
                     </td>
                     <td className="py-3 px-4 pr-6 text-xs max-w-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{entry.reasoning}</td>
                   </tr>
@@ -1052,7 +979,7 @@ function ExplainabilityTab() {
       {/* C6 — Tactic Embedding Cluster ScatterChart */}
       <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Tactic Embedding Clusters</CardTitle>
+          <CardTitle className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Tactic Embedding Map</CardTitle>
           <CardDescription className="text-xs text-[hsl(var(--muted-foreground))]">2D t-SNE projection of event embeddings colored by MITRE ATT&CK tactic cluster</CardDescription>
         </CardHeader>
         <CardContent>
@@ -1111,7 +1038,7 @@ export function AnalyticsPage({ timeRange, onTimeRangeChange }: { timeRange: str
             </TabsTrigger>
             <TabsTrigger value="fusion" className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-[hsl(var(--muted-foreground))] text-xs px-3 py-2">
               <Layers className="w-3.5 h-3.5 mr-1.5" />
-              Fused Temporal Graph
+              Fused Graph
             </TabsTrigger>
             <TabsTrigger value="drift" className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-[hsl(var(--muted-foreground))] text-xs px-3 py-2">
               <Brain className="w-3.5 h-3.5 mr-1.5" />
@@ -1119,7 +1046,7 @@ export function AnalyticsPage({ timeRange, onTimeRangeChange }: { timeRange: str
             </TabsTrigger>
             <TabsTrigger value="attack-backtracking" className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-[hsl(var(--muted-foreground))] text-xs px-3 py-2">
               <GitBranch className="w-3.5 h-3.5 mr-1.5" />
-              Attack Backtracking
+              Backtracking
             </TabsTrigger>
             <TabsTrigger value="explainability" className="data-[state=active]:bg-emerald-400/10 data-[state=active]:text-emerald-400 text-[hsl(var(--muted-foreground))] text-xs px-3 py-2">
               <Eye className="w-3.5 h-3.5 mr-1.5" />

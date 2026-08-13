@@ -20,8 +20,8 @@ const ranges: { label: string; value: TimeRange }[] = [
 
 export function TimeRangePicker({ value, onChange }: TimeRangePickerProps) {
   return (
-    <div className="flex items-center gap-1 bg-[var(--bg-input)] rounded-lg p-0.5">
-      <Clock className="w-3.5 h-3.5 text-[var(--text-muted)] ml-1.5" />
+    <div className="flex items-center gap-1 bg-[hsl(var(--secondary))] rounded-lg p-0.5">
+      <Clock className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] ml-1.5" />
       {ranges.map((r) => (
         <Button
           key={r.value}
@@ -31,7 +31,7 @@ export function TimeRangePicker({ value, onChange }: TimeRangePickerProps) {
           className={`h-6 px-2 text-[10px] font-medium rounded-md transition-all ${
             value === r.value
               ? 'bg-emerald-400/10 text-emerald-400 shadow-sm'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)]'
+              : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--card-hover))]'
           }`}
         >
           {r.label}
