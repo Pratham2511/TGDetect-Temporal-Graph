@@ -508,3 +508,93 @@ export const supportedLogFormats = [
   { name: 'PCAP Extracted', desc: 'Network captures exported as flow logs', ext: '.csv', icon: 'wifi' as const },
   { name: 'SURICATA EVE', desc: 'Suricata IDS EVE JSON log format', ext: '.json', icon: 'alert-triangle' as const },
 ];
+
+// ── Log Source Type Breakdown (GAP C1) ──
+export const logSourceTypeData = [
+  { name: 'Auth Logs', count: 1240000, color: 'hsl(var(--chart-1))' },
+  { name: 'Network Flow', count: 4820000, color: 'hsl(var(--chart-6))' },
+  { name: 'System Audit', count: 380000, color: 'hsl(var(--chart-2))' },
+  { name: 'DNS Queries', count: 410000, color: 'hsl(var(--chart-4))' },
+  { name: 'Cloud API', count: 80000, color: 'hsl(var(--chart-3))' },
+];
+
+// ── UniversalEncoder Feature Weights (GAP C2) ──
+export const universalEncoderWeights = [
+  { name: 'Hash-ID Embedding', weight: 38.2 },
+  { name: 'Frequency', weight: 24.1 },
+  { name: 'Temporal Burst', weight: 21.4 },
+  { name: 'Rarity', weight: 16.3 },
+];
+
+// ── Domain Invariance (GAP C5) ──
+export const domainInvarianceData = [
+  { name: 'DARPA TC', score: 31.2 },
+  { name: 'UNSW-NB15', score: 34.7 },
+  { name: 'LANL NetFlow', score: 34.1 },
+];
+export const domainConfusionScore = 96.8;
+
+// ── Rehearsal Buffer Status (GAP C7) ──
+export const rehearsalBufferData = {
+  capacity: 4847,
+  max: 5000,
+  sources: [
+    { name: 'DARPA TC', count: 1920 },
+    { name: 'UNSW-NB15', count: 1587 },
+    { name: 'LANL NetFlow', count: 1340 },
+  ],
+};
+
+// ── Drift Distance Gauge (GAP C8) ──
+export const driftDistanceData = {
+  current: 0.183,
+  limit: 0.250,
+  percentage: 73.2,
+  threshold: 0.250,
+  status: 'STABLE',
+  sparkline: [
+    { t: '00:00', d: 0.052 }, { t: '02:00', d: 0.061 }, { t: '04:00', d: 0.058 },
+    { t: '06:00', d: 0.072 }, { t: '08:00', d: 0.089 }, { t: '10:00', d: 0.112 },
+    { t: '12:00', d: 0.134 }, { t: '14:00', d: 0.156 }, { t: '16:00', d: 0.168 },
+    { t: '18:00', d: 0.179 }, { t: '20:00', d: 0.183 }, { t: '22:00', d: 0.177 },
+  ],
+};
+
+// ── Attack Chain Path Scores (GAP C9) ──
+export const attackChainPathScores: number[] = [0.891, 0.904, 0.887, 0.951, 0.922, 0.908, 0.876, 0.941, 0.963];
+
+// ── Cross-Source Correlations (D2) ──
+export const crossSourceCorrelations = [
+  { id: 'CORR-0041', srcA: 'DARPA TC', srcB: 'LANL Flow', dt: '0.8s', node: '10.0.0.12', score: 0.94 },
+  { id: 'CORR-0038', srcA: 'UNSW-NB15', srcB: 'LANL Flow', dt: '1.2s', node: '10.0.0.15', score: 0.87 },
+  { id: 'CORR-0052', srcA: 'DARPA TC', srcB: 'UNSW-NB15', dt: '2.1s', node: '192.168.1.35', score: 0.91 },
+  { id: 'CORR-0019', srcA: 'LANL Flow', srcB: 'DARPA TC', dt: '0.4s', node: '10.0.0.12', score: 0.98 },
+];
+
+// ── Tactic Embedding Clusters (GAP C6) ──
+export const tacticEmbeddingClusters = [
+  { name: 'Initial Access', cluster: 0, x: -3.2, y: 2.1 },
+  { name: 'Execution', cluster: 1, x: 2.8, y: -1.5 },
+  { name: 'Credential Access', cluster: 2, x: -1.1, y: -3.4 },
+  { name: 'Lateral Movement', cluster: 3, x: 3.5, y: 1.8 },
+  { name: 'C2', cluster: 4, x: -2.5, y: 0.8 },
+  { name: 'Exfiltration', cluster: 5, x: 0.9, y: 3.2 },
+  { name: 'Phishing (IA)', cluster: 0, x: -3.8, y: 2.6 },
+  { name: 'Exploit (IA)', cluster: 0, x: -2.7, y: 1.5 },
+  { name: 'PowerShell (EX)', cluster: 1, x: 3.2, y: -1.0 },
+  { name: 'WMI (EX)', cluster: 1, x: 2.3, y: -2.1 },
+  { name: 'Mimikatz (CA)', cluster: 2, x: -0.8, y: -3.8 },
+  { name: 'Pass-the-Hash (CA)', cluster: 2, x: -1.6, y: -2.9 },
+  { name: 'RDP (LM)', cluster: 3, x: 3.9, y: 2.3 },
+  { name: 'PsExec (LM)', cluster: 3, x: 3.0, y: 1.2 },
+  { name: 'DNS Tunnel (C2)', cluster: 4, x: -3.0, y: 1.2 },
+  { name: 'HTTP Beacon (C2)', cluster: 4, x: -2.0, y: 0.3 },
+  { name: 'HTTPS Exfil (EF)', cluster: 5, x: 1.3, y: 3.6 },
+  { name: 'Covert Ch (EF)', cluster: 5, x: 0.5, y: 2.7 },
+];
+
+// ── SupCon Metrics (E1) ──
+export const supConMetrics = {
+  tacticSeparation: 8.3,
+  clusterCompactness: 0.94,
+};
