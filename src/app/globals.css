@@ -45,76 +45,80 @@
 
 /* ────────────────────────────────────────────────────────────
    LIGHT MODE (default / :root)
-   Background: light slate-blue surface
+   Background: warm-cool off-white
    Cards: pure white with soft shadow
-   Text: deep navy for maximum contrast
-   Sidebar: always dark navy (does not invert)
+   Text: near-black navy for maximum contrast
+   Sidebar: cool slate (light) in light mode
    ──────────────────────────────────────────────────────────── */
 :root {
-  /* Surfaces */
-  --background: 213 40% 95%;      /* #EBF2FC — light slate blue */
-  --card: 0 0% 100%;             /* #FFFFFF — pure white cards */
+  /* ── Surfaces ─────────────────────────────────────────────────────── */
+  --background: 220 20% 97%;        /* #F6F7FA — warm-cool off-white */
+  --card: 0 0% 100%;               /* #FFFFFF — white cards */
   --popover: 0 0% 100%;
-  --card-hover: 213 30% 97%;     /* #F5F8FD — subtle card hover */
+  --card-hover: 220 20% 98%;       /* #F8F9FB — very subtle hover */
+  --elevated: 220 20% 99%;         /* modals, dropdowns */
 
-  /* Text */
-  --foreground: 222 83% 10%;     /* #071628 — near-black navy */
-  --card-foreground: 222 83% 10%;
-  --popover-foreground: 222 83% 10%;
-  --muted-foreground: 215 25% 40%; /* #4E6585 — readable muted blue-gray */
+  /* ── Text ─────────────────────────────────────────────────────────── */
+  --foreground: 222 47% 11%;        /* #0F1B2D — near-black navy */
+  --card-foreground: 222 47% 11%;
+  --popover-foreground: 222 47% 11%;
+  --muted-foreground: 220 15% 46%;  /* #667085 — readable mid-gray */
 
-  /* Brand / Primary — deep cyan for light mode contrast */
-  --primary: 199 85% 32%;       /* #0B8FB5 — deep cyan, 7:1 on white */
+  /* ── Primary (cyan-blue, dark enough for white backgrounds) ───────── */
+  --primary: 199 80% 34%;          /* #0F8CB5 — 7:1 contrast on white */
   --primary-foreground: 0 0% 100%;
-  --primary-dim: 199 85% 42%;    /* lighter variant for hover */
+  --primary-dim: 199 80% 42%;       /* hover state */
 
-  /* Interactive surfaces */
-  --secondary: 213 35% 90%;      /* #D5E2F2 */
-  --secondary-foreground: 222 83% 10%;
-  --muted: 213 35% 90%;
-  --accent: 213 35% 92%;
-  --accent-foreground: 222 83% 10%;
+  /* ── Interactive surfaces ─────────────────────────────────────────── */
+  --secondary: 220 15% 93%;         /* #E8EBF0 */
+  --secondary-foreground: 222 47% 11%;
+  --muted: 220 15% 93%;
+  --accent: 220 15% 91%;
+  --accent-foreground: 222 47% 11%;
 
-  /* State */
-  --destructive: 0 84% 58%;      /* #EF3434 */
+  /* ── State ────────────────────────────────────────────────────────── */
+  --destructive: 0 84% 55%;
   --destructive-foreground: 0 0% 98%;
 
-  /* Structure */
-  --border: 213 28% 80%;         /* #BDD0E8 — visible but soft */
-  --border-light: 213 28% 88%;   /* #D4E3F1 — nested card borders */
-  --input: 213 28% 80%;
-  --ring: 199 85% 32%;
+  /* ── Structure ────────────────────────────────────────────────────── */
+  --border: 220 15% 87%;            /* #D5DAE3 — visible but gentle */
+  --border-light: 220 15% 92%;      /* nested borders */
+  --input: 220 15% 87%;
+  --ring: 199 80% 34%;
   --radius: 0.5rem;
 
-  /* ── Semantic status colors (same in both modes) ── */
-  --success: 142 70% 38%;         /* #1EA64F — green */
-  --success-bg: 142 70% 95%;
-  --warning: 38 92% 48%;          /* #F59207 — amber */
-  --warning-bg: 38 92% 95%;
-  --danger: 0 84% 58%;            /* #EF3434 — red */
-  --danger-bg: 0 84% 96%;
-  --info: 199 85% 42%;            /* cyan */
-  --info-bg: 199 85% 95%;
-  --purple: 263 60% 62%;          /* #8B5CF6 — violet for AI/ML */
-  --purple-bg: 263 60% 95%;
-  --teal: 173 58% 45%;            /* #2CB8A8 — graph/TGNN elements */
+  /* ── Semantic status ──────────────────────────────────────────────── */
+  --success: 142 65% 36%;           /* #1E9E50 */
+  --success-bg: 142 65% 95%;
+  --warning: 38 90% 46%;            /* #E8930A */
+  --warning-bg: 38 90% 95%;
+  --danger: 0 80% 55%;              /* #E83333 */
+  --danger-bg: 0 80% 96%;
+  --info: 199 80% 40%;
+  --info-bg: 199 80% 95%;
+  --purple: 263 55% 58%;            /* #7C5DC7 */
+  --purple-bg: 263 55% 96%;
+  --teal: 173 55% 38%;              /* #29A898 */
 
-  /* ── Sidebar — ALWAYS dark navy, does not change in light mode ── */
-  --sidebar-bg: 222 83% 8%;      /* #060F20 */
-  --sidebar-border: 217 40% 14%; /* #0F1E30 */
-  --sidebar-item-hover: 217 40% 13%; /* #0E1C2C */
-  --sidebar-item-active: 217 40% 18%; /* #13253A */
-  --sidebar-text: 213 25% 68%;   /* #94A8BE — muted nav text */
-  --sidebar-text-active: 199 89% 70%; /* #72D4F7 — active cyan */
-  --sidebar-logo-sub: 213 25% 55%; /* #7190A8 — subtitle under logo */
+  /* ── Sidebar — cool slate in light mode ──────────────────────────── */
+  --sidebar-bg: 220 18% 93%;         /* #E8ECF2 — cool slate sidebar */
+  --sidebar-border: 220 15% 86%;     /* #D2D8E2 — sidebar right border */
+  --sidebar-item-hover: 220 18% 89%; /* #DDE2EB */
+  --sidebar-item-active: 220 18% 85%; /* #D2D9E5 — active item bg */
+  --sidebar-text: 220 15% 45%;       /* #626D7E — muted nav text */
+  --sidebar-text-active: 199 80% 34%; /* #0F8CB5 — active = primary cyan */
+  --sidebar-logo-sub: 220 15% 55%;   /* #788797 */
 
-  /* ── Chart palette ── */
-  --chart-1: 199 89% 48%;         /* #06B6D4 cyan — DARPA / primary */
-  --chart-2: 263 60% 62%;         /* #8B5CF6 violet — UNSW / secondary */
-  --chart-3: 142 70% 42%;         /* #22A057 green — LANL / tertiary */
-  --chart-4: 38 92% 48%;          /* #F59207 amber — suspicious */
-  --chart-5: 0 84% 58%;           /* #EF3434 red — malicious */
-  --chart-6: 173 58% 45%;          /* #2CB8A8 teal — fused/graph */
+  /* ── Logo text in light mode: dark navy on slate ─────────────── */
+  --sidebar-logo-text: 222 47% 11%;  /* dark navy, readable on slate */
+
+  /* ── Chart colors (slightly darker for light-mode readability) ───── */
+  --chart-1: 199 80% 40%;           /* cyan */
+  --chart-2: 263 55% 58%;           /* violet */
+  --chart-3: 142 65% 36%;           /* green */
+  --chart-4: 38 90% 46%;            /* amber */
+  --chart-5: 0 80% 55%;             /* red */
+  --chart-6: 173 55% 38%;           /* teal */
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -173,7 +177,7 @@
   --purple-bg: 263 70% 8%;
   --teal: 173 58% 52%;            /* #35C9B8 */
 
-  /* ── Sidebar — same values as light mode (always dark) ── */
+  /* ── Sidebar — dark navy in dark mode ── */
   --sidebar-bg: 222 100% 5%;     /* #020A17 — even darker than --background */
   --sidebar-border: 217 40% 12%;  /* #0C1929 */
   --sidebar-item-hover: 217 40% 11%;
@@ -181,6 +185,7 @@
   --sidebar-text: 213 25% 60%;    /* #7C98B0 */
   --sidebar-text-active: 199 89% 70%; /* #72D4F7 */
   --sidebar-logo-sub: 213 25% 48%; /* #607A8E */
+  --sidebar-logo-text: 213 30% 90%;    /* #D8E5F2 — light text in dark sidebar */
 
   /* ── Chart palette (slightly brighter in dark mode) ── */
   --chart-1: 199 89% 60%;         /* #38BDF8 cyan */
@@ -224,10 +229,18 @@
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* ── Sidebar: force dark regardless of mode ──────────────────────────── */
+/* ── Sidebar ──────────────────────────────────────────────────────────────── */
 .sidebar-shell {
   background-color: hsl(var(--sidebar-bg));
   border-right: 1px solid hsl(var(--sidebar-border));
+}
+
+/* Light mode card shadow — adds subtle elevation */
+:root .tg-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.dark .tg-card {
+  box-shadow: none;
 }
 
 /* ── Top accent line — security product signature ─────────────────────── */

@@ -284,10 +284,10 @@ export function generateThreatTimeline() {
 
 export function generateEdgeTypeDistribution() {
   return [
-    { name: 'TCP Connection', value: 35 },
-    { name: 'DNS Query', value: 22 },
-    { name: 'HTTP/HTTPS', value: 25 },
-    { name: 'SSH Session', value: 8 },
+    { name: 'TCP', value: 35 },
+    { name: 'DNS', value: 22 },
+    { name: 'Web Traffic', value: 25 },
+    { name: 'SSH', value: 8 },
     { name: 'ICMP', value: 5 },
     { name: 'File Transfer', value: 5 },
   ];
@@ -511,11 +511,11 @@ export const supportedLogFormats = [
 
 // ── Log Source Type Breakdown (GAP C1) ──
 export const logSourceTypeData = [
-  { name: 'Auth Logs', count: 1240000, color: 'hsl(var(--chart-1))' },
-  { name: 'Network Flow', count: 4820000, color: 'hsl(var(--chart-6))' },
-  { name: 'System Audit', count: 380000, color: 'hsl(var(--chart-2))' },
-  { name: 'DNS Queries', count: 410000, color: 'hsl(var(--chart-4))' },
-  { name: 'Cloud API', count: 80000, color: 'hsl(var(--chart-3))' },
+  { name: 'Authentication', count: 1240000, color: 'hsl(var(--chart-1))' },
+  { name: 'Network Traffic', count: 4820000, color: 'hsl(var(--chart-6))' },
+  { name: 'System Events', count: 380000, color: 'hsl(var(--chart-2))' },
+  { name: 'DNS Activity', count: 410000, color: 'hsl(var(--chart-4))' },
+  { name: 'Cloud Events', count: 80000, color: 'hsl(var(--chart-3))' },
 ];
 
 // ── UniversalEncoder Feature Weights (GAP C2) ──

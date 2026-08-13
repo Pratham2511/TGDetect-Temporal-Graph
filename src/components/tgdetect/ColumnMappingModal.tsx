@@ -115,22 +115,22 @@ export function ColumnMappingModal({ fileName, onClose, onComplete }: ColumnMapp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-[var(--bg-card)] border border-[var(--border-primary)] rounded-2xl w-full max-w-3xl shadow-2xl mx-4 max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl w-full max-w-3xl shadow-2xl mx-4 max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-primary)]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
               {[1, 2, 3].map(s => (
                 <div key={s} className={`h-1 w-8 rounded-full transition-all duration-300 ${
-                  s <= step ? 'bg-emerald-400' : 'bg-[var(--bg-input)]'
+                  s <= step ? 'bg-emerald-400' : 'bg-[hsl(var(--secondary))]'
                 }`} />
               ))}
             </div>
-            <span className="text-xs text-[var(--text-muted)]">
+            <span className="text-xs text-[hsl(var(--muted-foreground))]">
               Step {step} of 3 — {step === 1 ? 'File Analysis' : step === 2 ? 'Column Mapping' : 'Processing'}
             </span>
           </div>
-          <Button variant="ghost" size="sm" className="text-[var(--text-muted)] hover:text-[var(--text-primary)]" onClick={onClose}>
+          <Button variant="ghost" size="sm" className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]" onClick={onClose}>
             <X className="w-4 h-4" />
           </Button>
         </div>
@@ -142,16 +142,16 @@ export function ColumnMappingModal({ fileName, onClose, onComplete }: ColumnMapp
             <div className="space-y-5">
               <div className="flex items-center gap-3">
                 <FileSearch className="w-5 h-5 text-emerald-400" />
-                <h3 className="text-sm font-semibold text-[var(--text-primary)]">Analyzing: {fileName}</h3>
+                <h3 className="text-sm font-semibold text-[hsl(var(--foreground))]">Analyzing: {fileName}</h3>
               </div>
 
               {scanning ? (
                 <div className="space-y-4 py-8">
                   <div className="flex items-center justify-center gap-3">
                     <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm text-[var(--text-secondary)]">Scanning file structure and content...</span>
+                    <span className="text-sm text-[hsl(var(--muted-foreground))]">Scanning file structure and content...</span>
                   </div>
-                  <Progress value={Math.min(scanProgress, 100)} className="h-1.5 bg-[var(--bg-input)]" />
+                  <Progress value={Math.min(scanProgress, 100)} className="h-1.5 bg-[hsl(var(--secondary))]" />
                 </div>
               ) : (
                 <>
@@ -162,15 +162,15 @@ export function ColumnMappingModal({ fileName, onClose, onComplete }: ColumnMapp
                       { label: 'Columns', value: String(DETECTED_COLUMNS.length) },
                       { label: 'Size', value: '12.4 MB' },
                     ].map(item => (
-                      <div key={item.label} className="bg-[var(--bg-input)] rounded-lg p-3 text-center">
-                        <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">{item.label}</p>
-                        <p className="text-base font-semibold text-[var(--text-primary)] mt-1">{item.value}</p>
+                      <div key={item.label} className="bg-[hsl(var(--secondary))] rounded-lg p-3 text-center">
+                        <p className="text-[10px] text-[hsl(var(--muted-foreground))] uppercase tracking-wider">{item.label}</p>
+                        <p className="text-base font-semibold text-[hsl(var(--foreground))] mt-1">{item.value}</p>
                       </div>
                     ))}
                   </div>
-                  <Separator className="bg-[var(--border-secondary)]" />
+                  <Separator className="bg-[hsl(var(--border-light))]" />
                   <div>
-                    <p className="text-xs font-medium text-[var(--text-secondary)] mb-3">Data Quality Assessment</p>
+                    <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-3">Data Quality Assessment</p>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {[
                         { label: 'Quality Score', value: '94.2%', color: 'text-emerald-400', bar: 94.2 },
@@ -178,17 +178,17 @@ export function ColumnMappingModal({ fileName, onClose, onComplete }: ColumnMapp
                         { label: 'Consistency', value: '91.7%', color: 'text-cyan-400', bar: 91.7 },
                         { label: 'Duplicate Rate', value: '0.3%', color: 'text-emerald-400', bar: 99.7 },
                       ].map(q => (
-                        <div key={q.label} className="bg-[var(--bg-input)] rounded-lg p-3">
-                          <p className="text-[10px] text-[var(--text-muted)]">{q.label}</p>
+                        <div key={q.label} className="bg-[hsl(var(--secondary))] rounded-lg p-3">
+                          <p className="text-[10px] text-[hsl(var(--muted-foreground))]">{q.label}</p>
                           <p className={`text-sm font-semibold ${q.color} mt-1`}>{q.value}</p>
-                          <Progress value={q.bar} className="h-1 bg-[var(--bg-card)] mt-1.5" />
+                          <Progress value={q.bar} className="h-1 bg-[hsl(var(--card))] mt-1.5" />
                         </div>
                       ))}
                     </div>
                   </div>
-                  <div className="bg-[var(--bg-input)] rounded-lg p-3">
-                    <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">Timestamp Range</p>
-                    <p className="text-xs font-mono text-[var(--text-secondary)]">2024-06-15T00:00:00Z → 2024-06-15T23:59:59Z (24 hours)</p>
+                  <div className="bg-[hsl(var(--secondary))] rounded-lg p-3">
+                    <p className="text-[10px] text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-1">Timestamp Range</p>
+                    <p className="text-xs font-mono text-[hsl(var(--muted-foreground))]">2024-06-15T00:00:00Z → 2024-06-15T23:59:59Z (24 hours)</p>
                   </div>
                 </>
               )}
@@ -201,50 +201,50 @@ export function ColumnMappingModal({ fileName, onClose, onComplete }: ColumnMapp
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Columns3 className="w-5 h-5 text-emerald-400" />
-                  <h3 className="text-sm font-semibold text-[var(--text-primary)]">Map Your Columns to TGDetect Fields</h3>
+                  <h3 className="text-sm font-semibold text-[hsl(var(--foreground))]">Map Your Columns to TGDetect Fields</h3>
                 </div>
                 <Badge className={`text-[10px] ${unmappedRequiredCount === 0 ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-amber-400/10 text-amber-400 border-amber-400/20'}`}>
                   {unmappedRequiredCount === 0 ? 'All required fields mapped' : `${unmappedRequiredCount} unmapped required fields`}
                 </Badge>
               </div>
-              <p className="text-xs text-[var(--text-muted)]">
+              <p className="text-xs text-[hsl(var(--muted-foreground))]">
                 Map your file&apos;s columns to TGDetect&apos;s expected fields. Required fields are marked with <span className="text-red-400">*</span>.
                 Auto-detected mappings are pre-filled based on column name analysis.
               </p>
 
               {/* Mapping Table */}
-              <div className="rounded-lg border border-[var(--border-primary)] overflow-hidden">
-                <div className="grid grid-cols-[1fr_40px_1fr] gap-0 bg-[var(--bg-input)] px-4 py-2">
-                  <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium">Your Column</span>
+              <div className="rounded-lg border border-[hsl(var(--border))] overflow-hidden">
+                <div className="grid grid-cols-[1fr_40px_1fr] gap-0 bg-[hsl(var(--secondary))] px-4 py-2">
+                  <span className="text-[10px] text-[hsl(var(--muted-foreground))] uppercase tracking-wider font-medium">Your Column</span>
                   <span />
-                  <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium">TGDetect Field</span>
+                  <span className="text-[10px] text-[hsl(var(--muted-foreground))] uppercase tracking-wider font-medium">TGDetect Field</span>
                 </div>
-                <div className="divide-y divide-[var(--border-secondary)]">
+                <div className="divide-y divide-[hsl(var(--border-light))]">
                   {DETECTED_COLUMNS.map(col => {
                     const isMapped = !!mappings[col.name];
                     const confidence = col.confidence;
                     return (
-                      <div key={col.name} className="grid grid-cols-[1fr_40px_1fr] gap-0 px-4 py-2.5 items-center hover:bg-[var(--bg-card-hover)] transition-colors">
+                      <div key={col.name} className="grid grid-cols-[1fr_40px_1fr] gap-0 px-4 py-2.5 items-center hover:bg-[hsl(var(--card-hover))] transition-colors">
                         {/* Source Column */}
                         <div className="flex items-center gap-2 min-w-0">
                           <div className={`w-2 h-2 rounded-full shrink-0 ${
                             confidence > 0.8 ? 'bg-emerald-400' :
-                            confidence > 0.5 ? 'bg-amber-400' : 'bg-[var(--text-muted)]'
+                            confidence > 0.5 ? 'bg-amber-400' : 'bg-[hsl(var(--muted-foreground))]'
                           }`} />
                           <div className="min-w-0">
-                            <p className="text-xs font-medium text-[var(--text-primary)] font-mono truncate">{col.name}</p>
-                            <p className="text-[9px] text-[var(--text-muted)] truncate">{col.type} · {col.sample}</p>
+                            <p className="text-xs font-medium text-[hsl(var(--foreground))] font-mono truncate">{col.name}</p>
+                            <p className="text-[9px] text-[hsl(var(--muted-foreground))] truncate">{col.type} · {col.sample}</p>
                           </div>
                         </div>
 
                         {/* Arrow */}
-                        <ArrowRightLeft className="w-3.5 h-3.5 text-[var(--text-muted)] mx-auto shrink-0" />
+                        <ArrowRightLeft className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))] mx-auto shrink-0" />
 
                         {/* TGDetect Field Dropdown */}
                         <select
                           value={mappings[col.name] || ''}
                           onChange={(e) => setMappings(prev => ({ ...prev, [col.name]: e.target.value }))}
-                          className="text-xs bg-[var(--bg-input)] border border-[var(--border-secondary)] rounded-md px-2 py-1.5 text-[var(--text-primary)] focus:outline-none focus:border-emerald-400/50 appearance-none cursor-pointer min-w-0"
+                          className="text-xs bg-[hsl(var(--secondary))] border border-[hsl(var(--border-light))] rounded-md px-2 py-1.5 text-[hsl(var(--foreground))] focus:outline-none focus:border-emerald-400/50 appearance-none cursor-pointer min-w-0"
                         >
                           <option value="">— Skip —</option>
                           {TGDetect_FIELDS.map(field => (
@@ -259,10 +259,10 @@ export function ColumnMappingModal({ fileName, onClose, onComplete }: ColumnMapp
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 bg-[var(--bg-input)] rounded-lg p-3">
+              <div className="flex items-start gap-2 bg-[hsl(var(--secondary))] rounded-lg p-3">
                 <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <div className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
-                  <span className="font-medium text-[var(--text-primary)]">Required fields:</span> src_ip, dst_ip, and timestamp must be mapped for TGNN temporal graph construction.
+                <div className="text-[11px] text-[hsl(var(--muted-foreground))] leading-relaxed">
+                  <span className="font-medium text-[hsl(var(--foreground))]">Required fields:</span> src_ip, dst_ip, and timestamp must be mapped for TGNN temporal graph construction.
                   Unmapped optional fields will be ignored during processing. Confidence indicators show how well your column names match TGDetect&apos;s expected schema.
                 </div>
               </div>
@@ -274,7 +274,7 @@ export function ColumnMappingModal({ fileName, onClose, onComplete }: ColumnMapp
             <div className="space-y-5 py-8">
               <div className="flex items-center justify-center gap-3 mb-6">
                 <Cpu className="w-5 h-5 text-emerald-400 animate-pulse" />
-                <h3 className="text-sm font-semibold text-[var(--text-primary)]">Processing Dataset</h3>
+                <h3 className="text-sm font-semibold text-[hsl(var(--foreground))]">Processing Dataset</h3>
               </div>
 
               <div className="max-w-md mx-auto space-y-4">
@@ -289,22 +289,22 @@ export function ColumnMappingModal({ fileName, onClose, onComplete }: ColumnMapp
                         isComplete
                           ? 'bg-emerald-400/10 border border-emerald-400/30' :
                           isActive ? 'bg-emerald-400/10 border border-emerald-400/30 animate-pulse' :
-                          'bg-[var(--bg-input)] border border-[var(--border-secondary)]'
+                          'bg-[hsl(var(--secondary))] border border-[hsl(var(--border-light))]'
                       }`}>
                         {isComplete ? (
                           <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
                         ) : isActive ? (
                           <div className="w-3 h-3 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
                         ) : (
-                          <div className="w-2 h-2 rounded-full bg-[var(--text-muted)]" />
+                          <div className="w-2 h-2 rounded-full bg-[hsl(var(--muted-foreground))]" />
                         )}
                       </div>
                       <div className="flex-1">
-                        <p className={`text-xs font-medium ${isComplete ? 'text-emerald-400' : isActive ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>
+                        <p className={`text-xs font-medium ${isComplete ? 'text-emerald-400' : isActive ? 'text-[hsl(var(--foreground))]' : 'text-[hsl(var(--muted-foreground))]'}`}>
                           {s.label}
                         </p>
                         {isActive && (
-                          <Progress value={Math.min(processingProgress, 100)} className="h-1 bg-[var(--bg-input)] mt-1" />
+                          <Progress value={Math.min(processingProgress, 100)} className="h-1 bg-[hsl(var(--secondary))] mt-1" />
                         )}
                       </div>
                     </div>
@@ -316,11 +316,11 @@ export function ColumnMappingModal({ fileName, onClose, onComplete }: ColumnMapp
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-[var(--border-primary)]">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-[hsl(var(--border))]">
           <Button
             variant="ghost"
             size="sm"
-            className="text-[var(--text-muted)]"
+            className="text-[hsl(var(--muted-foreground))]"
             onClick={() => step > 1 ? setStep(step - 1) : onClose()}
             disabled={step === 3}
           >
