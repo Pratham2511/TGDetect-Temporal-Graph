@@ -413,6 +413,37 @@ export function generateConceptDriftData(): DriftPoint[] {
   return data;
 }
 
+// ── Concept Drift Accuracy (3-line comparison) ────────────────
+export interface DriftAccuracyPoint {
+  epoch: number;
+  v16Apex: number;
+  noRehearsal: number;
+  baseline: number;
+}
+
+export const driftAccuracyData: DriftAccuracyPoint[] = [
+  { epoch: 1,  v16Apex: 89.2, noRehearsal: 88.5, baseline: 87.8 },
+  { epoch: 2,  v16Apex: 92.1, noRehearsal: 91.0, baseline: 89.4 },
+  { epoch: 3,  v16Apex: 94.3, noRehearsal: 92.8, baseline: 90.1 },
+  { epoch: 4,  v16Apex: 95.6, noRehearsal: 93.5, baseline: 90.5 },
+  { epoch: 5,  v16Apex: 96.4, noRehearsal: 93.9, baseline: 90.2 },
+  { epoch: 6,  v16Apex: 96.8, noRehearsal: 93.6, baseline: 88.7 },
+  { epoch: 7,  v16Apex: 97.1, noRehearsal: 92.1, baseline: 85.3 },
+  { epoch: 8,  v16Apex: 97.4, noRehearsal: 90.5, baseline: 82.1 },
+  { epoch: 9,  v16Apex: 97.2, noRehearsal: 88.9, baseline: 79.4 },
+  { epoch: 10, v16Apex: 97.5, noRehearsal: 87.2, baseline: 76.8 },
+  { epoch: 11, v16Apex: 97.3, noRehearsal: 85.8, baseline: 74.2 },
+  { epoch: 12, v16Apex: 97.6, noRehearsal: 84.1, baseline: 71.9 },
+  { epoch: 13, v16Apex: 97.4, noRehearsal: 82.6, baseline: 69.5 },
+  { epoch: 14, v16Apex: 97.7, noRehearsal: 81.0, baseline: 67.3 },
+  { epoch: 15, v16Apex: 97.5, noRehearsal: 79.5, baseline: 65.1 },
+  { epoch: 16, v16Apex: 97.6, noRehearsal: 78.2, baseline: 63.4 },
+  { epoch: 17, v16Apex: 97.8, noRehearsal: 76.8, baseline: 61.8 },
+  { epoch: 18, v16Apex: 97.5, noRehearsal: 75.5, baseline: 60.2 },
+  { epoch: 19, v16Apex: 97.7, noRehearsal: 74.3, baseline: 59.1 },
+  { epoch: 20, v16Apex: 97.6, noRehearsal: 73.1, baseline: 58.4 },
+];
+
 // ── Attack Backtracking Chain (Objective 3) ──────────────────────
 export interface AttackChainStep {
   step: number;
