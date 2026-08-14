@@ -22,10 +22,11 @@ TGDetect is a threat detection platform that leverages **Temporal Graph Neural N
 - **Attack Backtracking** — Trace detected threats backward through the temporal graph to identify the attack chain and root cause
 - **Explainable AI (XAI)** — Attention-weighted feature importance, temporal influence scoring, and decision path visualization
 - **Concept Drift Adaptation** — Continuous model accuracy monitoring with automatic drift detection and rehearsal buffer rotation
+- **12 Architecture Gap Widgets** — Comprehensive analytics covering log source analysis, universal encoder weights, time encoder specs, causal convolutions, domain invariance, tactic embeddings, rehearsal buffer status, drift gauges, attack chain path scores, analyst narratives, graph topology statistics, cross-source correlations, and supervised contrastive metrics
 - **Smart Column Mapping** — Auto-detects and maps CSV/JSON/Syslog/NetFlow columns to TGDetect's expected schema
 - **12+ Log Format Support** — CSV, JSON, Syslog, NetFlow v5/v9, Zeek JSON, Suricata EVE, Apache Access, Windows Event, AWS CloudTrail, CEF, and custom delimited formats
-- **Dark/Light Theme** — Full theme switching with CSS custom properties for all components
-- **Interactive Onboarding Tour** — Step-by-step guided walkthrough with spotlight highlighting for first-time users
+- **Dark/Light Theme** — Full theme switching with CSS custom properties ("Midnight Intelligence" design system)
+- **Interactive Onboarding Tour** — Step-by-step guided walkthrough with SVG spotlight highlighting for first-time users
 
 ---
 
@@ -58,10 +59,11 @@ tgdetect/
 │   │
 │   ├── components/
 │   │   ├── tgdetect/             # TGDetect-specific components
-│   │   │   ├── AnalyticsPage.tsx  #   Analytics: source analysis, graph fusion,
-│   │   │   │                      #   concept drift, backtracking, explainability
+│   │   │   ├── AnalyticsPage.tsx  #   Analytics: 5-tab layout with 12 architecture gap widgets
+│   │   │   │                      #   (Source Analysis, Fused Temporal Graph, Concept Drift,
+│   │   │   │                      #    Attack Backtracking, Explainability)
 │   │   │   ├── ColumnMappingModal.tsx  #   Drag-and-drop column mapping for uploads
-│   │   │   ├── OnboardingTour.tsx      #   Guided tour overlay with spotlight
+│   │   │   ├── OnboardingTour.tsx      #   Guided tour overlay with SVG mask spotlight
 │   │   │   └── TimeRangePicker.tsx      #   Time range selector (1h/6h/24h/7d/30d)
 │   │   └── ui/                   # shadcn/ui base components (40+)
 │   │       ├── accordion.tsx
@@ -83,12 +85,12 @@ tgdetect/
 │   └── lib/                      # Utilities and configuration
 │       ├── date-utils.ts         #   Hydration-safe date formatting
 │       ├── db.ts                 #   Prisma database client
-│       ├── synthetic-data.ts     #   Demo data generators for all charts
+│       ├── synthetic-data.ts     #   Demo data generators for all charts (30+ exports)
 │       ├── theme-context.tsx     #   Dark/light theme context (localStorage)
 │       └── utils.ts              #   General utilities (cn, etc.)
 │
 ├── public/                       # Static assets
-│   ├── logo.svg
+│   ├── logo.svg                  #   TGDetect brand logo (TGNN graph icon)
 │   └── robots.txt
 │
 ├── prisma/                       # Database schema
@@ -120,8 +122,8 @@ tgdetect/
 
 ```bash
 # Clone the repository
-git clone https://github.com/Pratham2511/-TGDetect-Temporal-Graph.git
-cd -TGDetect-Temporal-Graph
+git clone https://github.com/Pratham2511/TGDetect-Temporal-Graph.git
+cd TGDetect-Temporal-Graph
 
 # Install dependencies
 npm install
@@ -225,12 +227,35 @@ pm2 startup
 - Live activity feed with auto-updating entries
 - Live streaming pulse indicators (pulsing dots, counter ticks)
 
-### Analytics
-- **Source Analysis** — Per-dataset metrics for DARPA TC, UNSW-NB15, LANL NetFlow
-- **Fused Temporal Graph** — Graph topology stats, edge distribution, temporal patterns
-- **Concept Drift** — Model accuracy tracking, drift detection thresholds, rehearsal buffer status
-- **Attack Backtracking** — Temporal path tracing from detection to root cause through the graph
-- **Explainability** — Feature attribution, attention weights, temporal influence scores
+### Analytics (5 Tabs + 12 Architecture Gap Widgets)
+
+#### Tab 1 — Source Analysis
+- Per-dataset metrics for DARPA TC, UNSW-NB15, LANL NetFlow
+- **C1**: Log source type distribution (bar chart with log scale)
+- **C2**: Universal encoder weight distribution
+- **C3**: Time encoder specification callout
+
+#### Tab 2 — Fused Temporal Graph
+- Graph topology statistics, edge distribution, temporal patterns
+- **C4**: Causal convolution architecture callout
+- **C5**: Domain invariance analysis
+- **D1**: Graph statistics summary (nodes, edges, density, avg degree)
+
+#### Tab 3 — Concept Drift
+- Model accuracy tracking, drift detection thresholds, rehearsal buffer status
+- **C6**: Tactic embedding cluster scatter plot
+- **C7**: Rehearsal buffer composition (stacked bar)
+- **C8**: Drift distance gauge with threshold indicators
+
+#### Tab 4 — Attack Backtracking
+- Temporal path tracing from detection to root cause through the graph
+- **C9**: Attack chain path scores
+- **C10**: Analyst narrative backtracking timeline
+
+#### Tab 5 — Explainability
+- Feature attribution, attention weights, temporal influence scores
+- **D2**: Cross-source correlation table
+- **E1**: Supervised contrastive learning metrics
 
 ### Datasets
 - 12+ log format support with format detection
@@ -242,6 +267,17 @@ pm2 startup
 - Create analysis profiles per dataset/investigation
 - Configurable V16 Apex parameters (temporal window, memory dim, attention heads, layers, thresholds)
 - Profile comparison and cloning
+
+---
+
+## Design System — "Midnight Intelligence"
+
+TGDetect uses a CSS custom properties design system with HSL tokens for seamless dark/light theme switching:
+
+- **Dark theme**: Deep navy backgrounds (`hsl(222, 47%, 11%)`) with blue accents
+- **Light theme**: Clean slate surfaces (`hsl(0, 0%, 98%)`) with crisp contrast
+- **Component classes**: `.sidebar-shell`, `.header-shell`, `.tg-card`, `.badge-*`, `.section-title`
+- **Chart constants**: `CHART_TOOLTIP_STYLE`, `CHART_GRID_STYLE`, `CHART_AXIS_STYLE`, `CHART_COLORS`
 
 ---
 
