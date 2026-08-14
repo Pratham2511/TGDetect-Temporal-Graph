@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: "TGDetect — Temporal Graph Neural Network for Threat Detection",
   description: "Demo interface for TGDetect: A TGNN-based system for detecting Advanced Persistent Threats (APTs) using temporal graph analysis of network telemetry.",
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/logo.svg",
   },
 };
 
