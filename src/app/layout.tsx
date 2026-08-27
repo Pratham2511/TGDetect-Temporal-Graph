@@ -16,10 +16,21 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "TGDetect — Temporal Graph Neural Network for Threat Detection",
-  description: "Demo interface for TGDetect: A TGNN-based system for detecting Advanced Persistent Threats (APTs) using temporal graph analysis of network telemetry.",
-  icons: {
-    icon: "/logo.svg",
-  },
+  description:
+    "Backend-contract-ready frontend for the TGDetect backend: TGEvent investigation, temporal heterogeneous graph, attack-chain reconstruction, parquet artifacts, and TGNN (GraphSAGE + GRU) model views.",
+  keywords: [
+    "TGDetect",
+    "Temporal Graph",
+    "Graph Neural Network",
+    "GraphSAGE",
+    "GRU",
+    "TGNN",
+    "Threat Detection",
+    "Attack Chain",
+    "MITRE ATT&CK",
+  ],
+  authors: [{ name: "TGDetect" }],
+  icons: { icon: "/logo.svg" },
 };
 
 export default function RootLayout({
@@ -30,12 +41,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="light" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <ThemeProvider>
-          {children}
-          <Toaster />
-        </ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
+        <Toaster />
       </body>
     </html>
   );

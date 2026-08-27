@@ -1,365 +1,167 @@
-# TGDetect — Temporal Graph Neural Network for APT Detection
+# TGDetect Frontend
 
-> V16 Apex Temporal Graph Neural Network (TGNN) based Advanced Persistent Threat (APT) detection system. Real-time network traffic analysis with multi-source data fusion, concept drift adaptation, and explainable AI-driven threat intelligence.
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Pratham2511/TGDetect-Temporal-Graph/blob/main/LICENSE)
+[![Version](https://img.shields.io/badge/Version-1.0.0-green.svg)](https://github.com/Pratham2511/TGDetect-Temporal-Graph/releases)
+[![Stars](https://img.shields.io/github/stars/Pratham2511/TGDetect-Temporal-Graph)](https://github.com/Pratham2511/TGDetect-Temporal-Graph/stargazers)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
 
-![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
-![React](https://img.shields.io/badge/React-19-61dafb?logo=react)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38bdf8?logo=tailwindcss)
-![License](https://img.shields.io/badge/License-MIT-green)
-
----
-
-## Overview
-
-TGDetect is a threat detection platform that leverages **Temporal Graph Neural Networks (TGNN)** to identify Advanced Persistent Threats (APTs) in network traffic. The system fuses data from multiple sources — DARPA TC v3, UNSW-NB15, and LANL NetFlow — into a unified temporal graph representation for real-time anomaly detection.
-
-### Key Capabilities
-
-- **Multi-Source Data Fusion** — Ingests and correlates network logs from DARPA TC, UNSW-NB15, and LANL NetFlow into a single temporal graph
-- **V16 Apex TGNN Model** — embed_dim=64, memory_dim=64, 4 attention heads, 2 layers with continuous learning via rehearsal buffers
-- **Live Streaming Detection** — Real-time event ingestion with live metrics, threat counters, and activity feeds
-- **Attack Backtracking** — Trace detected threats backward through the temporal graph to identify the attack chain and root cause
-- **Explainable AI (XAI)** — Attention-weighted feature importance, temporal influence scoring, and decision path visualization
-- **Concept Drift Adaptation** — Continuous model accuracy monitoring with automatic drift detection and rehearsal buffer rotation
-- **12 Architecture Gap Widgets** — Comprehensive analytics covering log source analysis, universal encoder weights, time encoder specs, causal convolutions, domain invariance, tactic embeddings, rehearsal buffer status, drift gauges, attack chain path scores, analyst narratives, graph topology statistics, cross-source correlations, and supervised contrastive metrics
-- **Smart Column Mapping** — Auto-detects and maps CSV/JSON/Syslog/NetFlow columns to TGDetect's expected schema
-- **12+ Log Format Support** — CSV, JSON, Syslog, NetFlow v5/v9, Zeek JSON, Suricata EVE, Apache Access, Windows Event, AWS CloudTrail, CEF, and custom delimited formats
-- **Dark/Light Theme** — Full theme switching with CSS custom properties ("Midnight Intelligence" design system)
-- **Interactive Onboarding Tour** — Step-by-step guided walkthrough with SVG spotlight highlighting for first-time users
+A backend-contract-ready Next.js frontend for the TGDetect temporal graph neural network threat detection system, designed around the actual Python backend data schemas (`graph_builder/`, `models/tgnn.py`).
 
 ---
 
-## Tech Stack
+## ✨ Features
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16 (App Router, Turbopack) |
-| Language | TypeScript 5 |
-| UI Library | React 19 |
-| Styling | Tailwind CSS 4 + CSS Custom Properties |
-| Components | shadcn/ui (Radix primitives) |
-| Charts | Recharts (Area, Bar, Line, Radar, Pie, Scatter) |
-| Icons | Lucide React |
-| State | React Context + useRef hooks |
-| Drag & Drop | @dnd-kit |
-
----
-
-## Project Structure
-
-```
-tgdetect/
-├── src/                          # Application source code
-│   ├── app/
-│   │   ├── api/route.ts          # API health-check endpoint
-│   │   ├── globals.css           # CSS variables for dark/light themes
-│   │   ├── layout.tsx            # Root layout with ThemeProvider
-│   │   └── page.tsx              # Main SPA (Dashboard, Datasets, Profiles)
-│   │
-│   ├── components/
-│   │   ├── tgdetect/             # TGDetect-specific components
-│   │   │   ├── AnalyticsPage.tsx  #   Analytics: 5-tab layout with 12 architecture gap widgets
-│   │   │   │                      #   (Source Analysis, Fused Temporal Graph, Concept Drift,
-│   │   │   │                      #    Attack Backtracking, Explainability)
-│   │   │   ├── ColumnMappingModal.tsx  #   Drag-and-drop column mapping for uploads
-│   │   │   ├── OnboardingTour.tsx      #   Guided tour overlay with SVG mask spotlight
-│   │   │   └── TimeRangePicker.tsx      #   Time range selector (1h/6h/24h/7d/30d)
-│   │   └── ui/                   # shadcn/ui base components (40+)
-│   │       ├── accordion.tsx
-│   │       ├── badge.tsx
-│   │       ├── button.tsx
-│   │       ├── card.tsx
-│   │       ├── dialog.tsx
-│   │       ├── input.tsx
-│   │       ├── select.tsx
-│   │       ├── table.tsx
-│   │       ├── tabs.tsx
-│   │       └── ... (40+ more)
-│   │
-│   ├── hooks/                    # Custom React hooks
-│   │   ├── useLiveStream.ts      #   Real-time metrics & feed streaming
-│   │   ├── use-mobile.ts         #   Mobile viewport detection
-│   │   └── use-toast.ts          #   Toast notification hook
-│   │
-│   └── lib/                      # Utilities and configuration
-│       ├── date-utils.ts         #   Hydration-safe date formatting
-│       ├── db.ts                 #   Prisma database client
-│       ├── synthetic-data.ts     #   Demo data generators for all charts (30+ exports)
-│       ├── theme-context.tsx     #   Dark/light theme context (localStorage)
-│       └── utils.ts              #   General utilities (cn, etc.)
-│
-├── public/                       # Static assets
-│   ├── logo.svg                  #   TGDetect brand logo (TGNN graph icon)
-│   └── robots.txt
-│
-├── prisma/                       # Database schema
-│   └── schema.prisma
-│
-├── .gitignore                    # Git ignore rules
-├── components.json                # shadcn/ui configuration
-├── eslint.config.mjs             # ESLint configuration
-├── LICENSE                       # MIT License
-├── next.config.ts                # Next.js configuration
-├── package.json                  # Dependencies and scripts
-├── postcss.config.mjs            # PostCSS configuration
-├── README.md                     # This file
-├── tailwind.config.ts            # Tailwind CSS configuration
-└── tsconfig.json                 # TypeScript configuration
-```
+| Feature | Description |
+|---------|-------------|
+| **Backend-contract domain model** | TypeScript types mirror backend Python schemas 1:1 (TGEvent, NodeType, RelationType, AttackChain, GraphStats, TGNNModelConfig) — verified against `graph_builder/schema.py`, `attack_tracker.py`, `tgnn.py` |
+| **Overview / Dashboard** | Pipeline summary (normalization → labeling → graph build → chains → elapsed), KPI tiles, events-over-time, node/relation/source distributions, recent malicious events |
+| **Event Investigation** | Filterable table of all 14 TGEvent fields; click-to-detail panel with causal_parent navigation, attrs JSON, related events touching src/dst nodes, link-to-chain |
+| **Temporal Heterogeneous Graph** | Canvas-based force-directed directed graph with node/relation legends, malicious-only mode, edge-label toggle, node inspector, pan/zoom/drag |
+| **Attack Chain Reconstruction** | Chain list with severity + strategy filters; 4-tab detail panel (Timeline / Subgraph / Events / Evidence) showing tactic/stage/relation sequences and causal links |
+| **Dataset Processing Workflow** | Job-oriented UI: 10 backend pipeline states (idle → parsing → normalizing → labeling → building_graph → exporting → reconstructing_chains → completed/failed), full ProcessingConfig display, equivalent CLI preview |
+| **Graph Artifacts Explorer** | Inspect 6 backend outputs (events.parquet, edges.parquet, nodes.parquet, chains_summary.parquet, graph_stats.json, subgraphs/) with exact schema field tables and row previews |
+| **TGNN Model Interface** | Architecture flow diagram (GraphSAGE per snapshot → GRU over time → node + snapshot classifiers), snapshot config, training history curves, evaluation metrics with confusion matrix |
+| **Analytics** | 4 categories: Event / Graph / Attack / Dataset analytics — all derived from backend-conformant domain entities |
+| **Service-layer abstraction** | UI depends on 8 service interfaces (Dataset / Event / Graph / AttackChain / Artifact / Model / Training / Processing); mock implementations swappable for real API with zero UI changes |
+| **Light / Dark themes** | "Midnight Intelligence" design system preserved from original repo |
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
-
-- **Node.js** >= 18.17
-- **npm** >= 9 (or **bun**)
-- **git**
+- Node.js 20+ or Bun 1.1+
+- npm / bun package manager
 
 ### Installation
-
 ```bash
-# Clone the repository
 git clone https://github.com/Pratham2511/TGDetect-Temporal-Graph.git
 cd TGDetect-Temporal-Graph
-
-# Install dependencies
-npm install
-
-# Start the development server
-npm run dev
+bun install
 ```
 
-The application will be available at **http://localhost:3000**.
+---
 
-### Production Build
+## 📖 Usage
 
+### Basic Usage
 ```bash
-# Create optimized production build
-npm run build
-
-# Start the production server
-npm run start
+bun run dev
 ```
+Open `http://localhost:3000` to view the application. Navigate the 8 sections via the left sidebar:
+- **Overview** — backend pipeline summary
+- **Events** — TGEvent investigation table
+- **Graph** — temporal heterogeneous graph workspace
+- **Attack Chains** — chain reconstruction with 4 detail views
+- **Datasets** — dataset + processing job inspector
+- **Artifacts** — parquet/JSON output explorer
+- **TGNN / Model** — GraphSAGE + GRU architecture, training, evaluation
+- **Analytics** — event/graph/attack/dataset analytics
 
-The production server runs on **http://localhost:3000** by default.
+### Commands
+| Command | Description |
+|---------|-------------|
+| `bun run dev` | Start dev server on port 3000 |
+| `bun run build` | Production build (outputs to `.next/standalone/`) |
+| `bun run start` | Start production server from built standalone |
+| `bun run lint` | Run ESLint |
+| `bun run db:push` | Push Prisma schema to SQLite (currently unused — backend not connected) |
 
 ---
 
-## Deployment
+## 🔧 Configuration
 
-### Vercel (Recommended)
+| Option | Description | Default |
+|--------|-------------|---------|
+| `tgdetect-theme` | localStorage key for theme (`light` / `dark`) | `light` |
+| Service implementation | Mock implementations live in `src/lib/tgdetect/services/index.ts`. Replace with real API client by implementing the same interfaces. | mock |
 
-The fastest way to deploy a Next.js application:
+**No environment variables are required.** The frontend runs entirely on local mock data conforming to backend schemas. When the backend is integrated later, API base URLs will be configured here.
 
-1. Push your code to GitHub
-2. Go to [vercel.com](https://vercel.com) and import your repository
-3. Vercel auto-detects Next.js — click **Deploy**
-4. Your app is live at `your-project.vercel.app`
+---
 
+## 🛠️ Development
+
+### Setup
 ```bash
-# Or deploy via Vercel CLI
-npm i -g vercel
-vercel
+bun install
+bun run dev
 ```
 
-### Docker
-
-```dockerfile
-FROM node:20-alpine AS base
-
-# Install dependencies
-FROM base AS deps
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
-
-# Build
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN npm run build
-
-# Production
-FROM base AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
-
-EXPOSE 3000
-CMD ["node", "server.js"]
-```
-
+### Build
 ```bash
-# Build and run
-docker build -t tgdetect .
-docker run -p 3000:3000 tgdetect
+bun run build
+bun run start
 ```
 
-### Self-Hosted (Node.js)
-
-```bash
-# Build
-npm run build
-
-# Run with PM2 for process management
-npm i -g pm2
-pm2 start npm --name "tgdetect" -- start
-pm2 save
-pm2 startup
+### Architecture
+```
+src/
+  app/
+    layout.tsx          # Root layout + ThemeProvider + Geist fonts
+    page.tsx            # Main shell with state-based navigation (8 sections)
+    globals.css          # Midnight Intelligence design system (light/dark)
+  components/
+    tgdetect/
+      overview/          # Dashboard page
+      events/            # Event investigation page
+      graph/             # Temporal graph workspace
+      chains/            # Attack chain workspace (4 detail views)
+      datasets/          # Dataset + processing job inspector
+      artifacts/         # Parquet/JSON artifact explorer
+      model/             # TGNN architecture + training + evaluation
+      analytics/         # 4-category analytics
+      shared/            # Reusable pills, legends, TemporalGraphViz
+    ui/                  # shadcn/Radix primitives (unchanged)
+  lib/
+    tgdetect/
+      types.ts           # Backend-mirrored TypeScript domain types
+      constants.ts       # UI metadata for every backend enum
+      mocks.ts           # Backend-conformant mock fixtures
+      formatters.ts      # Pure presentation adapters
+      chart-constants.ts # Shared Recharts styling
+      services/
+        index.ts         # 8 service interfaces + mock implementations
+        hooks.ts         # React hooks wrapping each service
+    theme-context.tsx    # Light/dark theme provider
+    date-utils.ts       # Hydration-safe date formatters
+    utils.ts            # cn() helper
+  hooks/
+    use-mobile.ts       # Mobile breakpoint hook
+    use-toast.ts        # Toast notifications
 ```
 
----
+### Backend Contract
+The frontend is designed around the actual TGDetect backend repository
+([dhruvmankame/tgdetect](https://github.com/dhruvmankame/tgdetect)). Key
+backend concepts the frontend is structured around:
 
-## Features
+- **TGEvent** — unified event with 14 fields (`event_id`, `ts`, `src_id`, `src_type`, `dst_id`, `dst_type`, `relation`, `label`, `tactics`, `apt_stage`, `source_tag`, `chain_id`, `causal_parent`, `attrs`)
+- **NodeType** — 8 types: `USER`, `HOST`, `PROCESS`, `FILE`, `IP`, `DOMAIN`, `SOCKET`, `UNKNOWN`
+- **RelationType** — 14 relations: `LOGON`, `EXECUTES`, `READS`, `WRITES`, `DELETES`, `CONNECTS_TO`, `AUTHENTICATES_TO`, `NETWORK_FLOW`, `EXPLOIT`, `LATERAL_MOVE`, `EXFILTRATE`, `DISCOVER`, `IMPACT`, `GENERIC`
+- **Label semantics** — `0 = benign`, `1 = malicious`; 3 modes: `parser`, `force`, `heuristic`
+- **Chain strategies** — `chain_id` (priority 1), `causal_parent` (priority 2, union-find), `entity_time` (priority 3, BFS)
+- **Graph artifacts** — `events.parquet`, `edges.parquet`, `nodes.parquet`, `chains_summary.parquet`, `graph_stats.json`, per-chain subgraph JSON
+- **TGNN architecture** — `TemporalGNN` = GraphSAGE (`SAGEConv`) per snapshot + GRU over time + dual classifier heads (node + snapshot); NO attention, NO Transformer, NO LLM
+- **Datasets supported** — `synthetic` (JSONL) and `mordor` (OTRF Security-Datasets); the backend does NOT support DARPA/UNSW/LANL parsers
+- **Training & evaluation** — `BCEWithLogitsLoss` with auto `pos_weight`, `AdamW` optimizer, threshold tuning on val set; metrics: precision, recall, F1, accuracy, AUC-ROC, AUC-PR, confusion matrix
 
-### Dashboard
-- Real-time stat cards with trend indicators (total events, threats, graph edges, memory)
-- Time-series area chart for event throughput with time range picker
-- Detection results bar chart by severity
-- MITRE ATT&CK tactic distribution radar chart
-- Network event type pie chart
-- Live activity feed with auto-updating entries
-- Live streaming pulse indicators (pulsing dots, counter ticks)
+### Mock Architecture
+Mock data lives behind service interfaces. The UI never imports mock fixtures directly — it consumes typed hooks (`useEvents`, `useChains`, `useTrainingRun`, etc.) which call service interfaces backed by mock implementations. To integrate the real backend:
 
-### Analytics (5 Tabs + 12 Architecture Gap Widgets)
-
-#### Tab 1 — Source Analysis
-- Per-dataset metrics for DARPA TC, UNSW-NB15, LANL NetFlow
-- **C1**: Log source type distribution (bar chart with log scale)
-- **C2**: Universal encoder weight distribution
-- **C3**: Time encoder specification callout
-
-#### Tab 2 — Fused Temporal Graph
-- Graph topology statistics, edge distribution, temporal patterns
-- **C4**: Causal convolution architecture callout
-- **C5**: Domain invariance analysis
-- **D1**: Graph statistics summary (nodes, edges, density, avg degree)
-
-#### Tab 3 — Concept Drift
-- Model accuracy tracking, drift detection thresholds, rehearsal buffer status
-- **C6**: Tactic embedding cluster scatter plot
-- **C7**: Rehearsal buffer composition (stacked bar)
-- **C8**: Drift distance gauge with threshold indicators
-
-#### Tab 4 — Attack Backtracking
-- Temporal path tracing from detection to root cause through the graph
-- **C9**: Attack chain path scores
-- **C10**: Analyst narrative backtracking timeline
-
-#### Tab 5 — Explainability
-- Feature attribution, attention weights, temporal influence scores
-- **D2**: Cross-source correlation table
-- **E1**: Supervised contrastive learning metrics
-
-### Datasets
-- 12+ log format support with format detection
-- Smart column mapping UI (drag-and-drop)
-- Import preview with data quality indicators
-- Dataset versioning and metadata management
-
-### Profiles
-- Create analysis profiles per dataset/investigation
-- Configurable V16 Apex parameters (temporal window, memory dim, attention heads, layers, thresholds)
-- Profile comparison and cloning
+1. Implement the same 8 service interfaces (`DatasetService`, `EventService`, `GraphService`, `AttackChainService`, `ArtifactService`, `ModelService`, `TrainingService`, `ProcessingService`) in `src/lib/tgdetect/services/api/` using `fetch()` against your FastAPI/Flask endpoints
+2. Swap the singleton exports in `src/lib/tgdetect/services/index.ts` from `MockXService` to `ApiXService`
+3. No UI changes required
 
 ---
 
-## Design System — "Midnight Intelligence"
+## 🤝 Contributing
 
-TGDetect uses a CSS custom properties design system with HSL tokens for seamless dark/light theme switching:
-
-- **Dark theme**: Deep navy backgrounds (`hsl(222, 47%, 11%)`) with blue accents
-- **Light theme**: Clean slate surfaces (`hsl(0, 0%, 98%)`) with crisp contrast
-- **Component classes**: `.sidebar-shell`, `.header-shell`, `.tg-card`, `.badge-*`, `.section-title`
-- **Chart constants**: `CHART_TOOLTIP_STYLE`, `CHART_GRID_STYLE`, `CHART_AXIS_STYLE`, `CHART_COLORS`
+See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
-## MITRE ATT&CK Mapping
+## 📜 License
 
-The detection engine maps findings to the following tactics:
-
-| Tactic | Examples |
-|--------|---------|
-| Initial Access | Phishing, Exploit Public-Facing App |
-| Execution | Command & Scripting Interpreter, User Execution |
-| Persistence | Account Manipulation, Bootkit |
-| Privilege Escalation | Exploitation for Privilege Escalation |
-| Defense Evasion | Indicator Blocking, Process Injection |
-| Credential Access | LSASS Memory, Credential Dumping |
-| Discovery | Network Service Discovery, Remote System Discovery |
-| Lateral Movement | Remote Services, Pass the Hash |
-| Collection | Archive Collected Data, Data from Local System |
-| Exfiltration | Exfiltration Over C2 Channel, DNS Tunneling |
-| Command & Control | Standard Application C2 Protocol, Web Service |
-
----
-
-## Model Architecture (V16 Apex)
-
-```
-Input: Network event stream → Node features (IP, port, protocol, bytes, packets, duration)
-                                 ↓
-                    Temporal Graph Construction
-                                 ↓
-            ┌────────────────────────────────────┐
-            │  TGNN Layer 1 (embed_dim=64)       │
-            │  ├── Multi-Head Attention (4 heads) │
-            │  ├── Temporal Memory (memory_dim=64)│
-            │  └── Message Passing (GAT conv)    │
-            ├────────────────────────────────────┤
-            │  TGNN Layer 2 (embed_dim=64)       │
-            │  ├── Multi-Head Attention (4 heads) │
-            │  ├── Temporal Memory (memory_dim=64)│
-            │  └── Message Passing (GAT conv)    │
-            └────────────────────────────────────┘
-                                 ↓
-                   Detection Head (MLP + Sigmoid)
-                                 ↓
-              Output: Threat probability per node/edge
-```
-
----
-
-## Environment Variables
-
-This is a frontend-only demo. No environment variables are required for the basic deployment.
-
-```env
-# Port (default: 3000)
-PORT=3000
-
-# Node environment
-NODE_ENV=production
-```
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -m 'Add your feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Open a Pull Request
-
----
-
-## License
-
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-
----
-
-## Acknowledgments
-
-- **DARPA Engagement** — DARPA TC v3 dataset for realistic APT scenario evaluation
-- **UNSW-NB15** — Network behavior dataset for intrusion detection benchmarking
-- **LANL NetFlow** — High-volume network flow data for scalable detection testing
-- **MITRE ATT&CK** — Adversarial tactics, techniques, and common knowledge base
+[MIT](https://github.com/Pratham2511/TGDetect-Temporal-Graph/blob/main/LICENSE)
