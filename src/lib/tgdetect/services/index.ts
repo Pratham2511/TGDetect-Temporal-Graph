@@ -30,6 +30,16 @@ import {
   mockTrainingHistory,
   mockTrainingRun,
 } from '../mocks';
+import {
+  ApiArtifactService,
+  ApiAttackChainService,
+  ApiDatasetService,
+  ApiEventService,
+  ApiGraphService,
+  ApiModelService,
+  ApiProcessingService,
+  ApiTrainingService,
+} from './api';
 import type {
   ArtifactMeta,
   AttackChainSummary,
@@ -316,15 +326,29 @@ class MockProcessingService implements ProcessingService {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Singleton instances — exported for direct consumption by hooks
-// ─────────────────────────────────────────────────────────────────────────────
+const isMockMode = process.env.NEXT_PUBLIC_TGDETECT_MOCK_MODE === 'true';
 
-export const datasetService: DatasetService = new MockDatasetService();
-export const eventService: EventService = new MockEventService();
-export const graphService: GraphService = new MockGraphService();
-export const chainService: AttackChainService = new MockAttackChainService();
-export const artifactService: ArtifactService = new MockArtifactService();
-export const modelService: ModelService = new MockModelService();
-export const trainingService: TrainingService = new MockTrainingService();
-export const processingService: ProcessingService = new MockProcessingService();
+export const datasetService: DatasetService = isMockMode
+  ? new MockDatasetService()
+  : new ApiDatasetService();
+export const eventService: EventService = isMockMode
+  ? new MockEventService()
+  : new ApiEventService();
+export const graphService: GraphService = isMockMode
+  ? new MockGraphService()
+  : new ApiGraphService();
+export const chainService: AttackChainService = isMockMode
+  ? new MockAttackChainService()
+  : new ApiAttackChainService();
+export const artifactService: ArtifactService = isMockMode
+  ? new MockArtifactService()
+  : new ApiArtifactService();
+export const modelService: ModelService = isMockMode
+  ? new MockModelService()
+  : new ApiModelService();
+export const trainingService: TrainingService = isMockMode
+  ? new MockTrainingService()
+  : new ApiTrainingService();
+export const processingService: ProcessingService = isMockMode
+  ? new MockProcessingService()
+  : new ApiProcessingService();

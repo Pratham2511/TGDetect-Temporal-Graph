@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Activity,
+  AlertTriangle,
   BarChart3,
   Boxes,
   Database,
@@ -11,8 +12,8 @@ import {
   ListTree,
   Moon,
   Network,
+  RefreshCw,
   Sun,
-  Upload,
   type LucideIcon,
 } from 'lucide-react';
 import { OverviewPage } from '@/components/tgdetect/overview/OverviewPage';
@@ -26,6 +27,7 @@ import { AnalyticsPage } from '@/components/tgdetect/analytics/AnalyticsPage';
 import { useTheme } from '@/lib/theme-context';
 import { useGraphStats } from '@/lib/tgdetect/services/hooks';
 import { formatInt } from '@/lib/tgdetect/formatters';
+import { api, API_BASE_URL } from '@/lib/tgdetect/api/client';
 
 interface NavItem {
   id: string;
@@ -60,12 +62,37 @@ interface PageCtx {
 export default function Home() {
   const [activePage, setActivePage] = useState<string>('overview');
   const [pageCtx, setPageCtx] = useState<PageCtx>({});
+  const [apiHealth, setApiHealth] = useState<'checking' | 'connected' | 'offline'>('checking');
+  const [healthError, setHealthError] = useState<string | null>(null);
   const theme = useTheme();
   const statsRes = useGraphStats();
 
+  const checkBackendHealth = useCallback(async () => {
+    try {
+      const res = await api.checkHealth();
+      if (res.status === 'ok') {
+        setApiHealth('connected');
+        setHealthError(null);
+      } else {
+        setApiHealth('offline');
+        setHealthError('API returned non-ok status');
+      }
+    } catch (err: unknown) {
+      setApiHealth('offline');
+      setHealthError(err instanceof Error ? err.message : String(err));
+    }
+  }, []);
+
+  useEffect(() => {
+    // Initial health check
+    checkBackendHealth();
+    const timer = setInterval(checkBackendHealth, 15000);
+    return () => clearInterval(timer);
+  }, [checkBackendHealth]);
+
   const navigate = useCallback((page: string, ctx?: Record<string, unknown>) => {
     setActivePage(page);
-    setPageCtx(ctx as PageCtx ?? {});
+    setPageCtx((ctx as PageCtx) ?? {});
     // Scroll to top on navigation
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
@@ -173,11 +200,29 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-2.5">
+              {/* Health status badge */}
+              {apiHealth === 'connected' ? (
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  <span className="size-1.5 rounded-full bg-emerald-500" />
+                  <span>API CONNECTED</span>
+                </span>
+              ) : apiHealth === 'offline' ? (
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                  <span className="size-1.5 rounded-full bg-rose-500 animate-pulse" />
+                  <span>API OFFLINE</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--muted-foreground))]">
+                  <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <span>CHECKING API</span>
+                </span>
+              )}
+
               <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))]">
-                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-[hsl(var(--muted-foreground))]">Dataset:</span>
                 <span className="font-semibold">mordor_empire</span>
               </span>
+
               <button
                 type="button"
                 onClick={theme.toggleTheme}
@@ -196,26 +241,59 @@ export default function Home() {
 
           {/* Page content */}
           <div className="flex-1 p-4 overflow-x-hidden">
-            {activePage === 'overview' && <OverviewPage onNavigate={navigate} />}
-            {activePage === 'events' && (
-              <EventsPage
-                initialFilter={
-                  pageCtx.labelFilter !== undefined
-                    ? { labels: [pageCtx.labelFilter] }
-                    : pageCtx.nodeId
-                      ? {} // no node-filter on event list, just initial state — nodeId drives related events panel only
-                      : undefined
-                }
-                initialEventId={pageCtx.eventId ?? null}
-                onNavigate={navigate}
-              />
+            {apiHealth === 'offline' ? (
+              <div className="max-w-md mx-auto my-12 p-6 rounded border border-rose-500/30 bg-[hsl(var(--card))] shadow-sm text-center">
+                <div className="size-10 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-500 flex items-center justify-center mx-auto mb-3">
+                  <AlertTriangle className="size-5" />
+                </div>
+                <h2 className="text-sm font-semibold tracking-wider uppercase text-rose-600 dark:text-rose-400 mb-1">
+                  TGDetect API OFFLINE
+                </h2>
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4 font-mono">
+                  Could not connect to {API_BASE_URL}
+                </p>
+                {healthError && (
+                  <p className="text-[11px] font-mono text-[hsl(var(--muted-foreground))] bg-[hsl(var(--background))] p-2.5 rounded mb-4 break-all text-left">
+                    {healthError}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApiHealth('checking');
+                    checkBackendHealth();
+                    statsRes.reload();
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-[hsl(var(--primary))] text-white text-xs font-medium hover:opacity-90 transition-opacity"
+                >
+                  <RefreshCw className="size-3.5" />
+                  <span>Retry Connection</span>
+                </button>
+              </div>
+            ) : (
+              <>
+                {activePage === 'overview' && <OverviewPage onNavigate={navigate} />}
+                {activePage === 'events' && (
+                  <EventsPage
+                    initialFilter={
+                      pageCtx.labelFilter !== undefined
+                        ? { labels: [pageCtx.labelFilter] }
+                        : pageCtx.nodeId
+                          ? {}
+                          : undefined
+                    }
+                    initialEventId={pageCtx.eventId ?? null}
+                    onNavigate={navigate}
+                  />
+                )}
+                {activePage === 'graph' && <GraphPage onNavigate={navigate} />}
+                {activePage === 'chains' && <ChainsPage initialChainId={pageCtx.chainId ?? null} onNavigate={navigate} />}
+                {activePage === 'datasets' && <DatasetsPage onNavigate={navigate} />}
+                {activePage === 'artifacts' && <ArtifactsPage initialJobId={pageCtx.jobId ?? null} />}
+                {activePage === 'model' && <ModelPage />}
+                {activePage === 'analytics' && <AnalyticsPage />}
+              </>
             )}
-            {activePage === 'graph' && <GraphPage onNavigate={navigate} />}
-            {activePage === 'chains' && <ChainsPage initialChainId={pageCtx.chainId ?? null} onNavigate={navigate} />}
-            {activePage === 'datasets' && <DatasetsPage onNavigate={navigate} />}
-            {activePage === 'artifacts' && <ArtifactsPage initialJobId={pageCtx.jobId ?? null} />}
-            {activePage === 'model' && <ModelPage />}
-            {activePage === 'analytics' && <AnalyticsPage />}
           </div>
         </main>
       </div>
