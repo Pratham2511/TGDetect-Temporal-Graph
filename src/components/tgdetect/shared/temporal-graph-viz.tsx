@@ -95,7 +95,7 @@ function toVisNodes(
   for (let i = 0; i < sample.length; i++) {
     const n = sample[i];
     const id = 'node_id' in n ? n.node_id : n.id;
-    const type = ('node_type' in n ? n.node_type : n.node_type) as NodeType;
+    const type = ('node_type' in n ? (n as { node_type: NodeType }).node_type : 'UNKNOWN') as NodeType;
     const degree = 'out_degree' in n ? n.out_degree + n.in_degree : 1;
     const malCount = 'malicious_events' in n ? n.malicious_events : 0;
     const total = 'out_degree' in n ? n.out_degree + n.in_degree : 1;
@@ -257,12 +257,11 @@ export function TemporalGraphViz({
     const selected = selectedNodeId ?? null;
     const highlightSet = new Set<string>();
     // Highlight nodes that participate in malicious edges or chain edges.
-    if (highlightChainId) {
-      for (const e of edgeArr as (GraphEdge | ChainSubgraph['edges'][number])[]) {
-        const ec = e as GraphEdge;
-        if (ec.chain_id === highlightChainId) {
-          highlightSet.add(ec.src_id);
-          highlightSet.add(ec.dst_id);
+    if (highlightChainId && Array.isArray(edges)) {
+      for (const e of edges) {
+        if ('chain_id' in e && e.chain_id === highlightChainId) {
+          highlightSet.add(e.src_id);
+          highlightSet.add(e.dst_id);
         }
       }
     }

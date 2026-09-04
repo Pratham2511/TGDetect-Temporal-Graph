@@ -227,33 +227,31 @@ function ChainDetailPanel({
         </div>
       </div>
 
-      <div className="tg-card p-2">
-        <div className="flex gap-1">
-          {([
-            { id: 'timeline', label: 'Timeline', icon: Clock },
-            { id: 'graph', label: 'Subgraph', icon: Network },
-            { id: 'events', label: 'Events', icon: ListTree },
-            { id: 'evidence', label: 'Evidence', icon: GitBranch },
-          ] as { id: DetailTab; label: string; icon: typeof Clock }[]).map((t) => {
-            const Icon = t.icon;
-            const isActive = tab === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => onTabChange(t.id)}
-                className={`px-2 py-1 text-[11px] font-medium flex items-center gap-1 border-b-2 -mb-[1px] ${
-                  isActive
-                    ? 'border-[hsl(var(--primary))] text-[hsl(var(--primary))]'
-                    : 'border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
-                }`}
-              >
-                <Icon className="size-3" />
-                {t.label}
-              </button>
-            );
-          })}
-        </div>
+      <div className="bg-[hsl(var(--card))] p-1.5 rounded-lg border border-[hsl(var(--border))] flex gap-1 shadow-xs">
+        {([
+          { id: 'timeline', label: 'Timeline', icon: Clock },
+          { id: 'graph', label: 'Subgraph', icon: Network },
+          { id: 'events', label: 'Events', icon: ListTree },
+          { id: 'evidence', label: 'Evidence', icon: GitBranch },
+        ] as { id: DetailTab; label: string; icon: typeof Clock }[]).map((t) => {
+          const Icon = t.icon;
+          const isActive = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => onTabChange(t.id)}
+              className={`px-3 py-1.5 text-xs rounded transition-all flex items-center gap-1.5 ${
+                isActive
+                  ? 'bg-[hsl(var(--primary)/0.15)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)/0.3)] font-semibold shadow-xs'
+                  : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--card-hover))]'
+              }`}
+            >
+              <Icon className="size-3.5" />
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className="tg-card p-3">

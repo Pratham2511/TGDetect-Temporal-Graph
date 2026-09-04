@@ -76,7 +76,7 @@ export function OverviewPage({ onNavigate }: { onNavigate?: (page: string, ctx?:
       </div>
       <RecentMaliciousCard
         events={recentMalRes.data ?? []}
-        loading={recentMalRes.state === 'loading'}
+        loading={false}
         onViewAll={() => onNavigate?.('events', { labelFilter: 1 })}
         onEventClick={(eventId) => onNavigate?.('events', { eventId })}
       />

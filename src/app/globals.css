@@ -50,75 +50,80 @@
    Text: near-black navy for maximum contrast
    Sidebar: cool slate (light) in light mode
    ──────────────────────────────────────────────────────────── */
+/* ────────────────────────────────────────────────────────────
+   LIGHT MODE (default / :root)
+   Foundations: Deep navy / blue-black for primary navigation
+   Canvas: Crisp cool-slate neutral (eliminating murky off-white)
+   Surfaces: Crisp pure white panels with precision hairline slate borders
+   Text: Deep navy slate for high contrast & technical legibility
+   ──────────────────────────────────────────────────────────── */
 :root {
   /* ── Surfaces ─────────────────────────────────────────────────────── */
-  --background: 220 20% 97%;        /* #F6F7FA — warm-cool off-white */
-  --card: 0 0% 100%;               /* #FFFFFF — white cards */
+  --background: 215 25% 95%;        /* #F0F4F8 — crisp cool-slate neutral */
+  --card: 0 0% 100%;               /* #FFFFFF — crisp white panels */
   --popover: 0 0% 100%;
-  --card-hover: 220 20% 98%;       /* #F8F9FB — very subtle hover */
-  --elevated: 220 20% 99%;         /* modals, dropdowns */
+  --card-hover: 215 25% 98%;       /* #F8FAFC — clean subtle hover */
+  --elevated: 0 0% 100%;           /* modals, dropdowns */
 
   /* ── Text ─────────────────────────────────────────────────────────── */
-  --foreground: 222 47% 11%;        /* #0F1B2D — near-black navy */
+  --foreground: 222 47% 11%;        /* #0F172A — slate-900 high contrast */
   --card-foreground: 222 47% 11%;
   --popover-foreground: 222 47% 11%;
-  --muted-foreground: 220 15% 46%;  /* #667085 — readable mid-gray */
+  --muted-foreground: 215 16% 47%;  /* #64748B — slate-500 technical mid-gray */
 
-  /* ── Primary (cyan-blue, dark enough for white backgrounds) ───────── */
-  --primary: 199 80% 34%;          /* #0F8CB5 — 7:1 contrast on white */
+  /* ── Primary (electric cyan-blue for analytical focus) ─────────────── */
+  --primary: 199 89% 38%;          /* #0284C7 — sky-600 technical cyan */
   --primary-foreground: 0 0% 100%;
-  --primary-dim: 199 80% 42%;       /* hover state */
+  --primary-dim: 199 89% 32%;       /* hover state */
 
   /* ── Interactive surfaces ─────────────────────────────────────────── */
-  --secondary: 220 15% 93%;         /* #E8EBF0 */
+  --secondary: 215 25% 92%;         /* #E2E8F0 */
   --secondary-foreground: 222 47% 11%;
-  --muted: 220 15% 93%;
-  --accent: 220 15% 91%;
+  --muted: 215 25% 92%;
+  --accent: 215 25% 90%;
   --accent-foreground: 222 47% 11%;
 
   /* ── State ────────────────────────────────────────────────────────── */
-  --destructive: 0 84% 55%;
+  --destructive: 0 75% 48%;        /* #DC2626 — threat / malicious only */
   --destructive-foreground: 0 0% 98%;
 
   /* ── Structure ────────────────────────────────────────────────────── */
-  --border: 220 15% 87%;            /* #D5DAE3 — visible but gentle */
-  --border-light: 220 15% 92%;      /* nested borders */
-  --input: 220 15% 87%;
-  --ring: 199 80% 34%;
-  --radius: 0.5rem;
+  --border: 215 20% 86%;            /* #CBD5E1 — crisp hairline border */
+  --border-light: 215 20% 92%;      /* #E2E8F0 — nested dividers */
+  --input: 215 20% 86%;
+  --ring: 199 89% 38%;
+  --radius: 0.375rem;              /* 6px precision radius */
 
-  /* ── Semantic status ──────────────────────────────────────────────── */
-  --success: 142 65% 36%;           /* #1E9E50 */
-  --success-bg: 142 65% 95%;
-  --warning: 38 90% 46%;            /* #E8930A */
-  --warning-bg: 38 90% 95%;
-  --danger: 0 80% 55%;              /* #E83333 */
-  --danger-bg: 0 80% 96%;
-  --info: 199 80% 40%;
-  --info-bg: 199 80% 95%;
-  --purple: 263 55% 58%;            /* #7C5DC7 */
-  --purple-bg: 263 55% 96%;
-  --teal: 173 55% 38%;              /* #29A898 */
+  /* ── Semantic status (Strictly Controlled) ────────────────────────── */
+  --success: 142 72% 32%;           /* #15803D — benign / safe only */
+  --success-bg: 142 60% 95%;
+  --warning: 38 92% 44%;            /* #D97706 — warning / attention only */
+  --warning-bg: 48 95% 95%;
+  --danger: 0 75% 48%;              /* #DC2626 — threat / malicious only */
+  --danger-bg: 0 85% 96%;
+  --info: 199 89% 38%;              /* #0284C7 — graph & system telemetry */
+  --info-bg: 199 85% 96%;
+  --purple: 262 60% 50%;            /* #7C3AED — TGNN ML engineering */
+  --purple-bg: 262 75% 96%;
+  --teal: 173 65% 35%;              /* #0F766E — attack chains & topology */
 
-  /* ── Sidebar — cool slate in light mode ──────────────────────────── */
-  --sidebar-bg: 220 18% 93%;         /* #E8ECF2 — cool slate sidebar */
-  --sidebar-border: 220 15% 86%;     /* #D2D8E2 — sidebar right border */
-  --sidebar-item-hover: 220 18% 89%; /* #DDE2EB */
-  --sidebar-item-active: 220 18% 85%; /* #D2D9E5 — active item bg */
-  --sidebar-text: 220 15% 45%;       /* #626D7E — muted nav text */
-  --sidebar-text-active: 199 80% 34%; /* #0F8CB5 — active = primary cyan */
-  --sidebar-logo-sub: 220 15% 55%;   /* #788797 */
+  /* ── Sidebar — Deep navy foundation in light mode for strong hierarchy ── */
+  --sidebar-bg: 222 47% 9%;          /* #0B1320 — deep technical navy */
+  --sidebar-border: 222 30% 16%;      /* #1B263B — hairline division */
+  --sidebar-item-hover: 222 35% 15%;  /* #172338 */
+  --sidebar-item-active: 215 30% 20%; /* #24354F */
+  --sidebar-text: 215 20% 70%;        /* #94A3B8 — readable muted nav */
+  --sidebar-text-active: 199 89% 65%; /* #38BDF8 — active cyan highlight */
+  --sidebar-logo-sub: 215 15% 55%;    /* #64748B */
+  --sidebar-logo-text: 210 40% 98%;   /* #F8FAFC — crisp high contrast */
 
-  /* ── Logo text in light mode: dark navy on slate ─────────────── */
-  --sidebar-logo-text: 222 47% 11%;  /* dark navy, readable on slate */
-
-  /* ── Chart colors (slightly darker for light-mode readability) ───── */
-  --chart-1: 199 80% 40%;           /* cyan */
-  --chart-2: 263 55% 58%;           /* violet */
-  --chart-3: 142 65% 36%;           /* green */
-  --chart-4: 38 90% 46%;            /* amber */
-  --chart-5: 0 80% 55%;             /* red */
-  --chart-6: 173 55% 38%;           /* teal */
+  /* ── Chart colors (tuned for high contrast on light surfaces) ──────── */
+  --chart-1: 199 89% 38%;           /* cyan */
+  --chart-2: 262 60% 50%;           /* violet / TGNN */
+  --chart-3: 142 72% 32%;           /* green / benign */
+  --chart-4: 38 92% 44%;            /* amber / warning */
+  --chart-5: 0 75% 48%;             /* red / threat */
+  --chart-6: 173 65% 35%;           /* teal / chains */
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -235,45 +240,67 @@
   border-right: 1px solid hsl(var(--sidebar-border));
 }
 
-/* Light mode card shadow — adds subtle elevation */
+/* ── Top Header ──────────────────────────────────────────────────────────── */
+.header-shell {
+  background-color: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border));
+}
+.dark .header-shell {
+  background-color: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+/* ── Card & Panel component base ─────────────────────────────────────────── */
+.tg-card {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.375rem; /* 6px crisp technical radius */
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
 :root .tg-card {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
 }
 .dark .tg-card {
   box-shadow: none;
 }
-
-/* ── Top accent line — security product signature ─────────────────────── */
-.header-shell {
-  background-color: hsl(var(--card));
-  border-bottom: 1px solid hsl(var(--border));
-  border-top: 2px solid hsl(var(--primary));
-}
-.dark .header-shell {
-  background-color: hsl(var(--sidebar-bg));
+.tg-card:hover {
+  border-color: hsl(var(--primary) / 0.4);
 }
 
-/* ── Card component base ─────────────────────────────────────────────────── */
-.tg-card {
+.tg-panel {
   background-color: hsl(var(--card));
   border: 1px solid hsl(var(--border));
-  border-radius: 0.75rem; /* 12px — rounded-xl */
-  transition: border-color 200ms ease, background-color 200ms ease;
+  border-radius: 0.375rem;
+  overflow: hidden;
+  transition: border-color 150ms ease;
 }
-.tg-card:hover {
-  border-color: hsl(var(--primary) / 0.35);
-  background-color: hsl(var(--card-hover));
+:root .tg-panel {
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05);
+}
+.dark .tg-panel {
+  box-shadow: none;
+}
+.tg-panel-header {
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid hsl(var(--border));
+  background-color: hsl(var(--card));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 /* ── Status badge base classes ─────────────────────────────────────────── */
-.badge-success { background: hsl(var(--success-bg)); color: hsl(var(--success)); border: 1px solid hsl(var(--success) / 0.25); }
-.badge-warning { background: hsl(var(--warning-bg)); color: hsl(var(--warning)); border: 1px solid hsl(var(--warning) / 0.25); }
-.badge-danger { background: hsl(var(--danger-bg)); color: hsl(var(--danger)); border: 1px solid hsl(var(--danger) / 0.25); }
-.badge-info { background: hsl(var(--info-bg)); color: hsl(var(--info)); border: 1px solid hsl(var(--info) / 0.25); }
-.badge-purple { background: hsl(var(--purple-bg)); color: hsl(var(--purple)); border: 1px solid hsl(var(--purple) / 0.25); }
+.badge-success { background: hsl(var(--success-bg)); color: hsl(var(--success)); border: 1px solid hsl(var(--success) / 0.3); }
+.badge-warning { background: hsl(var(--warning-bg)); color: hsl(var(--warning)); border: 1px solid hsl(var(--warning) / 0.3); }
+.badge-danger { background: hsl(var(--danger-bg)); color: hsl(var(--danger)); border: 1px solid hsl(var(--danger) / 0.3); }
+.badge-info { background: hsl(var(--info-bg)); color: hsl(var(--info)); border: 1px solid hsl(var(--info) / 0.3); }
+.badge-purple { background: hsl(var(--purple-bg)); color: hsl(var(--purple)); border: 1px solid hsl(var(--purple) / 0.3); }
+.badge-teal { background: hsl(173 60% 96%); color: hsl(var(--teal)); border: 1px solid hsl(var(--teal) / 0.3); }
+.dark .badge-teal { background: hsl(173 58% 10%); color: hsl(173 58% 60%); border: 1px solid hsl(173 58% 30%); }
 
 /* ── Typography helpers ─────────────────────────────────────────────────── */
-.section-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: hsl(var(--muted-foreground)); }
-.metric-value { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.metric-value-sm { font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.section-title { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: hsl(var(--muted-foreground)); }
+.metric-value { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.metric-value-sm { font-size: 1.1875rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .mono { font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace; }

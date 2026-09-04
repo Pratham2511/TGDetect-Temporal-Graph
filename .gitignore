@@ -76,3 +76,6 @@ server.log
 local-*
 .claude
 .z-ai-config
+.agents/
+AGENTS.md
+CLAUDE.md

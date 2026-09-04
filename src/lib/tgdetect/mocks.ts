@@ -772,7 +772,7 @@ export function mockArtifacts(jobId: string): ArtifactMeta[] {
       size_bytes: 58_320,
       row_count: mockEdges().length,
       schema: EDGE_SCHEMA,
-      preview: mockEdges().slice(0, 5),
+      preview: mockEdges().slice(0, 5) as unknown as Record<string, any>[],
     },
     {
       kind: 'nodes',
@@ -781,7 +781,7 @@ export function mockArtifacts(jobId: string): ArtifactMeta[] {
       size_bytes: 18_240,
       row_count: mockNodes().length,
       schema: NODE_SCHEMA,
-      preview: mockNodes().slice(0, 5),
+      preview: mockNodes().slice(0, 5) as unknown as Record<string, any>[],
     },
     {
       kind: 'chains_summary',
@@ -790,7 +790,7 @@ export function mockArtifacts(jobId: string): ArtifactMeta[] {
       size_bytes: 4_812,
       row_count: mockChainsPrimary().length,
       schema: CHAIN_SCHEMA,
-      preview: mockChainsPrimary().slice(0, 5),
+      preview: mockChainsPrimary().slice(0, 5) as unknown as Record<string, any>[],
     },
     {
       kind: 'graph_stats',
@@ -799,7 +799,7 @@ export function mockArtifacts(jobId: string): ArtifactMeta[] {
       size_bytes: 2_412,
       row_count: 1,
       schema: STATS_SCHEMA,
-      preview: [mockGraphStats()],
+      preview: [mockGraphStats() as unknown as Record<string, any>],
     },
     {
       kind: 'subgraph',
@@ -813,7 +813,7 @@ export function mockArtifacts(jobId: string): ArtifactMeta[] {
         { name: 'nodes', type: 'list<object>', nullable: false, description: 'Array of {id, node_type}' },
         { name: 'edges', type: 'list<object>', nullable: false, description: 'Array of edge objects with tactics + apt_stage' },
       ],
-      preview: mockSubgraphs().slice(0, 1),
+      preview: mockSubgraphs().slice(0, 1) as unknown as Record<string, any>[],
     },
   ];
 }
@@ -950,7 +950,10 @@ function buildTrainingHistory(epochs: number): EpochMetrics[] {
 }
 
 const HISTORY = buildTrainingHistory(20);
-const BEST_EPOCH_IDX = HISTORY.reduce((bestIdx, m, i, arr) => (m.auc_pr > arr[bestIdx].auc_pr ? i : bestIdx), 0);
+const BEST_EPOCH_IDX = HISTORY.reduce(
+  (bestIdx, m, i, arr) => ((m.auc_pr ?? 0) > (arr[bestIdx].auc_pr ?? 0) ? i : bestIdx),
+  0
+);
 
 const TRAINING_CONFIG: TrainingConfig = {
   snapshots_dir: 'data/snapshots/mixed_chains',
@@ -989,7 +992,7 @@ const TRAINING_RUN: TrainingRun = {
   total_epochs: HISTORY.length,
   best_epoch: BEST_EPOCH_IDX + 1,
   best_metric: 'auc_pr',
-  best_score: HISTORY[BEST_EPOCH_IDX].auc_pr,
+  best_score: HISTORY[BEST_EPOCH_IDX].auc_pr ?? 0,
   best_val_f1: HISTORY[BEST_EPOCH_IDX].f1,
   threshold: HISTORY[BEST_EPOCH_IDX].threshold,
   history: HISTORY,

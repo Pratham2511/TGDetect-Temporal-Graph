@@ -361,7 +361,7 @@ export type ArtifactKind =
 
 export interface ArtifactSchemaField {
   name: string;
-  type: 'string' | 'int8' | 'int64' | 'float64' | 'list<string>' | 'json' | 'object';
+  type: 'string' | 'int8' | 'int64' | 'float64' | 'list<string>' | 'list<object>' | 'json' | 'object' | string;
   nullable: boolean;
   description: string;
 }
@@ -376,7 +376,7 @@ export interface ArtifactMeta {
   row_count: number | null;
   schema: ArtifactSchemaField[];
   /** Preview rows (parsed; `attrs` is parsed JSON for events). */
-  preview: Record<string, unknown>[];
+  preview: Record<string, any>[];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

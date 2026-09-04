@@ -46,10 +46,11 @@ export function NodeLegend({
             disabled={!onToggle}
             onClick={() => onToggle?.(t)}
             className={cn(
-              'inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded border text-[10px] font-mono',
-              'border-[hsl(var(--border))] bg-[hsl(var(--card))]',
-              onToggle && 'hover:border-[hsl(var(--primary)/0.35)] cursor-pointer',
-              !isActive && 'opacity-40',
+              'inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[10px] font-mono transition-all',
+              isActive
+                ? 'border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-xs text-[hsl(var(--foreground))]'
+                : 'border-dashed border-[hsl(var(--border))] bg-[hsl(var(--background))] opacity-50 text-[hsl(var(--muted-foreground))]',
+              onToggle && 'hover:border-[hsl(var(--primary)/0.5)] cursor-pointer',
             )}
             title={meta.description}
           >
@@ -57,7 +58,7 @@ export function NodeLegend({
             <Icon className="size-3 text-[hsl(var(--muted-foreground))]" />
             <span className="text-[hsl(var(--foreground))]">{meta.label}</span>
             {count !== undefined && (
-              <span className="text-[hsl(var(--muted-foreground))] tabular-nums">{count}</span>
+              <span className="text-[hsl(var(--muted-foreground))] tabular-nums font-semibold">{count}</span>
             )}
             {!compact && count === undefined && (
               <span className="text-[hsl(var(--muted-foreground))]">{meta.id_prefix}:</span>
@@ -105,18 +106,18 @@ export function RelationLegend({
             disabled={!onToggle}
             onClick={() => onToggle?.(r)}
             className={cn(
-              'inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded border text-[10px] font-mono',
-              'border-[hsl(var(--border))] bg-[hsl(var(--card))]',
-              onToggle && 'hover:border-[hsl(var(--primary)/0.35)] cursor-pointer',
-              !isActive && 'opacity-40',
-              meta.is_attack && 'border-[hsl(var(--danger)/0.25)]',
+              'inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[10px] font-mono transition-all',
+              isActive
+                ? (meta.is_attack ? 'border-red-500/30 bg-red-500/5 text-[hsl(var(--foreground))]' : 'border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-xs text-[hsl(var(--foreground))]')
+                : 'border-dashed border-[hsl(var(--border))] bg-[hsl(var(--background))] opacity-50 text-[hsl(var(--muted-foreground))]',
+              onToggle && 'hover:border-[hsl(var(--primary)/0.5)] cursor-pointer',
             )}
             title={meta.description}
           >
             <span className={cn('size-2 rounded-full', RELATION_LEGEND_COLOR[meta.category])} />
             <span className="text-[hsl(var(--foreground))]">{meta.label}</span>
             {count !== undefined && (
-              <span className="text-[hsl(var(--muted-foreground))] tabular-nums">{count}</span>
+              <span className="text-[hsl(var(--muted-foreground))] tabular-nums font-semibold">{count}</span>
             )}
           </button>
         );

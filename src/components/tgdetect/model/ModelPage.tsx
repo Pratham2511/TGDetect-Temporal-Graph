@@ -59,7 +59,7 @@ export function ModelPage() {
   const [tab, setTab] = useState<ModelTab>('architecture');
   return (
     <div className="space-y-3">
-      <div className="tg-card p-3 flex flex-wrap gap-1">
+      <div className="bg-[hsl(var(--card))] p-1.5 rounded-lg border border-[hsl(var(--border))] flex flex-wrap gap-1 shadow-xs">
         {([
           { id: 'architecture', label: 'Architecture', icon: Brain },
           { id: 'snapshots', label: 'Snapshots', icon: Layers },
@@ -73,10 +73,10 @@ export function ModelPage() {
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
-              className={`px-3 py-1.5 text-[11px] font-medium flex items-center gap-1.5 border-b-2 -mb-[1px] ${
+              className={`px-3 py-1.5 text-xs rounded transition-all flex items-center gap-1.5 ${
                 isActive
-                  ? 'border-[hsl(var(--primary))] text-[hsl(var(--primary))]'
-                  : 'border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
+                  ? 'bg-[hsl(var(--primary)/0.15)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)/0.3)] font-semibold shadow-xs'
+                  : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--card-hover))]'
               }`}
             >
               <Icon className="size-3.5" />

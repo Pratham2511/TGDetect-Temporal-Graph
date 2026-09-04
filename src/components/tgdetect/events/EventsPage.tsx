@@ -147,75 +147,90 @@ function FiltersBar({
         >clear all</button>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-[hsl(var(--muted-foreground))]" />
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-[hsl(var(--muted-foreground))]" />
           <input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { setFilter({ ...filter, event_id_query: searchInput, offset: 0 }); } }}
             placeholder="search event_id… (press Enter)"
-            className="w-full pl-7 pr-2 py-1 text-xs bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded font-mono"
+            className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded font-mono focus:outline-hidden focus:border-[hsl(var(--primary))]"
           />
         </div>
-        <div className="flex gap-1">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-mono text-[hsl(var(--muted-foreground))] uppercase mr-1">Label:</span>
           {([0, 1] as EventLabel[]).map((l) => (
             <button
               key={l}
               type="button"
               onClick={() => toggleLabel(l)}
-              className={`px-2 py-1 text-[10px] font-mono font-semibold border rounded ${
+              className={`px-2 py-1 text-[10px] font-mono font-semibold border rounded transition-all ${
                 (filter.labels ?? []).includes(l)
-                  ? (l === 1 ? 'bg-[hsl(var(--danger-bg))] text-[hsl(var(--danger))] border-[hsl(var(--danger)/0.4)]' : 'bg-[hsl(var(--success-bg))] text-[hsl(var(--success))] border-[hsl(var(--success)/0.4)]')
-                  : 'bg-[hsl(var(--card))] text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))]'
+                  ? (l === 1 ? 'bg-[hsl(var(--danger-bg))] text-[hsl(var(--danger))] border-[hsl(var(--danger)/0.4)] shadow-xs' : 'bg-[hsl(var(--success-bg))] text-[hsl(var(--success))] border-[hsl(var(--success)/0.4)] shadow-xs')
+                  : 'bg-[hsl(var(--card))] text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--primary)/0.4)]'
               }`}
-            >{labelText(l)}</button>
+            >{l === 1 ? 'MAL' : 'BEN'} · {labelText(l)}</button>
           ))}
         </div>
       </div>
-      <div className="flex flex-wrap gap-1">
-        {NODE_TYPES.map((t) => {
-          const active = (filter.node_types ?? []).includes(t);
-          return (
-            <button
-              key={t}
-              type="button"
-              onClick={() => toggleNodeType(t)}
-              className={`px-1.5 py-0.5 text-[10px] font-mono border rounded ${
-                active ? 'border-[hsl(var(--primary)/0.6)] bg-[hsl(var(--info-bg))]' : 'border-[hsl(var(--border))] bg-[hsl(var(--card))]'
-              }`}
-            >{t}</button>
-          );
-        })}
-      </div>
-      <div className="flex flex-wrap gap-1">
-        {RELATION_TYPES.map((r) => {
-          const active = (filter.relations ?? []).includes(r);
-          return (
-            <button
-              key={r}
-              type="button"
-              onClick={() => toggleRelation(r)}
-              className={`px-1.5 py-0.5 text-[10px] font-mono border rounded ${
-                active ? 'border-[hsl(var(--primary)/0.6)] bg-[hsl(var(--info-bg))]' : 'border-[hsl(var(--border))] bg-[hsl(var(--card))]'
-              }`}
-            >{r}</button>
-          );
-        })}
-      </div>
-      <div className="flex flex-wrap gap-1">
-        {SYNTHETIC_TACTIC_ORDER.map((t) => {
-          const active = (filter.tactics ?? []).includes(t);
-          return (
-            <button
-              key={t}
-              type="button"
-              onClick={() => toggleTactic(t)}
-              className={`px-1.5 py-0.5 text-[10px] font-mono border rounded ${
-                active ? 'border-[hsl(var(--primary)/0.6)] bg-[hsl(var(--info-bg))]' : 'border-[hsl(var(--border))] bg-[hsl(var(--card))]'
-              }`}
-            >{t.replace(/_/g, ' ')}</button>
-          );
-        })}
+
+      <div className="space-y-1.5 pt-1.5 border-t border-[hsl(var(--border))]">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold w-16 flex-shrink-0">Entity:</span>
+          <div className="flex flex-wrap gap-1 flex-1">
+            {NODE_TYPES.map((t) => {
+              const active = (filter.node_types ?? []).includes(t);
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => toggleNodeType(t)}
+                  className={`px-1.5 py-0.5 text-[10px] font-mono border rounded transition-colors ${
+                    active ? 'border-[hsl(var(--primary)/0.6)] bg-[hsl(var(--info-bg))] text-[hsl(var(--foreground))] font-medium' : 'border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
+                  }`}
+                >{t}</button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold w-16 flex-shrink-0">Relation:</span>
+          <div className="flex flex-wrap gap-1 flex-1">
+            {RELATION_TYPES.map((r) => {
+              const active = (filter.relations ?? []).includes(r);
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => toggleRelation(r)}
+                  className={`px-1.5 py-0.5 text-[10px] font-mono border rounded transition-colors ${
+                    active ? 'border-[hsl(var(--primary)/0.6)] bg-[hsl(var(--info-bg))] text-[hsl(var(--foreground))] font-medium' : 'border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
+                  }`}
+                >{r}</button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold w-16 flex-shrink-0">Tactic:</span>
+          <div className="flex flex-wrap gap-1 flex-1">
+            {SYNTHETIC_TACTIC_ORDER.map((t) => {
+              const active = (filter.tactics ?? []).includes(t);
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => toggleTactic(t)}
+                  className={`px-1.5 py-0.5 text-[10px] font-mono border rounded transition-colors ${
+                    active ? 'border-[hsl(var(--primary)/0.6)] bg-[hsl(var(--info-bg))] text-[hsl(var(--foreground))] font-medium' : 'border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
+                  }`}
+                >{t.replace(/_/g, ' ')}</button>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -298,10 +313,17 @@ function EventsTable({
             <tbody>
               {events.map((e) => {
                 const isSelected = e.event_id === selectedEventId;
+                const isMalicious = e.label === 1;
                 return (
                   <tr
                     key={e.event_id}
-                    className={`border-b border-[hsl(var(--border)/0.5)] cursor-pointer hover:bg-[hsl(var(--card-hover))] ${isSelected ? 'bg-[hsl(var(--info-bg))]' : ''}`}
+                    className={`border-b border-[hsl(var(--border)/0.5)] cursor-pointer hover:bg-[hsl(var(--card-hover))] transition-colors ${
+                      isSelected
+                        ? 'bg-[hsl(var(--info-bg))] border-l-2 border-l-[hsl(var(--primary))]'
+                        : isMalicious
+                          ? 'border-l-2 border-l-red-500/80 bg-red-500/[0.03]'
+                          : 'border-l-2 border-l-transparent'
+                    }`}
                     onClick={() => onSelect(e.event_id)}
                   >
                     <td className="py-1.5 pr-3"><MonoId truncateAt={18}>{e.event_id}</MonoId></td>

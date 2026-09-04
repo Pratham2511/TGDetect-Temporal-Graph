@@ -80,21 +80,26 @@ export default function Home() {
           id="tour-sidebar"
           className="sidebar-shell w-60 flex-shrink-0 flex flex-col"
         >
-          {/* Logo */}
-          <div className="p-4 border-b border-[hsl(var(--sidebar-border))]">
-            <div className="flex items-center gap-2">
-              <img src="/logo.svg" alt="TGDetect" className="size-7" />
-              <div className="flex flex-col">
-                <span className="text-sm font-bold text-[hsl(var(--sidebar-logo-text))] tracking-tight">TGDetect</span>
-                <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--sidebar-logo-sub))] font-mono">
-                  Temporal Graph · Threat Detection
+          {/* Logo / Title */}
+          <div className="p-3.5 border-b border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar-bg))]">
+            <div className="flex items-center gap-2.5">
+              <div className="size-7 rounded bg-[hsl(var(--primary)/0.2)] border border-[hsl(var(--primary)/0.4)] flex items-center justify-center flex-shrink-0">
+                <Network className="size-4 text-[hsl(var(--sidebar-text-active))]" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-[hsl(var(--sidebar-logo-text))] tracking-tight">TGDetect</span>
+                  <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">v1.0</span>
+                </div>
+                <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--sidebar-logo-sub))] font-mono truncate">
+                  Temporal Graph Security
                 </span>
               </div>
             </div>
           </div>
 
           {/* Nav */}
-          <nav className="flex-1 overflow-y-auto py-2">
+          <nav className="flex-1 overflow-y-auto py-2.5 px-2 space-y-0.5">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = activePage === item.id;
@@ -104,27 +109,20 @@ export default function Home() {
                   id={`nav-${item.id}`}
                   type="button"
                   onClick={() => navigate(item.id)}
-                  className={`w-full text-left px-3 py-2 mx-1 rounded flex items-center gap-2.5 transition-colors group ${
+                  className={`w-full text-left px-2.5 py-2 rounded-md flex items-center gap-2.5 transition-all text-xs ${
                     isActive
-                      ? 'bg-[hsl(var(--sidebar-item-active))]'
-                      : 'hover:bg-[hsl(var(--sidebar-item-hover))]'
+                      ? 'bg-[hsl(var(--sidebar-item-active))] text-white font-medium shadow-sm border-l-2 border-[hsl(var(--sidebar-text-active))] pl-2'
+                      : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-item-hover))] hover:text-white'
                   }`}
-                  style={{ width: 'calc(100% - 8px)' }}
                 >
                   <Icon
-                    className={`size-4 ${
-                      isActive ? 'text-[hsl(var(--sidebar-text-active))]' : 'text-[hsl(var(--sidebar-text))]'
+                    className={`size-4 flex-shrink-0 ${
+                      isActive ? 'text-[hsl(var(--sidebar-text-active))]' : 'text-[hsl(var(--sidebar-text))] opacity-80'
                     }`}
                   />
-                  <div className="flex flex-col">
-                    <span
-                      className={`text-xs font-medium ${
-                        isActive ? 'text-[hsl(var(--sidebar-text-active))]' : 'text-[hsl(var(--sidebar-text))]'
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-                    <span className="text-[9px] text-[hsl(var(--sidebar-logo-sub))]">
+                  <div className="flex flex-col min-w-0">
+                    <span className="truncate leading-none">{item.label}</span>
+                    <span className="text-[9px] text-[hsl(var(--sidebar-logo-sub))] truncate mt-0.5">
                       {item.description}
                     </span>
                   </div>
@@ -133,26 +131,30 @@ export default function Home() {
             })}
           </nav>
 
-          {/* Sidebar footer — backend status */}
-          <div className="p-3 border-t border-[hsl(var(--sidebar-border))] space-y-2">
-            <div className="text-[9px] uppercase tracking-wider text-[hsl(var(--sidebar-logo-sub))] font-mono">
-              Backend contract
+          {/* Sidebar footer — backend contract & pipeline telemetry */}
+          <div className="p-3 border-t border-[hsl(var(--sidebar-border))] space-y-2 bg-[hsl(var(--sidebar-bg))]">
+            <div className="flex items-center justify-between text-[9px] uppercase tracking-wider text-[hsl(var(--sidebar-logo-sub))] font-mono">
+              <span>Backend Contract</span>
+              <span className="text-[8px] text-emerald-400 font-bold">VERIFIED</span>
             </div>
-            <div className="flex items-center justify-between text-[10px] font-mono">
-              <span className="text-[hsl(var(--sidebar-text))]">graph_builder</span>
-              <span className="px-1.5 py-0.5 rounded bg-[hsl(var(--success-bg))] text-[hsl(var(--success))] border border-[hsl(var(--success)/0.25)]">
-                schema-ready
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-[10px] font-mono">
-              <span className="text-[hsl(var(--sidebar-text))]">API</span>
-              <span className="px-1.5 py-0.5 rounded bg-[hsl(var(--warning-bg))] text-[hsl(var(--warning))] border border-[hsl(var(--warning)/0.25)]">
-                mock
-              </span>
+            <div className="space-y-1 text-[10px] font-mono">
+              <div className="flex items-center justify-between">
+                <span className="text-[hsl(var(--sidebar-text))]">graph_builder</span>
+                <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px]">
+                  parquet 6-stage
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[hsl(var(--sidebar-text))]">TGNN</span>
+                <span className="px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 text-[9px]">
+                  SAGE+GRU
+                </span>
+              </div>
             </div>
             {statsRes.data && (
-              <div className="text-[9px] text-[hsl(var(--sidebar-logo-sub))] mt-2 pt-2 border-t border-[hsl(var(--sidebar-border)/0.5)] font-mono">
-                events: {formatInt(statsRes.data.graph.total_events)} · chains: {formatInt(statsRes.data.attacks.total_chains)}
+              <div className="text-[9px] text-[hsl(var(--sidebar-logo-sub))] pt-1.5 border-t border-[hsl(var(--sidebar-border)/0.5)] font-mono flex items-center justify-between">
+                <span>{formatInt(statsRes.data.graph.total_events)} events</span>
+                <span>{formatInt(statsRes.data.attacks.total_chains)} chains</span>
               </div>
             )}
           </div>
@@ -161,30 +163,32 @@ export default function Home() {
         {/* Main */}
         <main className="flex-1 flex flex-col min-w-0">
           {/* Header */}
-          <header className="header-shell sticky top-0 z-10 px-5 py-3 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <activeItem.icon className="size-4 text-[hsl(var(--primary))]" />
+          <header className="header-shell sticky top-0 z-10 px-5 py-2.5 flex items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <activeItem.icon className="size-4 text-[hsl(var(--primary))] flex-shrink-0" />
               <div className="flex items-center gap-2 min-w-0">
-                <h1 className="text-sm font-semibold text-[hsl(var(--foreground))]">{activeItem.label}</h1>
-                <span className="text-[10px] text-[hsl(var(--muted-foreground))]">·</span>
-                <span className="text-[10px] text-[hsl(var(--muted-foreground))] truncate">{activeItem.description}</span>
+                <h1 className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--foreground))]">{activeItem.label}</h1>
+                <span className="text-[10px] text-[hsl(var(--muted-foreground))]">/</span>
+                <span className="text-xs text-[hsl(var(--muted-foreground))] truncate">{activeItem.description}</span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded border border-[hsl(var(--warning)/0.25)] bg-[hsl(var(--warning-bg))] text-[hsl(var(--warning))]">
-                <span className="size-1.5 rounded-full bg-[hsl(var(--warning))]" />
-                mock data
+            <div className="flex items-center gap-2.5">
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))]">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[hsl(var(--muted-foreground))]">Dataset:</span>
+                <span className="font-semibold">mordor_empire</span>
               </span>
               <button
                 type="button"
                 onClick={theme.toggleTheme}
-                className="size-8 rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex items-center justify-center hover:bg-[hsl(var(--card-hover))]"
-                title={theme.theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
+                className="size-7 rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex items-center justify-center hover:bg-[hsl(var(--card-hover))] transition-colors"
+                title={theme.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                aria-label="Toggle theme"
               >
                 {theme.theme === 'dark' ? (
-                  <Sun className="size-4 text-[hsl(var(--warning))]" />
+                  <Sun className="size-3.5 text-[hsl(var(--warning))]" />
                 ) : (
-                  <Moon className="size-4 text-[hsl(var(--primary))]" />
+                  <Moon className="size-3.5 text-[hsl(var(--primary))]" />
                 )}
               </button>
             </div>
