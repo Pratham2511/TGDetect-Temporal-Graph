@@ -205,7 +205,13 @@ function EventsOverTimeCard({ stats, className }: { stats: GraphStats; className
           <CartesianGrid {...CHART_GRID_STYLE} />
           <XAxis dataKey="label" {...CHART_AXIS_STYLE} interval="preserveStartEnd" />
           <YAxis {...CHART_AXIS_STYLE} width={36} />
-          <Tooltip {...CHART_TOOLTIP_STYLE} />
+          <Tooltip
+            {...CHART_TOOLTIP_STYLE}
+            formatter={(value: any, name: any) => [
+              typeof value === 'number' && !Number.isNaN(value) ? formatInt(value) : '0',
+              name,
+            ]}
+          />
           <Area type="monotone" dataKey="benign" stackId="1" stroke={CHART_COLORS.green} strokeWidth={1.5} fill="url(#benignGrad)" />
           <Area type="monotone" dataKey="malicious" stackId="1" stroke={CHART_COLORS.red} strokeWidth={1.5} fill="url(#malGrad)" />
         </AreaChart>

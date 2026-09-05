@@ -203,7 +203,7 @@ function NodeInspectorPanel({
         <>
           <div className="grid grid-cols-2 gap-2">
             <Field label="Type"><NodeTypePill type={node.node_type} /></Field>
-            <Field label="Severity">{(node.malicious_events / Math.max(1, node.in_degree + node.out_degree)).toFixed(2)}</Field>
+            <Field label="Severity">{(((node.malicious_events ?? 0) / Math.max(1, (node.in_degree ?? 0) + (node.out_degree ?? 0)))).toFixed(2)}</Field>
             <Field label="Out degree"><span className="mono text-xs">{node.out_degree}</span></Field>
             <Field label="In degree"><span className="mono text-xs">{node.in_degree}</span></Field>
             <Field label="Malicious events"><span className="mono text-xs text-[hsl(var(--danger))]">{node.malicious_events}</span></Field>

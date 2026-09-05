@@ -242,11 +242,17 @@ function SnapshotsPanel() {
           Snapshot window activity
         </SectionTitle>
         <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={snaps.map((s) => ({ idx: s.index, nodes: s.num_nodes, edges: s.num_edges, mal_edges: s.num_malicious_edges }))} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+          <BarChart data={snaps.map((s) => ({ idx: s.index ?? (s as any).sequence ?? 0, nodes: s.num_nodes, edges: s.num_edges, mal_edges: s.num_malicious_edges ?? 0 }))} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
             <CartesianGrid {...CHART_GRID_STYLE} />
             <XAxis dataKey="idx" {...CHART_AXIS_STYLE} />
             <YAxis {...CHART_AXIS_STYLE} width={36} />
-            <Tooltip {...CHART_TOOLTIP_STYLE} />
+            <Tooltip
+              {...CHART_TOOLTIP_STYLE}
+              formatter={(value: any, name: any) => [
+                typeof value === 'number' && !Number.isNaN(value) ? formatInt(value) : '0',
+                name,
+              ]}
+            />
             <Bar dataKey="edges" fill={CHART_COLORS.cyan} radius={[2, 2, 0, 0]} />
             <Bar dataKey="mal_edges" fill={CHART_COLORS.red} radius={[2, 2, 0, 0]} />
           </BarChart>
@@ -270,8 +276,6 @@ function TrainingPanel() {
   if (!runRes.data) return <EmptyState title="No training run" />;
   const run = runRes.data;
   const history = run.history;
-  const last = history[history.length - 1];
-  const best = history[run.best_epoch - 1];
   return (
     <div className="space-y-3">
       <div className="tg-card p-4">
@@ -283,15 +287,15 @@ function TrainingPanel() {
           </div>
         </div>
         <div className="text-[10px] text-[hsl(var(--muted-foreground))] mono">
-          dataset: {run.dataset_id} · checkpoint: <span className="text-[hsl(var(--foreground))]">{run.checkpoint_path}</span>
+          dataset: {run.dataset_id} · checkpoint: <span className="text-[hsl(var(--foreground))]">{run.checkpoint_path ?? 'Not recorded'}</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-3">
           <Hyperparam label="epochs" value={`${run.current_epoch}/${run.total_epochs}`} />
-          <Hyperparam label="best_epoch" value={run.best_epoch} hint={`by ${run.best_metric}`} />
-          <Hyperparam label="best_score" value={formatFloat(run.best_score, 4)} />
-          <Hyperparam label="best_f1" value={formatFloat(run.best_val_f1, 4)} />
-          <Hyperparam label="threshold" value={formatFloat(run.threshold, 4)} hint="tuned on val set" />
-          <Hyperparam label="elapsed" value={formatDurationLong(run.elapsed_s)} />
+          <Hyperparam label="best_epoch" value={run.best_epoch} hint={run.best_metric ? `by ${run.best_metric}` : undefined} />
+          <Hyperparam label="best_score" value={run.best_score != null ? formatFloat(run.best_score, 4) : 'Not recorded'} />
+          <Hyperparam label="best_f1" value={run.best_val_f1 != null ? formatFloat(run.best_val_f1, 4) : 'Not recorded'} />
+          <Hyperparam label="threshold" value={run.threshold != null ? formatFloat(run.threshold, 4) : 'Not recorded'} hint="tuned on val set" />
+          <Hyperparam label="elapsed" value={run.elapsed_s != null ? formatDurationLong(run.elapsed_s) : 'Not recorded'} />
         </div>
       </div>
 
@@ -308,7 +312,13 @@ function TrainingPanel() {
             <CartesianGrid {...CHART_GRID_STYLE} />
             <XAxis dataKey="epoch" {...CHART_AXIS_STYLE} />
             <YAxis {...CHART_AXIS_STYLE} width={36} />
-            <Tooltip {...CHART_TOOLTIP_STYLE} />
+            <Tooltip
+              {...CHART_TOOLTIP_STYLE}
+              formatter={(value: any, name: any) => [
+                typeof value === 'number' && !Number.isNaN(value) ? formatFloat(value, 4) : '—',
+                name,
+              ]}
+            />
             <Line type="monotone" dataKey="train_loss" stroke={CHART_COLORS.cyan} strokeWidth={1.5} dot={false} />
             <Line type="monotone" dataKey="loss" stroke={CHART_COLORS.violet} strokeWidth={1.5} dot={false} />
             <Line type="monotone" dataKey="threshold" stroke={CHART_COLORS.red} strokeWidth={1.5} dot={false} />
@@ -324,7 +334,13 @@ function TrainingPanel() {
               <CartesianGrid {...CHART_GRID_STYLE} />
               <XAxis dataKey="epoch" {...CHART_AXIS_STYLE} />
               <YAxis {...CHART_AXIS_STYLE} width={36} domain={[0, 1]} />
-              <Tooltip {...CHART_TOOLTIP_STYLE} />
+              <Tooltip
+                {...CHART_TOOLTIP_STYLE}
+                formatter={(value: any, name: any) => [
+                  typeof value === 'number' && !Number.isNaN(value) ? formatFloat(value, 4) : '—',
+                  name,
+                ]}
+              />
               <Line type="monotone" dataKey="auc_roc" stroke={CHART_COLORS.cyan} strokeWidth={1.5} dot={false} />
               <Line type="monotone" dataKey="auc_pr" stroke={CHART_COLORS.green} strokeWidth={1.5} dot={false} />
             </LineChart>
@@ -337,7 +353,13 @@ function TrainingPanel() {
               <CartesianGrid {...CHART_GRID_STYLE} />
               <XAxis dataKey="epoch" {...CHART_AXIS_STYLE} />
               <YAxis {...CHART_AXIS_STYLE} width={36} domain={[0, 1]} />
-              <Tooltip {...CHART_TOOLTIP_STYLE} />
+              <Tooltip
+                {...CHART_TOOLTIP_STYLE}
+                formatter={(value: any, name: any) => [
+                  typeof value === 'number' && !Number.isNaN(value) ? formatFloat(value, 4) : '—',
+                  name,
+                ]}
+              />
               <Line type="monotone" dataKey="precision" stroke={CHART_COLORS.amber} strokeWidth={1.5} dot={false} />
               <Line type="monotone" dataKey="recall" stroke={CHART_COLORS.teal} strokeWidth={1.5} dot={false} />
               <Line type="monotone" dataKey="f1" stroke={CHART_COLORS.violet} strokeWidth={2} dot={false} />
@@ -378,7 +400,7 @@ function TrainingPanel() {
                     <td className="py-1.5 pr-3 mono">{formatFloat(e.precision, 4)}</td>
                     <td className="py-1.5 pr-3 mono">{formatFloat(e.recall, 4)}</td>
                     <td className="py-1.5 pr-3 mono font-semibold">{formatFloat(e.f1, 4)}</td>
-                    <td className="py-1.5 pr-3 mono">{formatFloat(e.threshold, 4)}</td>
+                    <td className="py-1.5 pr-3 mono">{e.threshold != null ? formatFloat(e.threshold, 4) : '—'}</td>
                   </tr>
                 );
               })}

@@ -59,7 +59,7 @@ export type DatasetKind = 'synthetic' | 'mordor' | 'synthetic_demo';
 export type SplitMode = 'time' | 'block';
 
 /** CLI `--select-metric` for `train_tgnn.py`. */
-export type SelectMetric = 'auc_pr' | 'f1' | 'auc_roc';
+export type SelectMetric = 'auc_pr' | 'f1' | 'auc_roc' | 'best_val_f1';
 
 /** CLI `--node-feature-mode` for `build_snapshots.py`. */
 export type NodeFeatureMode = 'type_degree' | 'type_only';
@@ -433,6 +433,7 @@ export interface SnapshotMeta {
 
 export interface SnapshotInfo {
   index: number;
+  sequence?: number;
   window_start_ts: number;
   window_end_ts: number;
   num_nodes: number;
@@ -440,6 +441,8 @@ export interface SnapshotInfo {
   num_malicious_nodes: number;
   num_malicious_edges: number;
   snapshot_label: EventLabel;
+  label?: EventLabel;
+  path?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -477,7 +480,7 @@ export interface EpochMetrics {
   loss: number;
   auc_roc: number | null;
   auc_pr: number | null;
-  threshold: number;
+  threshold: number | null;
   f1: number;
   accuracy: number;
   precision: number;
@@ -489,16 +492,16 @@ export interface TrainingRun {
   name: string;
   dataset_id: string;
   config: TrainingConfig;
-  started_at: number;
+  started_at: number | null;
   ended_at: number | null;
-  elapsed_s: number;
+  elapsed_s: number | null;
   current_epoch: number;
   total_epochs: number;
   best_epoch: number;
   best_metric: SelectMetric;
-  best_score: number;
-  best_val_f1: number;
-  threshold: number;
+  best_score: number | null;
+  best_val_f1: number | null;
+  threshold: number | null;
   history: EpochMetrics[];
   checkpoint_path: string | null;
   final_model_path: string | null;

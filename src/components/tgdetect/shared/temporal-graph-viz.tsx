@@ -96,9 +96,9 @@ function toVisNodes(
     const n = sample[i];
     const id = 'node_id' in n ? n.node_id : n.id;
     const type = ('node_type' in n ? (n as { node_type: NodeType }).node_type : 'UNKNOWN') as NodeType;
-    const degree = 'out_degree' in n ? n.out_degree + n.in_degree : 1;
-    const malCount = 'malicious_events' in n ? n.malicious_events : 0;
-    const total = 'out_degree' in n ? n.out_degree + n.in_degree : 1;
+    const degree = 'out_degree' in n ? (n.out_degree ?? 0) + (n.in_degree ?? 0) : 1;
+    const malCount = 'malicious_events' in n ? (n.malicious_events ?? 0) : 0;
+    const total = degree;
     const severity = total > 0 ? Math.min(1, malCount / total) : 0;
     // Deterministic initial placement around a circle
     const angle = (i / Math.max(sample.length, 1)) * Math.PI * 2;
@@ -508,7 +508,7 @@ export function TemporalGraphViz({
         return (
           <div className="absolute top-2 right-2 px-2 py-1.5 rounded bg-[hsl(var(--card))] border border-[hsl(var(--border))] shadow-lg z-10 text-[10px] font-mono">
             <div className="text-[hsl(var(--foreground))] font-semibold">{meta.label} · {shortNodeId(n.id)}</div>
-            <div className="text-[hsl(var(--muted-foreground))]">type: {n.type} · deg: {n.degree} · sev: {n.severity.toFixed(2)}</div>
+            <div className="text-[hsl(var(--muted-foreground))]">type: {n.type} · deg: {n.degree} · sev: {typeof n.severity === 'number' && !Number.isNaN(n.severity) ? n.severity.toFixed(2) : '0.00'}</div>
             <button
               type="button"
               onClick={() => onSelectNode?.(null)}

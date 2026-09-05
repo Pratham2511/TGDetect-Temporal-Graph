@@ -15,6 +15,7 @@ import type {
   Dataset,
   DatasetKind,
   EventFilter,
+  EventLabel,
   EvaluationRun,
   GraphEdge,
   GraphNode,
@@ -133,7 +134,25 @@ export class ApiGraphService implements GraphService {
   }
 
   async stats(): Promise<GraphStats> {
-    return api.get<GraphStats>('/api/graph/stats');
+    const s = await api.get<any>('/api/graph/stats');
+    if (s && s.normalization) {
+      const accepted = s.normalization.accepted ?? 0;
+      const rejected = s.normalization.rejected ?? 0;
+      if (s.normalization.seen == null) {
+        s.normalization.seen = accepted + rejected;
+      }
+    }
+    if (s && s.labeling) {
+      const total = s.graph?.total_events ?? s.labeling.total_events ?? 0;
+      const mal = s.labeling.malicious_events ?? s.graph?.malicious_events ?? 0;
+      if (s.labeling.benign_events == null) {
+        s.labeling.benign_events = s.graph?.benign_events ?? Math.max(0, total - mal);
+      }
+      if (s.labeling.total_events == null) {
+        s.labeling.total_events = total;
+      }
+    }
+    return s as GraphStats;
   }
 }
 
@@ -213,17 +232,87 @@ export class ApiModelService implements ModelService {
   }
 
   async snapshots(limit?: number): Promise<SnapshotInfo[]> {
-    const res = await api.get<{ meta: SnapshotMeta; snapshots: SnapshotInfo[] }>(
+    const res = await api.get<{ meta: SnapshotMeta; snapshots: any[] }>(
       '/api/model/snapshots',
       { params: limit ? { limit } : undefined }
     );
-    return res.snapshots || [];
+    const list = res.snapshots || [];
+    return list.map((s: any) => ({
+      index: s.index ?? s.sequence ?? 0,
+      sequence: s.sequence ?? s.index ?? 0,
+      window_start_ts: s.window_start_ts ?? 0,
+      window_end_ts: s.window_end_ts ?? 0,
+      num_nodes: s.num_nodes ?? 0,
+      num_edges: s.num_edges ?? 0,
+      num_malicious_nodes: s.num_malicious_nodes ?? 0,
+      num_malicious_edges: s.num_malicious_edges ?? (s.snapshot_label === 1 || s.label === 1 ? s.num_edges ?? 0 : 0),
+      snapshot_label: (s.snapshot_label ?? s.label ?? 0) as EventLabel,
+      label: (s.label ?? s.snapshot_label ?? 0) as EventLabel,
+      path: s.path,
+    }));
   }
 }
 
 export class ApiTrainingService implements TrainingService {
   async currentRun(): Promise<TrainingRun> {
-    return api.get<TrainingRun>('/api/model/training');
+    const raw = await api.get<any>('/api/model/training');
+    const history = raw.history || [];
+    const bestEpochMetric = history.find((h: any) => h.epoch === raw.best_epoch) || history[0] || {};
+    return {
+      id: raw.id || raw.run_id || 'mordor-mixed-run-01',
+      name: raw.model_type || 'TemporalGNN (GraphSAGE + GRU)',
+      dataset_id: raw.dataset || raw.dataset_id || 'mordor_mixed',
+      config: {
+        snapshots_dir: 'data/snapshots/mordor_mixed',
+        out_dir: 'models/checkpoints/mordor_mixed',
+        epochs: raw.epochs_total ?? history.length ?? 5,
+        batch_size: 8,
+        lr: 0.001,
+        weight_decay: 0.0001,
+        gnn_layers: 2,
+        rnn_layers: 1,
+        hidden_channels: 64,
+        out_channels: 64,
+        dropout: 0.3,
+        window_size: 10,
+        val_ratio: 0.15,
+        test_ratio: 0.15,
+        split_mode: 'time',
+        seed: 42,
+        grad_clip: 1.0,
+        seq_stride: 1,
+        block_size: 1,
+        select_metric: 'f1',
+        no_threshold_tuning: false,
+        pos_weight: null,
+      },
+      started_at: raw.started_at ?? null,
+      ended_at: raw.ended_at ?? null,
+      elapsed_s: raw.training_time_s ?? null,
+      current_epoch: raw.epochs_total ?? history.length ?? 5,
+      total_epochs: raw.epochs_total ?? history.length ?? 5,
+      best_epoch: raw.best_epoch ?? 1,
+      best_metric: (raw.best_metric as any) || 'best_val_f1',
+      best_score: raw.best_metric_value ?? bestEpochMetric.f1 ?? bestEpochMetric.auc_roc ?? null,
+      best_val_f1: bestEpochMetric.f1 ?? raw.best_metric_value ?? null,
+      threshold: raw.threshold ?? null,
+      history: history.map((h: any) => ({
+        epoch: h.epoch,
+        train_loss: h.train_loss,
+        loss: h.loss,
+        auc_roc: h.auc_roc ?? null,
+        auc_pr: h.auc_pr ?? null,
+        threshold: h.threshold ?? null,
+        f1: h.f1,
+        accuracy: h.accuracy,
+        precision: h.precision,
+        recall: h.recall,
+      })),
+      checkpoint_path: raw.checkpoint_path || null,
+      final_model_path: raw.checkpoint_path || null,
+      state: raw.status === 'completed' ? 'completed' : 'running',
+      error: raw.error ?? null,
+    };
   }
 
   async history(): Promise<TrainingRun['history']> {

@@ -92,7 +92,8 @@ export function formatDurationLong(s: number | null | undefined): string {
 // Byte formatting
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function formatBytes(bytes: number): string {
+export function formatBytes(bytes: number | null | undefined): string {
+  if (bytes == null || Number.isNaN(bytes)) return '—';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -103,19 +104,23 @@ export function formatBytes(bytes: number): string {
 // Number formatting
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function formatInt(n: number): string {
+export function formatInt(n: number | null | undefined): string {
+  if (n == null || Number.isNaN(n)) return '—';
   return Math.round(n).toLocaleString('en-US');
 }
 
-export function formatFloat(n: number, digits = 2): string {
+export function formatFloat(n: number | null | undefined, digits = 2): string {
+  if (n == null || Number.isNaN(n)) return '—';
   return n.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
-export function formatPercent(n: number, digits = 1): string {
+export function formatPercent(n: number | null | undefined, digits = 1): string {
+  if (n == null || Number.isNaN(n)) return '—';
   return `${(n * 100).toFixed(digits)}%`;
 }
 
-export function formatRatio(n: number, digits = 3): string {
+export function formatRatio(n: number | null | undefined, digits = 3): string {
+  if (n == null || Number.isNaN(n)) return '—';
   return n.toFixed(digits);
 }
 
@@ -255,12 +260,13 @@ export function chainSeverity(chain: AttackChainSummary): ChainSeverity {
 
 export function nodeSeverityScore(node: GraphNode): number {
   // 0.55 * mal_ratio + 0.30 * log1p(malicious_events) + 0.15 * log1p(degree)
-  const total = node.in_degree + node.out_degree;
+  const total = (node.in_degree ?? 0) + (node.out_degree ?? 0);
   if (total === 0) return 0;
-  const mal_ratio = node.malicious_events / total;
+  const mal = node.malicious_events ?? 0;
+  const mal_ratio = mal / total;
   return Math.min(
     1,
-    0.55 * mal_ratio + 0.30 * Math.log1p(node.malicious_events) + 0.15 * Math.log1p(total)
+    0.55 * mal_ratio + 0.30 * Math.log1p(mal) + 0.15 * Math.log1p(total)
   );
 }
 
@@ -334,17 +340,18 @@ export function confusionMatrixView(m: { tn: number; fp: number; fn: number; tp:
 // Histogram bucket formatter
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function bucketize(values: number[], bucketCount: number, min?: number, max?: number): { x: string; count: number }[] {
-  if (values.length === 0) return [];
-  const lo = min ?? Math.min(...values);
-  const hi = max ?? Math.max(...values);
-  if (hi <= lo) return [{ x: String(lo.toFixed(0)), count: values.length }];
+export function bucketize(values: (number | null | undefined)[], bucketCount: number, min?: number, max?: number): { x: string; count: number }[] {
+  const valid = values.filter((v): v is number => v != null && !Number.isNaN(v));
+  if (valid.length === 0) return [];
+  const lo = min ?? Math.min(...valid);
+  const hi = max ?? Math.max(...valid);
+  if (hi <= lo) return [{ x: String(lo.toFixed(0)), count: valid.length }];
   const step = (hi - lo) / bucketCount;
   const buckets = Array.from({ length: bucketCount }, (_, i) => ({
     x: `${(lo + i * step).toFixed(0)}–${(lo + (i + 1) * step).toFixed(0)}`,
     count: 0,
   }));
-  for (const v of values) {
+  for (const v of valid) {
     let idx = Math.floor((v - lo) / step);
     if (idx >= bucketCount) idx = bucketCount - 1;
     if (idx < 0) idx = 0;

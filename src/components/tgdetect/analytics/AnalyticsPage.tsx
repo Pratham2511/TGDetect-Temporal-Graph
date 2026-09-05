@@ -95,11 +95,16 @@ function EventAnalytics() {
 
   // ALL hooks before any early return — call unconditionally
   const eventsOverTime = useMemo(() => {
-    return (snapsRes.data ?? []).map((s) => ({
-      idx: s.index,
-      benign: s.num_edges - s.num_malicious_edges,
-      malicious: s.num_malicious_edges,
-    }));
+    return (snapsRes.data ?? []).map((s) => {
+      const edges = s.num_edges ?? 0;
+      const malEdges = s.num_malicious_edges ?? (s.snapshot_label === 1 || (s as any).label === 1 ? edges : 0) ?? 0;
+      const benign = Math.max(0, edges - malEdges);
+      return {
+        idx: s.index ?? (s as any).sequence ?? 0,
+        benign,
+        malicious: malEdges,
+      };
+    });
   }, [snapsRes.data]);
 
   const tacticData = useMemo(() => {
@@ -141,7 +146,13 @@ function EventAnalytics() {
             <CartesianGrid {...CHART_GRID_STYLE} />
             <XAxis dataKey="idx" {...CHART_AXIS_STYLE} />
             <YAxis {...CHART_AXIS_STYLE} width={36} />
-            <Tooltip {...CHART_TOOLTIP_STYLE} />
+            <Tooltip
+              {...CHART_TOOLTIP_STYLE}
+              formatter={(value: any, name: any) => [
+                typeof value === 'number' && !Number.isNaN(value) ? formatInt(value) : '0',
+                name,
+              ]}
+            />
             <Bar dataKey="benign" stackId="1" fill={CHART_COLORS.green} />
             <Bar dataKey="malicious" stackId="1" fill={CHART_COLORS.red} />
           </BarChart>
@@ -218,22 +229,23 @@ function GraphAnalytics() {
   const degreeDist = useMemo(() => {
     const sn = nodesRes.data ?? [];
     return sn.map((s) => ({
-      idx: s.index,
-      nodes: s.num_nodes,
-      edges: s.num_edges,
+      idx: s.index ?? (s as any).sequence ?? 0,
+      nodes: s.num_nodes ?? 0,
+      edges: s.num_edges ?? 0,
     }));
   }, [nodesRes.data]);
 
   if (statsRes.state === 'loading') return <LoadingState label="Loading…" />;
   if (!statsRes.data) return <EmptyState title="No stats" />;
   const stats = statsRes.data;
+  const avgDegree = stats.graph.total_nodes ? (stats.graph.total_edges / stats.graph.total_nodes).toFixed(2) : '0.00';
 
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <MetricCard label="Total nodes" value={formatInt(stats.graph.total_nodes)} icon={Boxes} color="purple" />
         <MetricCard label="Total edges" value={formatInt(stats.graph.total_edges)} icon={Network} color="teal" />
-        <MetricCard label="Avg degree" value={(stats.graph.total_edges / Math.max(1, stats.graph.total_nodes)).toFixed(2)} icon={TrendingUp} color="info" />
+        <MetricCard label="Avg degree" value={avgDegree} icon={TrendingUp} color="info" />
         <MetricCard label="Out-of-order events" value={formatInt(stats.graph.out_of_order_events)} icon={BarChart3} color="amber" />
       </div>
 
@@ -283,7 +295,13 @@ function GraphAnalytics() {
             <CartesianGrid {...CHART_GRID_STYLE} />
             <XAxis dataKey="idx" {...CHART_AXIS_STYLE} />
             <YAxis {...CHART_AXIS_STYLE} width={36} />
-            <Tooltip {...CHART_TOOLTIP_STYLE} />
+            <Tooltip
+              {...CHART_TOOLTIP_STYLE}
+              formatter={(value: any, name: any) => [
+                typeof value === 'number' && !Number.isNaN(value) ? formatInt(value) : '0',
+                name,
+              ]}
+            />
             <Line type="monotone" dataKey="nodes" stroke={CHART_COLORS.violet} strokeWidth={1.5} dot={false} />
             <Line type="monotone" dataKey="edges" stroke={CHART_COLORS.cyan} strokeWidth={1.5} dot={false} />
           </LineChart>
@@ -334,9 +352,9 @@ function AttackAnalytics() {
         s === 'causal_parent' ? causalRes.data :
         entityRes.data;
       const arr = list ?? [];
-      const avgEvents = arr.length > 0 ? arr.reduce((sum, c) => sum + c.num_events, 0) / arr.length : 0;
-      const avgDuration = arr.length > 0 ? arr.reduce((sum, c) => sum + c.duration_s, 0) / arr.length : 0;
-      const avgNodes = arr.length > 0 ? arr.reduce((sum, c) => sum + c.num_nodes, 0) / arr.length : 0;
+      const avgEvents = arr.length > 0 ? arr.reduce((sum, c) => sum + (c.num_events ?? 0), 0) / arr.length : 0;
+      const avgDuration = arr.length > 0 ? arr.reduce((sum, c) => sum + (c.duration_s ?? 0), 0) / arr.length : 0;
+      const avgNodes = arr.length > 0 ? arr.reduce((sum, c) => sum + (c.num_nodes ?? 0), 0) / arr.length : 0;
       return { strategy: s, chains: arr.length, avgEvents, avgDuration, avgNodes };
     });
   }, [chainIdRes.data, causalRes.data, entityRes.data]);
@@ -344,7 +362,7 @@ function AttackAnalytics() {
   const tacticInChains = useMemo(() => {
     const counts = new Map<string, number>();
     for (const c of [...(chainIdRes.data ?? [])]) {
-      for (const t of c.tactic_sequence) counts.set(t, (counts.get(t) ?? 0) + 1);
+      for (const t of c.tactic_sequence ?? []) counts.set(t, (counts.get(t) ?? 0) + 1);
     }
     return Array.from(counts.entries())
       .map(([name, value]) => ({ name: name.replace(/_/g, ' '), value }))
@@ -400,7 +418,13 @@ function AttackAnalytics() {
               <CartesianGrid {...CHART_GRID_STYLE} />
               <XAxis dataKey="x" {...CHART_AXIS_STYLE} />
               <YAxis {...CHART_AXIS_STYLE} width={36} />
-              <Tooltip {...CHART_TOOLTIP_STYLE} />
+              <Tooltip
+                {...CHART_TOOLTIP_STYLE}
+                formatter={(value: any, name: any) => [
+                  typeof value === 'number' && !Number.isNaN(value) ? formatInt(value) : '0',
+                  name,
+                ]}
+              />
               <Bar dataKey="count" fill={CHART_COLORS.teal} radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -412,7 +436,13 @@ function AttackAnalytics() {
               <CartesianGrid {...CHART_GRID_STYLE} />
               <XAxis dataKey="x" {...CHART_AXIS_STYLE} />
               <YAxis {...CHART_AXIS_STYLE} width={36} />
-              <Tooltip {...CHART_TOOLTIP_STYLE} />
+              <Tooltip
+                {...CHART_TOOLTIP_STYLE}
+                formatter={(value: any, name: any) => [
+                  typeof value === 'number' && !Number.isNaN(value) ? formatInt(value) : '0',
+                  name,
+                ]}
+              />
               <Bar dataKey="count" fill={CHART_COLORS.violet} radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -426,7 +456,13 @@ function AttackAnalytics() {
             <CartesianGrid {...CHART_GRID_STYLE} horizontal={false} />
             <XAxis type="number" {...CHART_AXIS_STYLE} />
             <YAxis type="category" dataKey="name" {...CHART_AXIS_STYLE} width={120} />
-            <Tooltip {...CHART_TOOLTIP_STYLE} />
+            <Tooltip
+              {...CHART_TOOLTIP_STYLE}
+              formatter={(value: any, name: any) => [
+                typeof value === 'number' && !Number.isNaN(value) ? formatInt(value) : '0',
+                name,
+              ]}
+            />
             <Bar dataKey="value" fill={CHART_COLORS.red} radius={[0, 2, 2, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -445,7 +481,8 @@ function DatasetAnalytics() {
   const normalizationData = useMemo(() => {
     const stats = statsRes.data;
     if (!stats) return [];
-    const { accepted, rejected } = stats.normalization;
+    const accepted = stats.normalization?.accepted ?? 0;
+    const rejected = stats.normalization?.rejected ?? 0;
     return [
       { name: 'accepted', value: accepted, color: CHART_COLORS.green },
       { name: 'rejected', value: rejected, color: CHART_COLORS.red },
@@ -454,7 +491,7 @@ function DatasetAnalytics() {
 
   const rejectReasons = useMemo(() => {
     const stats = statsRes.data;
-    if (!stats) return [];
+    if (!stats?.normalization?.reject_reasons) return [];
     return Object.entries(stats.normalization.reject_reasons)
       .map(([k, v]) => ({ name: k, value: v }))
       .sort((a, b) => b.value - a.value);
@@ -463,9 +500,11 @@ function DatasetAnalytics() {
   const labelingModeData = useMemo(() => {
     const stats = statsRes.data;
     if (!stats) return [];
+    const mal = stats.labeling?.malicious_events ?? stats.graph?.malicious_events ?? 0;
+    const ben = stats.labeling?.benign_events ?? stats.graph?.benign_events ?? Math.max(0, (stats.graph?.total_events ?? 0) - mal);
     return [
-      { name: 'malicious', value: stats.labeling.malicious_events, color: CHART_COLORS.red },
-      { name: 'benign', value: stats.labeling.benign_events, color: CHART_COLORS.green },
+      { name: 'benign', value: ben, color: CHART_COLORS.green },
+      { name: 'malicious', value: mal, color: CHART_COLORS.red },
     ];
   }, [statsRes.data]);
 
@@ -473,13 +512,19 @@ function DatasetAnalytics() {
   if (!statsRes.data) return <EmptyState title="No stats" />;
   const stats = statsRes.data;
 
+  const norm = stats.normalization;
+  const accepted = norm?.accepted ?? 0;
+  const rejected = norm?.rejected ?? 0;
+  const seen = norm?.seen ?? (accepted + rejected);
+  const acceptanceRate = seen > 0 ? accepted / seen : 1.0;
+
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <MetricCard label="Normalization seen" value={formatInt(stats.normalization.seen)} icon={Database} color="info" />
-        <MetricCard label="Normalization accepted" value={formatInt(stats.normalization.accepted)} icon={Tag} color="success" />
-        <MetricCard label="Normalization rejected" value={formatInt(stats.normalization.rejected)} icon={BarChart3} color="danger" />
-        <MetricCard label="Acceptance rate" value={formatPercent(stats.normalization.accepted / Math.max(1, stats.normalization.seen), 2)} icon={TrendingUp} color="amber" />
+        <MetricCard label="Normalization seen" value={formatInt(seen)} icon={Database} color="info" />
+        <MetricCard label="Normalization accepted" value={formatInt(accepted)} icon={Tag} color="success" />
+        <MetricCard label="Normalization rejected" value={formatInt(rejected)} icon={BarChart3} color="danger" />
+        <MetricCard label="Acceptance rate" value={formatPercent(acceptanceRate, 2)} icon={TrendingUp} color="amber" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
@@ -492,7 +537,13 @@ function DatasetAnalytics() {
                   <Cell key={i} fill={entry.color} stroke="hsl(var(--card))" strokeWidth={2} />
                 ))}
               </Pie>
-              <Tooltip {...CHART_TOOLTIP_STYLE} />
+              <Tooltip
+                {...CHART_TOOLTIP_STYLE}
+                formatter={(value: any, name: any) => [
+                  typeof value === 'number' && !Number.isNaN(value) ? formatInt(value) : '0',
+                  name,
+                ]}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -506,7 +557,13 @@ function DatasetAnalytics() {
                 <CartesianGrid {...CHART_GRID_STYLE} horizontal={false} />
                 <XAxis type="number" {...CHART_AXIS_STYLE} />
                 <YAxis type="category" dataKey="name" {...CHART_AXIS_STYLE} width={140} />
-                <Tooltip {...CHART_TOOLTIP_STYLE} />
+                <Tooltip
+                  {...CHART_TOOLTIP_STYLE}
+                  formatter={(value: any, name: any) => [
+                    typeof value === 'number' && !Number.isNaN(value) ? formatInt(value) : '0',
+                    name,
+                  ]}
+                />
                 <Bar dataKey="value" fill={CHART_COLORS.red} radius={[0, 2, 2, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -521,7 +578,13 @@ function DatasetAnalytics() {
             <CartesianGrid {...CHART_GRID_STYLE} />
             <XAxis dataKey="name" {...CHART_AXIS_STYLE} />
             <YAxis {...CHART_AXIS_STYLE} width={48} />
-            <Tooltip {...CHART_TOOLTIP_STYLE} />
+            <Tooltip
+              {...CHART_TOOLTIP_STYLE}
+              formatter={(value: any, name: any) => [
+                typeof value === 'number' && !Number.isNaN(value) ? formatInt(value) : '0',
+                name,
+              ]}
+            />
             <Bar dataKey="value" radius={[2, 2, 0, 0]}>
               {labelingModeData.map((entry, i) => (
                 <Cell key={i} fill={entry.color} />
