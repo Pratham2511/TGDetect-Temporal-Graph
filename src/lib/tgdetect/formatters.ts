@@ -31,15 +31,19 @@ import type {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Convert epoch seconds (float) to a Date-safe ISO string for date-utils. */
-export function epochToIso(ts: number): string {
+export function epochToIso(ts: number | null | undefined): string {
+  if (ts == null || Number.isNaN(ts)) return '';
   return new Date(ts * 1000).toISOString();
 }
 
-export function formatEpoch(ts: number): string {
-  return formatDateTime(epochToIso(ts));
+export function formatEpoch(ts: number | null | undefined): string {
+  if (ts == null || Number.isNaN(ts)) return 'unavailable';
+  const iso = epochToIso(ts);
+  return iso ? formatDateTime(iso) : 'unavailable';
 }
 
-export function formatEpochTime(ts: number): string {
+export function formatEpochTime(ts: number | null | undefined): string {
+  if (ts == null || Number.isNaN(ts)) return 'unavailable';
   const d = new Date(ts * 1000);
   const h = String(d.getHours()).padStart(2, '0');
   const m = String(d.getMinutes()).padStart(2, '0');
@@ -47,7 +51,8 @@ export function formatEpochTime(ts: number): string {
   return `${h}:${m}:${s}`;
 }
 
-export function formatEpochDate(ts: number): string {
+export function formatEpochDate(ts: number | null | undefined): string {
+  if (ts == null || Number.isNaN(ts)) return 'unavailable';
   const d = new Date(ts * 1000);
   const y = d.getFullYear();
   const mo = String(d.getMonth() + 1).padStart(2, '0');
@@ -59,7 +64,8 @@ export function formatEpochDate(ts: number): string {
 // Duration formatting — seconds → human compact
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function formatDurationShort(s: number): string {
+export function formatDurationShort(s: number | null | undefined): string {
+  if (s == null || Number.isNaN(s)) return 'unavailable';
   if (s < 1) return `${(s * 1000).toFixed(0)}ms`;
   if (s < 60) return `${s.toFixed(1)}s`;
   if (s < 3600) return `${Math.floor(s / 60)}m ${Math.floor(s % 60)}s`;
@@ -67,7 +73,8 @@ export function formatDurationShort(s: number): string {
   return `${Math.floor(s / 86400)}d ${Math.floor((s % 86400) / 3600)}h`;
 }
 
-export function formatDurationLong(s: number): string {
+export function formatDurationLong(s: number | null | undefined): string {
+  if (s == null || Number.isNaN(s)) return 'unavailable';
   if (s < 1) return `${(s * 1000).toFixed(0)} milliseconds`;
   if (s < 60) return `${s.toFixed(2)} seconds`;
   const m = Math.floor(s / 60);
@@ -295,16 +302,32 @@ export interface ConfusionMatrixView {
   accuracy: number;
 }
 
-export function confusionMatrixView(m: { tn: number; fp: number; fn: number; tp: number }): ConfusionMatrixView {
-  const total = m.tn + m.fp + m.fn + m.tp;
-  const tpr = m.tp + m.fn > 0 ? m.tp / (m.tp + m.fn) : 0;
-  const fpr = m.fp + m.tn > 0 ? m.fp / (m.fp + m.tn) : 0;
-  const tnr = m.fp + m.tn > 0 ? m.tn / (m.fp + m.tn) : 0;
-  const ppv = m.tp + m.fp > 0 ? m.tp / (m.tp + m.fp) : 0;
-  const npv = m.tn + m.fn > 0 ? m.tn / (m.tn + m.fn) : 0;
+export function confusionMatrixView(m: { tn: number; fp: number; fn: number; tp: number } | number[][] | unknown): ConfusionMatrixView {
+  let tn = 0;
+  let fp = 0;
+  let fn = 0;
+  let tp = 0;
+  if (Array.isArray(m) && m.length >= 2) {
+    tn = Number(m[0]?.[0] ?? 0);
+    fp = Number(m[0]?.[1] ?? 0);
+    fn = Number(m[1]?.[0] ?? 0);
+    tp = Number(m[1]?.[1] ?? 0);
+  } else if (m && typeof m === 'object') {
+    const obj = m as Record<string, unknown>;
+    tn = Number(obj.tn ?? 0);
+    fp = Number(obj.fp ?? 0);
+    fn = Number(obj.fn ?? 0);
+    tp = Number(obj.tp ?? 0);
+  }
+  const total = tn + fp + fn + tp;
+  const tpr = tp + fn > 0 ? tp / (tp + fn) : 0;
+  const fpr = fp + tn > 0 ? fp / (fp + tn) : 0;
+  const tnr = fp + tn > 0 ? tn / (fp + tn) : 0;
+  const ppv = tp + fp > 0 ? tp / (tp + fp) : 0;
+  const npv = tn + fn > 0 ? tn / (tn + fn) : 0;
   const fnr = 1 - tpr;
-  const accuracy = total > 0 ? (m.tp + m.tn) / total : 0;
-  return { ...m, total, tpr, fpr, tnr, ppv, npv, fnr, accuracy };
+  const accuracy = total > 0 ? (tp + tn) / total : 0;
+  return { tn, fp, fn, tp, total, tpr, fpr, tnr, ppv, npv, fnr, accuracy };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

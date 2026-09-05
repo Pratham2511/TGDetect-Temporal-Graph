@@ -112,7 +112,7 @@ function ArchitecturePanel() {
           TGNN Architecture
         </SectionTitle>
         <div className="text-[11px] text-[hsl(var(--muted-foreground))] mt-1">
-          {summary.gnn_operator} per snapshot · {summary.temporal_aggregator} over time · loss: <span className="mono">{summary.loss}</span>
+          {summary.gnn_operator} per snapshot · {summary.temporal_aggregator} over time{summary.total_parameters ? ` · ${formatInt(summary.total_parameters)} params` : ''} · loss: <span className="mono">{summary.loss}</span>
         </div>
         <div className="grid grid-cols-3 gap-2 mt-3">
           <Attention flag={summary.has_attention} label="Self-attention" />
@@ -395,107 +395,122 @@ function EvaluationPanel() {
   const [split, setSplit] = useState<EvalSplit>('test');
   const predsRes = usePredictions(split);
   if (runsRes.state === 'loading') return <LoadingState label="Loading evaluation…" />;
+  
+  const availableSplits = new Set((runsRes.data ?? []).map((r) => r.split));
   const run = (runsRes.data ?? []).find((r) => r.split === split) ?? null;
+  const m = run?.metrics;
+  const cm = m ? confusionMatrixView(m.confusion_matrix) : null;
 
-  if (!run) {
-    return (
-      <div className="tg-card p-4">
-        <SectionTitle>Evaluation</SectionTitle>
-        <EmptyState title="No evaluation" description={`No evaluation run for split=${split}`} />
-      </div>
-    );
-  }
-  const m = run.metrics;
-  const cm = confusionMatrixView(m.confusion_matrix);
   return (
     <div className="space-y-3">
       <div className="tg-card p-3 flex items-center gap-3 flex-wrap">
         <SectionTitle className="flex-1">Evaluation</SectionTitle>
         <div className="flex gap-1">
-          {(['train', 'val', 'test'] as EvalSplit[]).map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setSplit(s)}
-              className={`px-2 py-1 text-[10px] font-mono border rounded ${split === s ? 'border-[hsl(var(--primary)/0.6)] bg-[hsl(var(--info-bg))]' : 'border-[hsl(var(--border))] bg-[hsl(var(--card))]'}`}
-            >{s}</button>
-          ))}
+          {(['train', 'val', 'test'] as EvalSplit[]).map((s) => {
+            const hasRun = availableSplits.has(s);
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setSplit(s)}
+                className={`px-2 py-1 text-[10px] font-mono border rounded transition-colors ${
+                  split === s
+                    ? 'border-[hsl(var(--primary)/0.6)] bg-[hsl(var(--info-bg))] font-semibold'
+                    : 'border-[hsl(var(--border))] bg-[hsl(var(--card))]'
+                } ${!hasRun ? 'opacity-50' : ''}`}
+                title={hasRun ? `${s} split` : `${s} (no evaluation artifact present on disk)`}
+              >
+                {s}{!hasRun ? ' (n/a)' : ''}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="tg-card p-4">
-        <SectionTitle right={<div className="text-[10px] text-[hsl(var(--muted-foreground))]">{formatInt(m.num_samples)} samples · {formatInt(m.num_positive)} positive · {formatInt(m.num_negative)} negative</div>}>
-          Metrics · split={split}
-        </SectionTitle>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-3">
-          <Hyperparam label="threshold" value={formatFloat(m.threshold, 4)} />
-          <Hyperparam label="accuracy" value={formatFloat(m.accuracy, 4)} />
-          <Hyperparam label="precision" value={formatFloat(m.precision, 4)} />
-          <Hyperparam label="recall" value={formatFloat(m.recall, 4)} />
-          <Hyperparam label="f1" value={formatFloat(m.f1, 4)} />
-          <Hyperparam label="auc_roc" value={m.auc_roc === null ? 'null' : formatFloat(m.auc_roc, 4)} hint="null = one-class split" />
-          <Hyperparam label="auc_pr" value={m.auc_pr === null ? 'null' : formatFloat(m.auc_pr, 4)} hint="null = one-class split" />
+      {!run || !m || !cm ? (
+        <div className="tg-card p-6">
+          <EmptyState
+            title={`No evaluation artifact for split="${split}"`}
+            description={`Evaluation metrics for "${split}" were not computed or are not present in models/checkpoints. Only splits with physical evaluation artifacts (e.g. test) are loaded.`}
+          />
         </div>
-        <div className="mt-2 text-[10px] text-[hsl(var(--muted-foreground))]">
-          predictions: <span className="mono">{run.predictions_path ?? '—'}</span> · checkpoint: <span className="mono">{run.checkpoint_path}</span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <div className="tg-card p-4">
-          <SectionTitle>Confusion Matrix</SectionTitle>
-          <div className="grid grid-cols-2 gap-2 mt-3 max-w-md mx-auto">
-            <CmCell label="TN" value={cm.tn} color="success" />
-            <CmCell label="FP" value={cm.fp} color="danger" />
-            <CmCell label="FN" value={cm.fn} color="warning" />
-            <CmCell label="TP" value={cm.tp} color="info" />
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] font-mono">
-            <div>TPR (recall): <span className="text-[hsl(var(--info))]">{formatFloat(cm.tpr, 4)}</span></div>
-            <div>FPR: <span className="text-[hsl(var(--danger))]">{formatFloat(cm.fpr, 4)}</span></div>
-            <div>TNR (specificity): <span className="text-[hsl(var(--success))]">{formatFloat(cm.tnr, 4)}</span></div>
-            <div>FNR: <span className="text-[hsl(var(--warning))]">{formatFloat(cm.fnr, 4)}</span></div>
-            <div>PPV (precision): <span className="text-[hsl(var(--info))]">{formatFloat(cm.ppv, 4)}</span></div>
-            <div>NPV: <span className="text-[hsl(var(--success))]">{formatFloat(cm.npv, 4)}</span></div>
-          </div>
-        </div>
-
-        <div className="tg-card p-4">
-          <SectionTitle right={<Target className="size-3 text-[hsl(var(--muted-foreground))]" />}>Sample predictions</SectionTitle>
-          {predsRes.state === 'loading' ? (
-            <LoadingState label="Loading predictions…" />
-          ) : (predsRes.data ?? []).length === 0 ? (
-            <EmptyState title="No predictions" />
-          ) : (
-            <div className="overflow-x-auto mt-2 max-h-80 overflow-y-auto">
-              <table className="w-full text-xs">
-                <thead className="sticky top-0 bg-[hsl(var(--card))]">
-                  <tr className="text-left text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] border-b border-[hsl(var(--border))]">
-                    <th className="py-1.5 pr-3">seq</th>
-                    <th className="py-1.5 pr-3">node_id</th>
-                    <th className="py-1.5 pr-3">prob</th>
-                    <th className="py-1.5 pr-3">pred</th>
-                    <th className="py-1.5 pr-3">truth</th>
-                    <th className="py-1.5 pr-3">snap</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(predsRes.data ?? []).slice(0, 50).map((p, i) => (
-                    <tr key={i} className="border-b border-[hsl(var(--border)/0.5)]">
-                      <td className="py-1.5 pr-3 mono text-[10px]">{p.sequence}</td>
-                      <td className="py-1.5 pr-3"><MonoId truncateAt={20}>{p.node_id}</MonoId></td>
-                      <td className="py-1.5 pr-3 mono text-[10px]">{formatFloat(p.probability, 4)}</td>
-                      <td className="py-1.5 pr-3"><LabelPill label={p.prediction} /></td>
-                      <td className="py-1.5 pr-3"><LabelPill label={p.ground_truth} /></td>
-                      <td className="py-1.5 pr-3 mono text-[10px]">{p.snapshot_label}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      ) : (
+        <>
+          <div className="tg-card p-4">
+            <SectionTitle right={<div className="text-[10px] text-[hsl(var(--muted-foreground))]">{formatInt(m.num_samples)} samples · {formatInt(m.num_positive)} positive · {formatInt(m.num_negative)} negative</div>}>
+              Metrics · split={split}
+            </SectionTitle>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-3">
+              <Hyperparam label="threshold" value={formatFloat(m.threshold, 4)} />
+              <Hyperparam label="accuracy" value={formatFloat(m.accuracy, 4)} />
+              <Hyperparam label="precision" value={formatFloat(m.precision, 4)} />
+              <Hyperparam label="recall" value={formatFloat(m.recall, 4)} />
+              <Hyperparam label="f1" value={formatFloat(m.f1, 4)} />
+              <Hyperparam label="auc_roc" value={m.auc_roc === null ? 'null' : formatFloat(m.auc_roc, 4)} hint="null = one-class split" />
+              <Hyperparam label="auc_pr" value={m.auc_pr === null ? 'null' : formatFloat(m.auc_pr, 4)} hint="null = one-class split" />
             </div>
-          )}
-        </div>
-      </div>
+            <div className="mt-2 text-[10px] text-[hsl(var(--muted-foreground))]">
+              predictions: <span className="mono">{run.predictions_path ?? '—'}</span> · checkpoint: <span className="mono">{run.checkpoint_path}</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div className="tg-card p-4">
+              <SectionTitle>Confusion Matrix</SectionTitle>
+              <div className="grid grid-cols-2 gap-2 mt-3 max-w-md mx-auto">
+                <CmCell label="TN" value={cm.tn} color="success" />
+                <CmCell label="FP" value={cm.fp} color="danger" />
+                <CmCell label="FN" value={cm.fn} color="warning" />
+                <CmCell label="TP" value={cm.tp} color="info" />
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] font-mono">
+                <div>TPR (recall): <span className="text-[hsl(var(--info))]">{formatFloat(cm.tpr, 4)}</span></div>
+                <div>FPR: <span className="text-[hsl(var(--danger))]">{formatFloat(cm.fpr, 4)}</span></div>
+                <div>TNR (specificity): <span className="text-[hsl(var(--success))]">{formatFloat(cm.tnr, 4)}</span></div>
+                <div>FNR: <span className="text-[hsl(var(--warning))]">{formatFloat(cm.fnr, 4)}</span></div>
+                <div>PPV (precision): <span className="text-[hsl(var(--info))]">{formatFloat(cm.ppv, 4)}</span></div>
+                <div>NPV: <span className="text-[hsl(var(--success))]">{formatFloat(cm.npv, 4)}</span></div>
+              </div>
+            </div>
+
+            <div className="tg-card p-4">
+              <SectionTitle right={<Target className="size-3 text-[hsl(var(--muted-foreground))]" />}>Sample predictions</SectionTitle>
+              {predsRes.state === 'loading' ? (
+                <LoadingState label="Loading predictions…" />
+              ) : (predsRes.data ?? []).length === 0 ? (
+                <EmptyState title="No predictions" />
+              ) : (
+                <div className="overflow-x-auto mt-2 max-h-80 overflow-y-auto">
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0 bg-[hsl(var(--card))]">
+                      <tr className="text-left text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] border-b border-[hsl(var(--border))]">
+                        <th className="py-1.5 pr-3">seq</th>
+                        <th className="py-1.5 pr-3">node_id</th>
+                        <th className="py-1.5 pr-3">prob</th>
+                        <th className="py-1.5 pr-3">pred</th>
+                        <th className="py-1.5 pr-3">truth</th>
+                        <th className="py-1.5 pr-3">snap</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(predsRes.data ?? []).slice(0, 50).map((p, i) => (
+                        <tr key={i} className="border-b border-[hsl(var(--border)/0.5)]">
+                          <td className="py-1.5 pr-3 mono text-[10px]">{p.sequence}</td>
+                          <td className="py-1.5 pr-3"><MonoId truncateAt={20}>{p.node_id}</MonoId></td>
+                          <td className="py-1.5 pr-3 mono text-[10px]">{formatFloat(p.probability, 4)}</td>
+                          <td className="py-1.5 pr-3"><LabelPill label={p.prediction} /></td>
+                          <td className="py-1.5 pr-3"><LabelPill label={p.ground_truth} /></td>
+                          <td className="py-1.5 pr-3 mono text-[10px]">{p.snapshot_label}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

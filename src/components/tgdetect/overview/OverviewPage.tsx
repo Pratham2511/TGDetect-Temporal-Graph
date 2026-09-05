@@ -93,7 +93,12 @@ function PipelineHeader({ stats }: { stats: GraphStats }) {
     <div className="tg-card p-4">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex flex-col gap-1">
-          <SectionTitle>Backend Pipeline · {stats.dataset}</SectionTitle>
+          <div className="flex items-center gap-2">
+            <SectionTitle>Backend Pipeline · {stats.dataset}</SectionTitle>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning-bg))] text-[hsl(var(--warning))] font-semibold">
+              Synthetic Demonstration
+            </span>
+          </div>
           <div className="mono text-xs text-[hsl(var(--muted-foreground))]" title={stats.input}>
             input: {stats.input}
           </div>

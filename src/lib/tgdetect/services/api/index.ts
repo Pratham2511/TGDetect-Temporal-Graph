@@ -13,6 +13,7 @@ import type {
   ChainStrategy,
   ChainSubgraph,
   Dataset,
+  DatasetKind,
   EventFilter,
   EvaluationRun,
   GraphEdge,
@@ -40,12 +41,37 @@ import type {
 
 export class ApiDatasetService implements DatasetService {
   async list(): Promise<Dataset[]> {
-    return api.get<Dataset[]>('/api/datasets');
+    const raw = await api.get<any[]>('/api/datasets');
+    return raw.map((d) => ({
+      id: d.id,
+      name: d.name,
+      kind: (d.kind as DatasetKind) || 'synthetic_demo',
+      source: d.source || '',
+      metadata_dir: null,
+      size_bytes: d.raw_bytes || d.size_bytes || 0,
+      estimated_events: d.num_raw_events ?? d.estimated_events ?? null,
+      created_at: d.created_at ?? null,
+      last_job_id: 'job-mordor-empire-01',
+      tags: ['synthetic_demo', 'mordor_empire'],
+    }));
   }
 
   async get(id: string): Promise<Dataset | null> {
     try {
-      return await api.get<Dataset>(`/api/datasets/${encodeURIComponent(id)}`);
+      const d = await api.get<any>(`/api/datasets/${encodeURIComponent(id)}`);
+      if (!d) return null;
+      return {
+        id: d.id,
+        name: d.name,
+        kind: (d.kind as DatasetKind) || 'synthetic_demo',
+        source: d.source || '',
+        metadata_dir: null,
+        size_bytes: d.raw_bytes || d.size_bytes || 0,
+        estimated_events: d.num_raw_events ?? d.estimated_events ?? null,
+        created_at: d.created_at ?? null,
+        last_job_id: 'job-mordor-empire-01',
+        tags: ['synthetic_demo', 'mordor_empire'],
+      };
     } catch {
       return null;
     }
@@ -149,8 +175,26 @@ export class ApiAttackChainService implements AttackChainService {
 
 export class ApiArtifactService implements ArtifactService {
   async listForJob(jobId: string): Promise<ArtifactMeta[]> {
-    return api.get<ArtifactMeta[]>('/api/artifacts', {
+    const raw = await api.get<any[]>('/api/artifacts', {
       params: { job_id: jobId },
+    });
+    return raw.map((a) => {
+      const pathStr = a.path || a.id || '';
+      const fmt: 'parquet' | 'json' = pathStr.endsWith('.parquet') ? 'parquet' : 'json';
+      return {
+        kind: a.kind as any,
+        path: pathStr,
+        format: fmt,
+        size_bytes: a.size_bytes ?? 0,
+        row_count: a.row_count ?? null,
+        schema: (a.schema || []).map((s: any) => ({
+          name: s.name,
+          type: s.type,
+          nullable: !!s.nullable,
+          description: s.name,
+        })),
+        preview: a.preview || [],
+      };
     });
   }
 }
@@ -213,12 +257,46 @@ export class ApiTrainingService implements TrainingService {
 
 export class ApiProcessingService implements ProcessingService {
   async jobs(): Promise<ProcessingJob[]> {
-    return api.get<ProcessingJob[]>('/api/jobs');
+    const raw = await api.get<any[]>('/api/jobs');
+    return raw.map((j) => {
+      const cfg = j.config || {};
+      return {
+        id: j.id,
+        dataset_id: j.dataset_id,
+        dataset_name: j.dataset_name || j.dataset_id || 'mordor_empire',
+        config: {
+          kind: (cfg.dataset_kind as DatasetKind) || 'synthetic_demo',
+          source_tag: cfg.source_tag || 'mordor_empire',
+          label_mode: cfg.label_mode || 'heuristic',
+          force_label: cfg.force_label ?? null,
+          label_window_s: cfg.label_window_s ?? 300,
+          no_label_propagation: !cfg.label_propagation,
+          strategies: cfg.strategies || ['chain_id', 'causal_parent', 'entity_time'],
+          chain_window_s: cfg.window_s ?? 86400,
+          chain_max_hops: cfg.max_hops ?? 2,
+          max_subgraphs: cfg.max_subgraphs ?? 1000,
+          chunk_size: cfg.chunk_size ?? 100000,
+          limit: null,
+          use_networkx: false,
+        },
+        state: (j.status === 'completed' ? 'completed' : j.status) as any,
+        progress: (j.progress_pct ?? 100) / 100,
+        current_step: j.description || 'Completed historical batch processing',
+        output_dir: cfg.out_dir || 'data/processed/mordor_empire',
+        graphs_dir: cfg.graphs_out || 'data/graphs',
+        started_at: j.started_at ?? null,
+        ended_at: j.completed_at ?? null,
+        elapsed_s: j.elapsed_s ?? (j.completed_at && j.started_at ? j.completed_at - j.started_at : (j.stats?.elapsed_s ?? null)),
+        stats_path: 'data/processed/mordor_empire/graph_stats.json',
+        error: j.error ?? null,
+      };
+    });
   }
 
   async job(id: string): Promise<ProcessingJob | null> {
     try {
-      return await api.get<ProcessingJob>(`/api/jobs/${encodeURIComponent(id)}`);
+      const all = await this.jobs();
+      return all.find((j) => j.id === id) ?? null;
     } catch {
       return null;
     }

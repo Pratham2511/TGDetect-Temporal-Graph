@@ -85,6 +85,7 @@ export default function Home() {
 
   useEffect(() => {
     // Initial health check
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     checkBackendHealth();
     const timer = setInterval(checkBackendHealth, 15000);
     return () => clearInterval(timer);

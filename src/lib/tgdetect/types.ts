@@ -53,7 +53,7 @@ export type LabelMode = 'parser' | 'force' | 'heuristic';
 export type ChainStrategy = 'chain_id' | 'causal_parent' | 'entity_time';
 
 /** Backend `parsers.PARSERS` registry keys. Only these two exist. */
-export type DatasetKind = 'synthetic' | 'mordor';
+export type DatasetKind = 'synthetic' | 'mordor' | 'synthetic_demo';
 
 /** CLI `--split-mode` for `train_tgnn.py`. */
 export type SplitMode = 'time' | 'block';
@@ -274,7 +274,7 @@ export interface Dataset {
   size_bytes: number;
   /** Pre-build estimated event count (post-parse). May be `null` until scanned. */
   estimated_events: number | null;
-  created_at: number;
+  created_at: number | null;
   /** Most recent processing job id, if any. */
   last_job_id: string | null;
   tags: string[];
@@ -337,10 +337,10 @@ export interface ProcessingJob {
   output_dir: string;
   /** Subgraph output dir (`--graphs-out`). */
   graphs_dir: string | null;
-  started_at: number;
+  started_at: number | null;
   ended_at: number | null;
   /** Elapsed seconds (live-ticking while running). */
-  elapsed_s: number;
+  elapsed_s: number | null;
   /** Final stats path (`graph_stats.json`) once `completed`. */
   stats_path: string | null;
   /** Error message if `state === 'failed'`. */
@@ -404,6 +404,8 @@ export interface TGNNModelSummary {
   has_attention: false;
   has_transformer: false;
   has_llm: false;
+  total_parameters?: number;
+  trainable_parameters?: number;
   config: TGNNModelConfig;
 }
 
@@ -541,8 +543,8 @@ export interface EvaluationRun {
   split: EvalSplit;
   metrics: EvaluationMetrics;
   predictions_path: string | null;
-  started_at: number;
-  ended_at: number;
+  started_at: number | null;
+  ended_at: number | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

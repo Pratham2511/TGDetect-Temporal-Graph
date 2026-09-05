@@ -249,7 +249,7 @@ export const CHAIN_STRATEGY_META: Record<ChainStrategy, ChainStrategyMeta> = {
 // Dataset kinds (graph_builder/parsers.py PARSERS registry)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const DATASET_KINDS: DatasetKind[] = ['synthetic', 'mordor'];
+export const DATASET_KINDS: DatasetKind[] = ['synthetic', 'mordor', 'synthetic_demo'];
 
 export interface DatasetKindMeta {
   kind: DatasetKind;
@@ -276,6 +276,14 @@ export const DATASET_KIND_META: Record<DatasetKind, DatasetKindMeta> = {
     supports_metadata_dir: true,
     raw_format: 'JSON / JSONL / .gz / .zip / .tar.gz',
     example_input: 'mordor/*.json',
+  },
+  synthetic_demo: {
+    kind: 'synthetic_demo',
+    label: 'Synthetic Demo',
+    description: 'Demonstration simulation dataset generated via StreamingGraphBuilder',
+    supports_metadata_dir: false,
+    raw_format: 'Parquet / Demo Simulation',
+    example_input: 'scripts/init_demo_data.py',
   },
 };
 
