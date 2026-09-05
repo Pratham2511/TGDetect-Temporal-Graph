@@ -33,6 +33,7 @@ import {
 import {
   bucketize,
   formatDurationLong,
+  formatFloat,
   formatInt,
   formatPercent,
 } from '@/lib/tgdetect/formatters';
@@ -97,7 +98,7 @@ function EventAnalytics() {
   const eventsOverTime = useMemo(() => {
     return (snapsRes.data ?? []).map((s) => {
       const edges = s.num_edges ?? 0;
-      const malEdges = s.num_malicious_edges ?? (s.snapshot_label === 1 || (s as any).label === 1 ? edges : 0) ?? 0;
+      const malEdges = s.num_malicious_edges ?? 0;
       const benign = Math.max(0, edges - malEdges);
       return {
         idx: s.index ?? (s as any).sequence ?? 0,
@@ -400,8 +401,8 @@ function AttackAnalytics() {
                 <tr key={s.strategy} className="border-b border-[hsl(var(--border)/0.5)]">
                   <td className="py-1.5 pr-3 mono font-semibold">{s.strategy}</td>
                   <td className="py-1.5 pr-3 mono">{formatInt(s.chains)}</td>
-                  <td className="py-1.5 pr-3 mono">{s.avgEvents.toFixed(1)}</td>
-                  <td className="py-1.5 pr-3 mono">{s.avgNodes.toFixed(1)}</td>
+                  <td className="py-1.5 pr-3 mono">{formatFloat(s.avgEvents, 1)}</td>
+                  <td className="py-1.5 pr-3 mono">{formatFloat(s.avgNodes, 1)}</td>
                   <td className="py-1.5 pr-3 mono">{formatDurationLong(s.avgDuration)}</td>
                 </tr>
               ))}

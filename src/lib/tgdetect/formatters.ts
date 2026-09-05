@@ -32,18 +32,18 @@ import type {
 
 /** Convert epoch seconds (float) to a Date-safe ISO string for date-utils. */
 export function epochToIso(ts: number | null | undefined): string {
-  if (ts == null || Number.isNaN(ts)) return '';
+  if (ts == null || !Number.isFinite(ts)) return '';
   return new Date(ts * 1000).toISOString();
 }
 
 export function formatEpoch(ts: number | null | undefined): string {
-  if (ts == null || Number.isNaN(ts)) return 'unavailable';
+  if (ts == null || !Number.isFinite(ts)) return 'unavailable';
   const iso = epochToIso(ts);
   return iso ? formatDateTime(iso) : 'unavailable';
 }
 
 export function formatEpochTime(ts: number | null | undefined): string {
-  if (ts == null || Number.isNaN(ts)) return 'unavailable';
+  if (ts == null || !Number.isFinite(ts)) return 'unavailable';
   const d = new Date(ts * 1000);
   const h = String(d.getHours()).padStart(2, '0');
   const m = String(d.getMinutes()).padStart(2, '0');
@@ -52,7 +52,7 @@ export function formatEpochTime(ts: number | null | undefined): string {
 }
 
 export function formatEpochDate(ts: number | null | undefined): string {
-  if (ts == null || Number.isNaN(ts)) return 'unavailable';
+  if (ts == null || !Number.isFinite(ts)) return 'unavailable';
   const d = new Date(ts * 1000);
   const y = d.getFullYear();
   const mo = String(d.getMonth() + 1).padStart(2, '0');
@@ -65,7 +65,7 @@ export function formatEpochDate(ts: number | null | undefined): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function formatDurationShort(s: number | null | undefined): string {
-  if (s == null || Number.isNaN(s)) return 'unavailable';
+  if (s == null || !Number.isFinite(s)) return 'unavailable';
   if (s < 1) return `${(s * 1000).toFixed(0)}ms`;
   if (s < 60) return `${s.toFixed(1)}s`;
   if (s < 3600) return `${Math.floor(s / 60)}m ${Math.floor(s % 60)}s`;
@@ -74,7 +74,7 @@ export function formatDurationShort(s: number | null | undefined): string {
 }
 
 export function formatDurationLong(s: number | null | undefined): string {
-  if (s == null || Number.isNaN(s)) return 'unavailable';
+  if (s == null || !Number.isFinite(s)) return 'unavailable';
   if (s < 1) return `${(s * 1000).toFixed(0)} milliseconds`;
   if (s < 60) return `${s.toFixed(2)} seconds`;
   const m = Math.floor(s / 60);
@@ -93,7 +93,7 @@ export function formatDurationLong(s: number | null | undefined): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function formatBytes(bytes: number | null | undefined): string {
-  if (bytes == null || Number.isNaN(bytes)) return '—';
+  if (bytes == null || !Number.isFinite(bytes)) return '—';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -105,22 +105,22 @@ export function formatBytes(bytes: number | null | undefined): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function formatInt(n: number | null | undefined): string {
-  if (n == null || Number.isNaN(n)) return '—';
+  if (n == null || !Number.isFinite(n)) return '—';
   return Math.round(n).toLocaleString('en-US');
 }
 
 export function formatFloat(n: number | null | undefined, digits = 2): string {
-  if (n == null || Number.isNaN(n)) return '—';
+  if (n == null || !Number.isFinite(n)) return '—';
   return n.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
 export function formatPercent(n: number | null | undefined, digits = 1): string {
-  if (n == null || Number.isNaN(n)) return '—';
+  if (n == null || !Number.isFinite(n)) return '—';
   return `${(n * 100).toFixed(digits)}%`;
 }
 
 export function formatRatio(n: number | null | undefined, digits = 3): string {
-  if (n == null || Number.isNaN(n)) return '—';
+  if (n == null || !Number.isFinite(n)) return '—';
   return n.toFixed(digits);
 }
 

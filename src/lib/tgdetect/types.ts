@@ -450,28 +450,28 @@ export interface SnapshotInfo {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface TrainingConfig {
-  snapshots_dir: string;
-  out_dir: string;
-  epochs: number;
-  batch_size: number;
-  lr: number;
-  weight_decay: number;
-  grad_clip: number;
-  hidden_channels: number;
-  out_channels: number;
-  gnn_layers: number;
-  rnn_layers: number;
-  dropout: number;
-  window_size: number; // # snapshots per training sequence (default 10)
-  seq_stride: number;
-  val_ratio: number;
-  test_ratio: number;
-  split_mode: SplitMode;
-  block_size: number;
-  select_metric: SelectMetric;
-  no_threshold_tuning: boolean;
-  pos_weight: number | null; // auto-computed if null
-  seed: number;
+  snapshots_dir?: string | null;
+  out_dir?: string | null;
+  epochs?: number | null;
+  batch_size?: number | null;
+  lr?: number | null;
+  weight_decay?: number | null;
+  grad_clip?: number | null;
+  hidden_channels?: number | null;
+  out_channels?: number | null;
+  gnn_layers?: number | null;
+  rnn_layers?: number | null;
+  dropout?: number | null;
+  window_size?: number | null; // # snapshots per training sequence (default 10)
+  seq_stride?: number | null;
+  val_ratio?: number | null;
+  test_ratio?: number | null;
+  split_mode?: SplitMode | string | null;
+  block_size?: number | null;
+  select_metric?: SelectMetric | string | null;
+  no_threshold_tuning?: boolean | null;
+  pos_weight?: number | null; // auto-computed if null
+  seed?: number | null;
 }
 
 export interface EpochMetrics {
@@ -492,20 +492,20 @@ export interface TrainingRun {
   name: string;
   dataset_id: string;
   config: TrainingConfig;
-  started_at: number | null;
-  ended_at: number | null;
+  started_at: number | string | null;
+  ended_at: number | string | null;
   elapsed_s: number | null;
-  current_epoch: number;
-  total_epochs: number;
-  best_epoch: number;
-  best_metric: SelectMetric;
+  current_epoch: number | null;
+  total_epochs: number | null;
+  best_epoch: number | null;
+  best_metric: SelectMetric | string | null;
   best_score: number | null;
   best_val_f1: number | null;
   threshold: number | null;
   history: EpochMetrics[];
   checkpoint_path: string | null;
   final_model_path: string | null;
-  state: 'running' | 'completed' | 'failed' | 'stopped';
+  state: 'running' | 'completed' | 'failed' | 'stopped' | string;
   error: string | null;
 }
 

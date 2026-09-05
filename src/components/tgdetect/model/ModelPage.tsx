@@ -290,12 +290,32 @@ function TrainingPanel() {
           dataset: {run.dataset_id} · checkpoint: <span className="text-[hsl(var(--foreground))]">{run.checkpoint_path ?? 'Not recorded'}</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-3">
-          <Hyperparam label="epochs" value={`${run.current_epoch}/${run.total_epochs}`} />
-          <Hyperparam label="best_epoch" value={run.best_epoch} hint={run.best_metric ? `by ${run.best_metric}` : undefined} />
+          <Hyperparam label="epochs" value={run.total_epochs != null ? `${run.current_epoch ?? run.total_epochs}/${run.total_epochs}` : 'Not recorded'} />
+          <Hyperparam label="best_epoch" value={run.best_epoch ?? '—'} hint={run.best_metric ? `by ${run.best_metric}` : undefined} />
           <Hyperparam label="best_score" value={run.best_score != null ? formatFloat(run.best_score, 4) : 'Not recorded'} />
           <Hyperparam label="best_f1" value={run.best_val_f1 != null ? formatFloat(run.best_val_f1, 4) : 'Not recorded'} />
           <Hyperparam label="threshold" value={run.threshold != null ? formatFloat(run.threshold, 4) : 'Not recorded'} hint="tuned on val set" />
           <Hyperparam label="elapsed" value={run.elapsed_s != null ? formatDurationLong(run.elapsed_s) : 'Not recorded'} />
+        </div>
+
+        <div className="border-t border-[hsl(var(--border)/0.5)] pt-3 mt-3">
+          <div className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold mb-2">
+            Recorded Hyperparameters
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <Hyperparam label="learning_rate" value={run.config?.lr != null ? run.config.lr : '—'} />
+            <Hyperparam label="batch_size" value={run.config?.batch_size != null ? run.config.batch_size : '—'} />
+            <Hyperparam label="hidden_channels" value={run.config?.hidden_channels != null ? run.config.hidden_channels : '—'} />
+            <Hyperparam label="out_channels" value={run.config?.out_channels != null ? run.config.out_channels : '—'} />
+            <Hyperparam label="gnn_layers" value={run.config?.gnn_layers != null ? run.config.gnn_layers : '—'} />
+            <Hyperparam label="rnn_layers" value={run.config?.rnn_layers != null ? run.config.rnn_layers : '—'} />
+            <Hyperparam label="dropout" value={run.config?.dropout != null ? run.config.dropout : '—'} />
+            <Hyperparam label="window_size" value={run.config?.window_size != null ? run.config.window_size : '—'} hint="snapshots/seq" />
+            <Hyperparam label="val_ratio" value={run.config?.val_ratio != null ? formatPercent(run.config.val_ratio) : '—'} />
+            <Hyperparam label="test_ratio" value={run.config?.test_ratio != null ? formatPercent(run.config.test_ratio) : '—'} />
+            <Hyperparam label="seed" value={run.config?.seed != null ? run.config.seed : '—'} />
+            <Hyperparam label="weight_decay" value={run.config?.weight_decay != null ? run.config.weight_decay : '—'} hint={run.config?.weight_decay == null ? 'Not recorded' : undefined} />
+          </div>
         </div>
       </div>
 
