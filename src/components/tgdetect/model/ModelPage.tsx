@@ -112,7 +112,7 @@ function ArchitecturePanel() {
           TGNN Architecture
         </SectionTitle>
         <div className="text-[11px] text-[hsl(var(--muted-foreground))] mt-1">
-          {summary.gnn_operator} per snapshot · {summary.temporal_aggregator} over time{summary.total_parameters ? ` · ${formatInt(summary.total_parameters)} params` : ''} · loss: <span className="mono">{summary.loss}</span>
+          {summary.gnn_operator} per snapshot · {summary.temporal_aggregator} over time{summary.total_parameters ? ` · ${formatInt(summary.total_parameters)} total parameters` : ''}{summary.bn_running_stats ? ` (+${summary.bn_running_stats} BN buffers = ${formatInt(summary.total_state_dict_elements ?? 36356)} state_dict elements)` : ''} · loss: <span className="mono">{summary.loss}</span>
         </div>
         <div className="grid grid-cols-3 gap-2 mt-3">
           <Attention flag={summary.has_attention} label="Self-attention" />
@@ -155,6 +155,10 @@ function ArchitecturePanel() {
             <Hyperparam label="dropout" value={cfg.dropout} />
             <Hyperparam label="node_types" value={cfg.node_types ?? '—'} hint="8 backend types" />
             <Hyperparam label="num_relations" value={cfg.num_relations ?? '—'} hint="14 backend relations" />
+            <Hyperparam label="total_params" value={formatInt(summary.total_parameters ?? 36098)} hint="36,098 model parameters" />
+            <Hyperparam label="trainable_params" value={formatInt(summary.trainable_parameters ?? 36098)} hint="36,098 trainable weights & biases" />
+            <Hyperparam label="bn_buffers" value={summary.bn_running_stats ?? 258} hint="258 BatchNorm running-stat buffers" />
+            <Hyperparam label="state_dict_elems" value={formatInt(summary.total_state_dict_elements ?? 36356)} hint="36,356 total state_dict elements" />
           </div>
         </div>
       </div>

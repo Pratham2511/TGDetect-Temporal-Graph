@@ -406,6 +406,9 @@ export interface TGNNModelSummary {
   has_llm: false;
   total_parameters?: number;
   trainable_parameters?: number;
+  non_trainable_parameters?: number;
+  bn_running_stats?: number;
+  total_state_dict_elements?: number;
   config: TGNNModelConfig;
 }
 
