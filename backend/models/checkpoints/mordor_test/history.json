@@ -1,0 +1,222 @@
+[
+  {
+    "loss": 0.02941911498253996,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 1,
+    "train_loss": 0.4034005716064219
+  },
+  {
+    "loss": 0.0046518340876156635,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 2,
+    "train_loss": 0.03648790052571034
+  },
+  {
+    "loss": 0.0024476893542503767,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 3,
+    "train_loss": 0.01238026073344557
+  },
+  {
+    "loss": 0.001474968464621766,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 4,
+    "train_loss": 0.007311562835870279
+  },
+  {
+    "loss": 0.0010131592280231416,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 5,
+    "train_loss": 0.004631165434780009
+  },
+  {
+    "loss": 0.0007655247516760772,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 6,
+    "train_loss": 0.0031872654532997917
+  },
+  {
+    "loss": 0.0006150090061551468,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 7,
+    "train_loss": 0.002291718176250362
+  },
+  {
+    "loss": 0.0004863712396896021,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 8,
+    "train_loss": 0.0018684610022010944
+  },
+  {
+    "loss": 0.0004103550533975729,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 9,
+    "train_loss": 0.0014625906537807847
+  },
+  {
+    "loss": 0.0003521105734927749,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 10,
+    "train_loss": 0.0012261324766352456
+  },
+  {
+    "loss": 0.0003040381548502906,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 11,
+    "train_loss": 0.0010686700189904451
+  },
+  {
+    "loss": 0.00026559020360847086,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 12,
+    "train_loss": 0.0008552480455472181
+  },
+  {
+    "loss": 0.0002351297192614187,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 13,
+    "train_loss": 0.000839974753898016
+  },
+  {
+    "loss": 0.0002065120603550564,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 14,
+    "train_loss": 0.0006660130523614806
+  },
+  {
+    "loss": 0.0001860188084802675,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 15,
+    "train_loss": 0.0005889877763782012
+  },
+  {
+    "loss": 0.00017135725118516183,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 16,
+    "train_loss": 0.0005517191901286053
+  },
+  {
+    "loss": 0.00015256166013635018,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 17,
+    "train_loss": 0.00047794779169696807
+  },
+  {
+    "loss": 0.00013887503882870078,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 18,
+    "train_loss": 0.0004826475070963093
+  },
+  {
+    "loss": 0.00012745373996122825,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 19,
+    "train_loss": 0.0003693764989848359
+  },
+  {
+    "loss": 0.00011868462024722248,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 20,
+    "train_loss": 0.00036622006895012713
+  }
+]

@@ -103,10 +103,10 @@ To ensure transparency for researchers and engineers evaluating this repository,
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │
                                        │ HTTP / JSON (CORS localhost:3000)
-                                       │ Client: src/lib/tgdetect/api/client.ts
+                                       │ Client: frontend/src/lib/tgdetect/api/client.ts
                                        ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         TGDETECT FASTAPI BACKEND                            │
+│                         TGDETECT FASTAPI BACKEND (backend/)                 │
 │                         http://localhost:8000                               │
 │                                                                             │
 │  /api/health      /api/overview   /api/events       /api/graph              │
@@ -117,106 +117,134 @@ To ensure transparency for researchers and engineers evaluating this repository,
                                        │ Local Filesystem / Disk Ingestion
                                        ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                        LOCAL ARTIFACTS REPOSITORY                           │
+│                        LOCAL ARTIFACTS IN BACKEND                           │
 │                                                                             │
-│  data/processed/mordor_empire/     data/snapshots/mordor_empire/             │
-│  ├── events.parquet (1,219 rows)   ├── meta.json                            │
-│  ├── edges.parquet  (1,219 rows)   └── snapshot_*.pkl (612 snapshots)       │
+│  backend/data/processed/mordor_empire/   backend/data/snapshots/mordor_empire│
+│  ├── events.parquet (1,219 rows)         ├── meta.json                      │
+│  ├── edges.parquet  (1,219 rows)         └── snapshot_*.pkl (612 snapshots) │
 │  ├── nodes.parquet  (45 rows)                                               │
-│  ├── chains_summary.parquet (3)    models/checkpoints/mordor_mixed/         │
-│  └── graph_stats.json              ├── best_model.pt (36,098 parameters)    │
-│                                    ├── history.json (5 epochs)              │
-│  data/graphs/chains/*.json         └── eval/metrics_test.json               │
+│  ├── chains_summary.parquet (3)          backend/models/checkpoints/mixed/  │
+│  └── graph_stats.json                    ├── best_model.pt (36,098 params)  │
+│                                          ├── history.json (5 epochs)        │
+│  backend/data/graphs/chains/*.json       └── eval/metrics_test.json         │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Communication Flow
 - **Data Ingestion**: The backend reads Parquet tables and JSON summaries using PyArrow and Pandas upon startup or first query, with cached in-memory representations.
 - **REST Endpoints**: Fast HTTP JSON endpoints serialize tabular records, metadata, and graph node/edge projections.
-- **Frontend Fetch**: Client services in `src/lib/tgdetect/services/api/index.ts` call the backend using native `fetch` with configurable timeouts and AbortController cancellation.
-- **Security Envelope**: Path validation guards in `api/services/artifacts_service.py` strictly whitelist exposed files and forbid directory traversal (`..`, `/`, `\`).
+- **Frontend Fetch**: Client services in `frontend/src/lib/tgdetect/services/api/index.ts` call the backend using native `fetch` with configurable timeouts and AbortController cancellation.
+- **Security Envelope**: Path validation guards in `backend/api/services/artifacts_service.py` strictly whitelist exposed files and forbid directory traversal (`..`, `/`, `\`).
 
 ---
 
 ## Repository Structure
 
-TGDetect operates with the Next.js frontend code in the root directory and the Python backend services and pipeline scripts either linked locally or hosted in the companion backend repository:
+TGDetect is structured as a unified monorepo containing both the frontend dashboard and the complete backend pipeline:
 
 ```text
-TGDetect/
-├── .env.example                        # Environment template (API URL, Mock toggle)
-├── .env.local                          # Local environment variables
-├── package.json                        # Next.js 16, React 19, dependencies
-├── tsconfig.json                       # Strict TypeScript configuration
-├── next.config.ts                      # Next.js standalone server config
-├── public/                             # Static brand assets and icons
+TGDetect-Temporal-Graph/
+├── frontend/                           # Next.js 16 Dashboard & UI Layer
+│   ├── .env.example                    # Environment template (API URL, Mock toggle)
+│   ├── package.json                    # Next.js 16, React 19, Lucide, Tailwind CSS dependencies
+│   ├── tsconfig.json                   # Strict TypeScript configuration
+│   ├── next.config.ts                  # Next.js standalone server config
+│   ├── components.json                 # UI component registry configuration
+│   ├── eslint.config.mjs               # ESLint configuration
+│   ├── postcss.config.mjs              # PostCSS configuration
+│   ├── tailwind.config.ts              # Tailwind CSS configuration
+│   ├── public/                         # Static brand assets and icons
+│   │   ├── logo.svg                    # Vector brand mark
+│   │   └── robots.txt                  # Search indexing directives
+│   └── src/
+│       ├── app/
+│       │   ├── layout.tsx              # Global HTML wrapper, fonts, ThemeProvider
+│       │   ├── page.tsx                # Root navigation container, API status monitor
+│       │   └── globals.css             # Midnight Intelligence design tokens & styles
+│       ├── components/
+│       │   ├── tgdetect/
+│       │   │   ├── overview/           # OverviewPage: KPI tiles, timeline, distributions
+│       │   │   ├── events/             # EventsPage: Filterable forensic event table & detail drawer
+│       │   │   ├── graph/              # GraphPage: Force-directed heterogeneous canvas view
+│       │   │   ├── chains/             # ChainsPage: Multi-strategy timeline & subgraph explorer
+│       │   │   ├── datasets/           # DatasetsPage: Dataset inventory & job inspection
+│       │   │   ├── artifacts/          # ArtifactsPage: Parquet schema & row previewer
+│       │   │   ├── model/              # ModelPage: Architecture, Snapshots, Training, Evaluation
+│       │   │   ├── analytics/          # AnalyticsPage: Event, Graph, Attack, and Dataset metrics
+│       │   │   └── shared/             # Badges, pills, legends, temporal graph canvas
+│       │   └── ui/                     # Radix UI primitive components
+│       └── lib/
+│           ├── date-utils.ts           # Timestamp formatters & date calculations
+│           └── tgdetect/
+│               ├── types.ts            # TypeScript interfaces mirroring Python schemas 1:1
+│               ├── constants.ts        # Node types, relations, color palettes
+│               ├── formatters.ts       # Number, byte, ratio, and duration formatters
+│               ├── mocks.ts            # Static mock fixtures for offline testing
+│               ├── api/
+│               │   └── client.ts       # HTTP client with timeout and error handling
+│               └── services/
+│                   ├── index.ts        # Service factory (switches API vs Mock via env)
+│                   ├── hooks.ts        # React state hooks for service consumption
+│                   └── api/
+│                       └── index.ts    # Concrete HTTP API service adapters
 │
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx                  # Global HTML wrapper, fonts, ThemeProvider
-│   │   ├── page.tsx                    # Root navigation container, API status monitor
-│   │   └── globals.css                 # Midnight Intelligence design tokens & styles
+├── backend/                            # Python Graph Pipeline, TGNN & FastAPI Backend
+│   ├── requirements-graph.txt          # Graph builder dependencies (NetworkX, PyArrow, etc.)
+│   ├── requirements-ml.txt             # Machine learning dependencies (PyTorch, PyG, scikit-learn)
+│   ├── modal_train.py                  # Modal cloud GPU training definition (Nvidia A10G)
 │   │
-│   ├── components/
-│   │   ├── tgdetect/
-│   │   │   ├── overview/               # OverviewPage: KPI tiles, timeline, distributions
-│   │   │   ├── events/                 # EventsPage: Filterable forensic event table & detail drawer
-│   │   │   ├── graph/                  # GraphPage: Force-directed heterogeneous canvas view
-│   │   │   ├── chains/                 # ChainsPage: Multi-strategy timeline & subgraph explorer
-│   │   │   ├── datasets/               # DatasetsPage: Dataset inventory & job inspection
-│   │   │   ├── artifacts/              # ArtifactsPage: Parquet schema & row previewer
-│   │   │   ├── model/                  # ModelPage: Architecture, Snapshots, Training, Evaluation
-│   │   │   ├── analytics/              # AnalyticsPage: Event, Graph, Attack, and Dataset metrics
-│   │   │   └── shared/                 # Badges, pills, legends, temporal graph canvas
-│   │   └── ui/                         # Radix UI primitive components
+│   ├── api/                            # FastAPI backend service
+│   │   ├── main.py                     # App definition, CORS, routing, error handlers
+│   │   ├── dependencies.py             # Filepath constants, DataFrame caches, sanitizers
+│   │   ├── routes/                     # Route endpoints (health, events, graph, chains, etc.)
+│   │   └── services/                   # Business logic for data extraction & serialization
 │   │
-│   └── lib/
-│       ├── date-utils.ts               # Timestamp formatters & date calculations
-│       └── tgdetect/
-│           ├── types.ts                # TypeScript interfaces mirroring Python schemas 1:1
-│           ├── constants.ts            # Node types, relations, color palettes
-│           ├── formatters.ts           # Number, byte, ratio, and duration formatters
-│           ├── mocks.ts                # Static mock fixtures for offline testing
-│           ├── api/
-│           │   └── client.ts           # HTTP client with timeout and error handling
-│           └── services/
-│               ├── index.ts            # Service factory (switches API vs Mock via env)
-│               ├── hooks.ts            # React state hooks for service consumption
-│               └── api/
-│                   └── index.ts        # Concrete HTTP API service adapters
+│   ├── graph_builder/                  # Graph construction pipeline
+│   │   ├── README.md                   # Graph builder documentation & CLI guide
+│   │   ├── schema.py                   # TGEvent, NodeType, RelationType, Parquet schemas
+│   │   ├── parsers.py                  # Streaming JSON/JSONL parsers (Synthetic, Mordor)
+│   │   ├── normalizer.py               # Canonical ID coercion, entity typing, timestamp validation
+│   │   ├── labeler.py                  # Rule-based heuristics, LOLBIN regexes, label propagation
+│   │   ├── builder.py                  # StreamingGraphBuilder and TemporalGraphBuilder
+│   │   ├── attack_tracker.py           # ChainIdTracker, CausalParentTracker, EntityTimeTracker
+│   │   ├── temporal.py                 # TemporalSnapshot builder & sliding window partitioner
+│   │   ├── loader.py                   # TemporalGraphDataset loader
+│   │   └── exporters.py                # Parquet, JSON, and subgraph disk writers
+│   │
+│   ├── models/                         # Neural network architectures & checkpoints
+│   │   ├── tgnn.py                     # TemporalGNN (GraphSAGE + GRU + dual linear classifiers)
+│   │   └── checkpoints/
+│   │       ├── mordor_mixed/           # Checkpoint run: best_model.pt, history.json, eval/
+│   │       ├── mordor_full/            # Full scenario checkpoint run
+│   │       └── mordor_test/            # Test scenario checkpoint run
+│   │
+│   ├── scripts/                        # CLI execution and utility scripts
+│   │   ├── init_demo_data.py           # Generates the synthetic demonstration graph
+│   │   ├── build_graph.py              # CLI pipeline: raw logs -> processed Parquet graph
+│   │   ├── build_snapshots.py          # CLI pipeline: processed graph -> snapshot pickles
+│   │   ├── train_tgnn.py               # PyTorch/PyG training script with early stopping
+│   │   ├── evaluate_tgnn.py            # Standalone checkpoint evaluation on test split
+│   │   ├── validate_graph.py           # Integrity validator for processed Parquets
+│   │   ├── visualize_graph.py          # NetworkX / Matplotlib graph rendering
+│   │   └── visualize_severity_graph.py # PyVis interactive attack severity graph
+│   │
+│   ├── tests/                          # Backend test suite
+│   │   └── test_api_integration.py     # 12 automated unittest cases for FastAPI backend
+│   │
+│   ├── data/                           # Demonstration and processed data
+│   │   ├── processed/mordor_empire/    # Demonstration processed Parquet tables & graph_stats.json
+│   │   ├── snapshots/mordor_empire/    # Demonstration temporal snapshot sequence & meta.json
+│   │   └── graphs/chains/              # Demonstration attack chain subgraphs
+│   │
+│   ├── reports/                        # Visual reports, training curves, distributions
+│   └── results/                        # Evaluation metrics and prediction parquet files
 │
-├── api/                                # FastAPI backend service
-│   ├── main.py                         # App definition, CORS, routing, error handlers
-│   ├── dependencies.py                 # Filepath constants, DataFrame caches, sanitizers
-│   ├── routes/                         # Route endpoints (health, events, graph, chains, etc.)
-│   └── services/                       # Business logic for data extraction & serialization
+├── docs/                               # System and API Documentation
+│   └── API_CONTRACT.md                 # Complete OpenAPI/FastAPI endpoint specifications
 │
-├── graph_builder/                      # Graph construction pipeline
-│   ├── schema.py                       # TGEvent, NodeType, RelationType, Parquet schemas
-│   ├── parsers.py                      # Streaming JSON/JSONL parsers (Synthetic, Mordor)
-│   ├── normalizer.py                   # Canonical ID coercion, entity typing, timestamp validation
-│   ├── labeler.py                      # Rule-based heuristics, LOLBIN regexes, label propagation
-│   ├── builder.py                      # StreamingGraphBuilder and TemporalGraphBuilder
-│   ├── attack_tracker.py               # ChainIdTracker, CausalParentTracker, EntityTimeTracker
-│   ├── temporal.py                     # TemporalSnapshot builder & sliding window partitioner
-│   ├── loader.py                       # TemporalGraphDataset loader
-│   └── exporters.py                    # Parquet, JSON, and subgraph disk writers
-│
-├── models/                             # Neural network architectures & checkpoints
-│   ├── tgnn.py                         # TemporalGNN (GraphSAGE + GRU + dual linear classifiers)
-│   └── checkpoints/
-│       └── mordor_mixed/               # Checkpoint run: best_model.pt, history.json, eval/
-│
-├── scripts/                            # CLI execution and utility scripts
-│   ├── init_demo_data.py               # Generates the synthetic demonstration graph
-│   ├── build_graph.py                  # CLI pipeline: raw logs -> processed Parquet graph
-│   ├── build_snapshots.py              # CLI pipeline: processed graph -> snapshot pickles
-│   ├── train_tgnn.py                   # PyTorch/PyG training script with early stopping
-│   ├── evaluate_tgnn.py                # Standalone checkpoint evaluation on test split
-│   └── modal_train.py                  # Modal cloud GPU training definition (Nvidia A10G)
-│
-└── tests/
-    └── test_api_integration.py         # 12 automated unittest cases for FastAPI backend
+├── README.md                           # Authoritative monorepo technical documentation
+├── LICENSE                             # MIT License
+└── .gitignore                          # Root ignore rules for Python, Node, Next.js, and env
 ```
 
 ---
@@ -229,7 +257,7 @@ The pipeline transforms unformatted event streams into graph structures and temp
 Raw Log Ingestion (JSON / JSONL / GZ / ZIP / TAR)
    │
    ▼
-1. Parser Layer (graph_builder/parsers.py)
+1. Parser Layer (backend/graph_builder/parsers.py)
    Streams line-by-line using Orjson; emits unnormalized TGEvent records.
    │
    ▼
@@ -603,17 +631,22 @@ The FastAPI backend exposes 29 fully implemented read-only `GET` endpoints:
 
 ## Running the Backend
 
-From the repository root (or companion backend directory):
+From the repository root, navigate into `backend/`:
 
 ```bash
+cd backend
+
 # 1. Create and activate a Python virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
 
 # 2. Install backend dependencies
-pip install fastapi uvicorn pydantic pandas pyarrow networkx pyyaml tqdm httpx orjson
+pip install -r requirements-graph.txt
+pip install -r requirements-ml.txt
+# Alternatively, for minimal API serving:
+# pip install fastapi uvicorn pydantic pandas pyarrow networkx pyyaml tqdm httpx orjson
 
-# 3. Generate the demonstration dataset and artifacts
+# 3. Generate or refresh the demonstration dataset (if needed)
 python scripts/init_demo_data.py
 
 # 4. Launch the FastAPI server on port 8000
@@ -621,6 +654,7 @@ uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 - **Health Verification**: `curl http://localhost:8000/api/health`
+- **Overview Verification**: `curl http://localhost:8000/api/overview`
 - **Interactive Swagger Docs**: `http://localhost:8000/docs`
 - **ReDoc Technical Interface**: `http://localhost:8000/redoc`
 
@@ -628,9 +662,11 @@ uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
 
 ## Running the Frontend
 
-In a separate terminal:
+From the repository root, navigate into `frontend/`:
 
 ```bash
+cd frontend
+
 # 1. Prepare environment file
 cp .env.example .env.local
 
@@ -680,10 +716,10 @@ modal run modal_train.py::download --name mordor_mixed --local-dir results/
 
 ## Artifact Structure
 
-The filesystem artifacts produced and inspected by the platform are organized as follows:
+The filesystem artifacts produced and inspected by the platform are organized within `backend/` as follows:
 
 ```text
-data/
+backend/data/
 ├── processed/
 │   └── mordor_empire/
 │       ├── events.parquet              # 1,219 canonical events with MITRE ATT&CK labels
@@ -703,7 +739,7 @@ data/
         ├── causal_*.json               # Subgraph for causal_parent strategy
         └── inferred_*.json             # Subgraph for entity_time strategy
 
-models/
+backend/models/
 └── checkpoints/
     └── mordor_mixed/
         ├── best_model.pt               # Checkpoint state dict (36,098 parameters, epoch 1)
@@ -720,7 +756,11 @@ models/
 
 ### Frontend Code Quality
 
+Run from the `frontend/` directory:
+
 ```bash
+cd frontend
+
 # 1. TypeScript strict type check
 npx tsc --noEmit
 
@@ -733,11 +773,15 @@ npm run build
 
 ### Backend Integration Tests
 
-The backend test suite is located in `tests/test_api_integration.py` and runs against a live Starlette test client:
+Run from the `backend/` directory using the virtual environment:
 
 ```bash
+cd backend
+
 # Run all backend integration tests
-python -m unittest discover -s tests
+.venv/bin/python tests/test_api_integration.py
+# or:
+.venv/bin/python -m unittest discover -s tests
 ```
 
 *Status: 12 tests passing covering health, overview, event filtering, attack chains, path traversal security, snapshots, training configurations, and normalization statistics.*

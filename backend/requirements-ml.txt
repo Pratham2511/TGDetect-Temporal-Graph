@@ -1,0 +1,16 @@
+# Machine-learning dependencies for the TGNN training/evaluation layer.
+# Install AFTER requirements-graph.txt, and install this file on its own:
+#     python -m pip install -r requirements-ml.txt
+#
+# NOTE: torch-scatter / torch-sparse are intentionally NOT listed.
+# They are optional C++/CUDA extensions that must be compiled against an
+# already-installed torch; pip resolves them in the same pass as torch, so the
+# build fails with "ModuleNotFoundError: No module named 'torch'".
+# PyTorch Geometric >= 2.3 ships pure-PyTorch fallbacks for every op this
+# project uses (SAGEConv, GRU, global pooling), so they are not needed.
+
+torch>=2.0
+torch-geometric>=2.3
+scikit-learn>=1.3
+matplotlib>=3.7
+seaborn>=0.12

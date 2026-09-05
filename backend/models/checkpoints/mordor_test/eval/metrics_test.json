@@ -1,0 +1,16 @@
+{
+  "num_samples": 117,
+  "num_positive": 117,
+  "num_negative": 0,
+  "accuracy": 1.0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "auc_roc": null,
+  "auc_pr": null,
+  "confusion_matrix": [
+    [
+      117
+    ]
+  ]
+}

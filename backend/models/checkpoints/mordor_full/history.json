@@ -1,0 +1,57 @@
+[
+  {
+    "loss": 0.0008021569757450682,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 1,
+    "train_loss": 0.041732848173034236
+  },
+  {
+    "loss": 0.0004214566183994369,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 2,
+    "train_loss": 0.0007475896303949986
+  },
+  {
+    "loss": 0.00020463739573541614,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 3,
+    "train_loss": 0.0008685902716458547
+  },
+  {
+    "loss": 0.0001601129198914148,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 4,
+    "train_loss": 0.00022883160264361343
+  },
+  {
+    "loss": 5.4748656071347394e-05,
+    "auc_roc": NaN,
+    "auc_pr": NaN,
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "epoch": 5,
+    "train_loss": 0.00016899978006421347
+  }
+]

@@ -1,0 +1,9 @@
+# Graph construction layer only — torch / torch-geometric belong to the TGNN layer.
+pandas>=2.0
+pyarrow>=14.0
+networkx>=3.0
+tqdm>=4.65
+orjson>=3.9
+pyyaml>=6.0
+matplotlib>=3.7
+pyvis>=0.3   # optional: interactive HTML graph

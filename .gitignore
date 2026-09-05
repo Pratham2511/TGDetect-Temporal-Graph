@@ -1,82 +1,125 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ==============================================================================
+# TGDetect Monorepo .gitignore
+# ==============================================================================
 
-# dependencies
-node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+# ------------------------------------------------------------------------------
+# Python & Backend
+# ------------------------------------------------------------------------------
+backend/.venv/
+.venv/
+venv/
+ENV/
+env/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib64/
 
-# testing
-/coverage
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
 
-# next.js
-/.next/
-/out/
+# Backend Raw Data (keep demo processed datasets, ignore huge raw downloads)
+backend/data/raw/
+data/raw/
 
-# production
-/build
+# ------------------------------------------------------------------------------
+# Node & Frontend (Next.js)
+# ------------------------------------------------------------------------------
+frontend/node_modules/
+node_modules/
+frontend/.pnp
+frontend/.pnp.*
+frontend/.yarn/*
+!frontend/.yarn/patches
+!frontend/.yarn/plugins
+!frontend/.yarn/releases
+!frontend/.yarn/versions
 
-# misc
-.DS_Store
-*.pem
-Thumbs.db
+# Next.js build output
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/dist/
+.next/
+out/
 
-# debug
+# TypeScript
+*.tsbuildinfo
+frontend/next-env.d.ts
+next-env.d.ts
+
+# ------------------------------------------------------------------------------
+# Environment Variables & Secrets
+# ------------------------------------------------------------------------------
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+frontend/.env
+frontend/.env.*
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+!frontend/.env.example
+
+# ------------------------------------------------------------------------------
+# Logs & Process Outputs
+# ------------------------------------------------------------------------------
+*.log
+frontend/*.log
+backend/*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
-
-# env files
-.env*
-!.env.example
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# logs
-*.log
+pnpm-debug.log*
 dev.log
 server.log
 
-# IDE
+# ------------------------------------------------------------------------------
+# Editor & OS Artifacts
+# ------------------------------------------------------------------------------
 .vscode/
+!.vscode/extensions.json
 .idea/
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 *.swp
 *.swo
+*~
 
-# OS
-.DS_Store
-
-# Workspace artifacts (not part of the project)
-/scripts/
-/download/
-/worklog.md
-/upgrade-file.txt
-/upload/
-
-# Skills directory (AI framework internal)
-/skills/
-
-# Research data (not part of the repo)
-/docs/research/
-
-# Tool outputs
-/tool-results/
-/.zscripts/
-/test/
-/prompt
-local-*
-.claude
-.z-ai-config
+# ------------------------------------------------------------------------------
+# Workspace & Local Tooling Artifacts
+# ------------------------------------------------------------------------------
 .agents/
 AGENTS.md
 CLAUDE.md
+.claude/
+.vercel/
+/download/
+/upload/
+/tool-results/
