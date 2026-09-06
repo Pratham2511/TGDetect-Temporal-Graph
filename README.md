@@ -1,519 +1,399 @@
-# TGDetect — Temporal Graph Threat Detection
+# TGDetect
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
-[![Next.js](https://img.shields.io/badge/Next.js-16.1.1-000000?style=flat&logo=next.js)](https://nextjs.org)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?style=flat&logo=pytorch)](https://pytorch.org)
-[![PyG](https://img.shields.io/badge/PyG-2.3+-3C2179?style=flat)](https://pyg.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+### Temporal Graph Security Detection & Investigation Platform
 
-> **TGDetect** is an open-source, research-grade cybersecurity platform that transforms streaming network telemetry into dynamic, typed temporal graphs and detects advanced persistent threats (APTs) and botnet activity using a spatiotemporal Graph Neural Network (GraphSAGE + GRU) with edge-level flow classification.
+TGDetect transforms raw cybersecurity telemetry into **temporal heterogeneous graphs**, directed security relationships, causal attack chains, and interactive forensic surfaces. By combining streaming graph construction with a spatiotemporal graph neural network (GraphSAGE + GRU), TGDetect detects stealthy, multi-stage threats while providing analysts with an authentic, research-grade command center.
 
----
-
-## 1. Project Title & Overview
-
-**TGDetect: Temporal Graph Threat Detection & Forensic Analysis Platform**
-
-TGDetect models computer network telemetry as an evolving, directed, heterogeneous temporal graph. By combining spatial neighborhood message-passing via GraphSAGE with temporal recurrence via Gated Recurrent Units (GRU), TGDetect detects stealthy, multi-stage cyber threats—such as botnet command-and-control (C2), lateral movement, and data exfiltration—at line rate without relying on brittle static signatures or synthetic heuristic metrics.
-
-<p align="center">
-  <img src="docs/images/01_overview_dashboard.png" alt="TGDetect Night Operations Command Center" width="49%" />
-  <img src="docs/images/01b_overview_solarized_light.png" alt="TGDetect Solarized Light Command Center" width="49%" />
-</p>
-<p align="center"><em>TGDetect Tactical Operations Command Center — Night Operations (left) & Solarized Light Operations (right)</em></p>
+> **TGDetect never substitutes uploaded telemetry with fake dashboard data.**<br/>
+> When a dataset is activated, the application synchronizes its state globally across every investigation view. Model benchmark metrics describe the production neural network; live telemetry describes your data.
 
 ---
 
-## 2. One-Paragraph Project Summary
+## Interface Preview
 
-TGDetect is an end-to-end, research-grounded cybersecurity AI operations platform that ingests raw network flow telemetry (e.g., CTU-13 NetFlow), extracts 37-dimensional directional flow features, constructs sequenced temporal graph snapshots, and runs edge-level inference using a dedicated 38,787-parameter Temporal Graph Neural Network (`ctu13_ho_c47`). Supported by a high-throughput FastAPI asynchronous backend and a tactical Next.js 16 command center, TGDetect delivers authentic forensic investigation, automated attack chain reconstruction, columnar Apache Parquet artifact inspection, and threshold-free ROC-AUC/PR-AUC evaluation over 1,068,851 held-out test flows.
+### Security Command Center
 
----
+The Security Command Center provides a high-density operational overview strictly separated into live operational telemetry and offline model benchmark evaluation.
 
-## 3. Core Problem
+![Security Command Center (Night Operations)](docs/images/01_overview_command_center.png)
+*Figure 1: Security Command Center in Night Operations. Section A renders live telemetry from the active dataset (CTU-13 Scenario 47: 1,068,851 events, 9,256 malicious flows). Section D isolates the production model evaluation benchmark with explicit provenance labeling.*
 
-Modern cyber threats (Advanced Persistent Threats and polymorphic botnets) evade conventional signature-based Network Intrusion Detection Systems (NIDS) and host endpoint monitoring through three primary evasive behaviors:
-
-1. **Slow-and-Low Progression**: Malicious actions are dispersed over long time horizons (hours to weeks), ensuring individual events blend into benign background noise and circumvent static rate-limiting thresholds.
-2. **Polymorphic Infrastructure**: Threat actors dynamically rotate source IP addresses, domain names, and ephemeral ports (e.g., fast-flux DNS and peer-to-peer C2), invalidating static indicator-of-compromise (IoC) blacklists.
-3. **Alert Fatigue & Extreme Class Imbalance**: In enterprise networks, malicious traffic typically represents less than 1% of total flow volume (e.g., 9,256 malicious flows out of 1,068,851 in CTU-13 Scenario 47). Naive classifiers produce thousands of false positives daily, overwhelming Security Operations Center (SOC) teams.
+![Security Command Center (Solarized Light Operations)](docs/images/01b_overview_solarized_light.png)
+*Figure 2: Security Command Center in Solarized Light Operations. Built with warm ivory (`#fdf6e3`), Solarized base2 (`#eee8d5`), sandstone borders (`#dfd7c2`), and deep slate typography (`#073642`) for complete day-shift visual ergonomics.*
 
 ---
 
-## 4. Why Temporal Graphs?
+### Temporal Heterogeneous Graph
 
-Graph representations capture the relational topological structure of networked entities that tabular feature tables ignore. However, static graphs discard the critical chronological order of events, obscuring causal relationships:
+Security interactions are modeled as a directed, temporal multigraph where nodes represent entities and edges represent timestamped communications.
 
-* **Relational Context**: Graph edges preserve the interaction topology between IP endpoints, capturing fan-in (scanning), star topologies (centralized C2), and mesh patterns (P2P botnets).
-* **Temporal Dynamics**: Dividing continuous event streams into sequenced temporal snapshots ($G_1, G_2, \dots, G_T$) captures state transitions, burstiness, and persistence over time.
-* **Spatiotemporal Inductive Bias**:
-  $$\mathbf{h}_v^{(t)} = \text{GraphSAGE}(\mathcal{N}(v), G_t), \quad \mathbf{s}_v^{(t)} = \text{GRU}(\mathbf{h}_v^{(t)}, \mathbf{s}_v^{(t-1)})$$
-  This decomposition allows the model to learn spatial structure per snapshot and track behavioral evolution across windows.
-* **Edge-Level Discrimination**: Since all IP nodes in standard NetFlow share identical node semantics (IPv4 address), discriminative signal resides primarily on the directional communication edges. TGDetect applies edge-level classification directly to raw communication flows.
+![Temporal Heterogeneous Graph](docs/images/02_temporal_heterogeneous_graph.png)
+*Figure 3: Temporal Heterogeneous Graph generated from the active telemetry partition (`tgdetect_ctu13_test_sample`). Nodes represent communicating IP endpoints, edges represent directional flow relations, and malicious attack paths are highlighted with red threat illumination. When the active dataset changes, topology updates dynamically.*
+
+![Temporal Heterogeneous Graph (Solarized Light)](docs/images/02b_temporal_graph_solarized.png)
+*Figure 4: Temporal Heterogeneous Graph rendered under Solarized Light Operations showing canonical NetFlow topology between communicating hosts.*
 
 ---
 
-## 5. Architecture Overview
+### Forensic Event Stream & Processing Pipeline
 
-TGDetect decouples heavy temporal graph computation and model inference from the tactical command-and-control interface:
+Granular investigation tools allow security analysts to inspect raw flows, track causal parents, and monitor the streaming GNN construction pipeline.
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                   NEXT.JS 16 TACTICAL COMMAND CENTER                        │
-│                   http://localhost:3000 (Obsidian HUD)                      │
-│                                                                             │
-│  Overview  │  Events  │  Temporal Graph  │  Attack Chains  │  Datasets      │
-│  Parquet Artifacts    │  TGNN Model Architecture   │  Security Analytics    │
-└──────────────────────────────────────┬──────────────────────────────────────┘
-                                       │
-                                       │ JSON / Streamed Parquet REST
-                                       ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                       TGDETECT FASTAPI BACKEND                              │
-│                       http://127.0.0.1:8000                                 │
-│                                                                             │
-│  /api/health      /api/overview   /api/events       /api/graph              │
-│  /api/chains      /api/datasets   /api/artifacts    /api/model              │
-│  /api/analytics   Swagger: /docs  ReDoc: /redoc     /download               │
-└───────────────────┬─────────────────────────────────────┬───────────────────┘
-                    │                                     │
-                    ▼                                     ▼
-┌─────────────────────────────────────┐ ┌─────────────────────────────────────┐
-│       DATA PROCESSING PIPELINE      │ │      TEMPORAL GNN SUBSYSTEM         │
-│                                     │ │                                     │
-│  Raw NetFlow / Ingestion Stream     │ │  PyTorch + PyG TemporalGNN          │
-│         ↓                           │ │  Checkpoint: ctu13_ho_c47           │
-│  Dataset Validator & Diagnostics    │ │  Trainable Params: 38,787           │
-│         ↓                           │ │                                     │
-│  Streaming Normalizer & Parsers     │ │  Spatiotemporal Architecture:       │
-│         ↓                           │ │    - 2x SAGEConv + Edge Project     │
-│  StreamingGraphBuilder Engine       │ │    - BatchNorm1d + Dropout (0.3)    │
-│         ↓                           │ │    - GRU Temporal Recurrence (64)   │
-│  Multi-Strategy AttackTracker       │ │    - Edge Head: Linear(128 → 1)     │
-│         ↓                           │ │                                     │
-│  Columnar Parquet Storage           │ │  Multi-Head Outputs:                │
-│  (nodes, edges, events, chains)     │ │    - Edge Botnet Classifier         │
-│         ↓                           │ │    - Node Entity Classifier         │
-│  Sliding-Window Snapshot Generator  │ │    - Snapshot Anomaly Classifier    │
-└─────────────────────────────────────┘ └─────────────────────────────────────┘
+![Events Investigation](docs/images/03_events_investigation.png)
+*Figure 5: Granular Event Investigation table displaying normalized flow records (`TGEvent`), source and target entities, directional relations, ground-truth labels, and MITRE ATT&CK tactic tags.*
+
+![Dataset Ingestion Pipeline](docs/images/04_datasets_pipeline.png)
+*Figure 6: Datasets & Processing Pipeline view displaying active telemetry partition status (`● ACTIVE TELEMETRY PARTITION`), 5-stage ingestion diagnostics, and the 6-stage GNN pipeline visualization.*
+
+---
+
+## Dataset Truth Architecture
+
+TGDetect is engineered around the principle of **uncompromising data truthfulness**. In cybersecurity operations and academic research, visual dashboards that substitute mock numbers or silently fall back to demo datasets erode trust and compromise investigation integrity.
+
+```
+                  ┌──────────────────────────────┐
+                  │   AUTHORITATIVE DATA CACHE   │
+                  │   (FastAPI Backend Server)   │
+                  └──────────────┬───────────────┘
+                                 │
+                   POST /api/datasets/{id}/activate
+                                 │
+                  ┌──────────────▼───────────────┐
+                  │    GLOBAL DATASET CONTEXT    │
+                  │   (Next.js State Provider)   │
+                  └──────────────┬───────────────┘
+                                 │
+        ┌──────────────┬─────────┴────────┬──────────────┬──────────────┐
+        ▼              ▼                  ▼              ▼              ▼
+   [Overview]      [Events]            [Graph]        [Chains]     [Artifacts]
+  Live Telemetry  Active Flows     Real Topology    Causal Paths  Active Parquet
+```
+
+### 1. Single Source of Truth
+The active dataset is globally authoritative across the platform:
+- **Backend**: `DataCache` manages the active dataset partition, Parquet storage paths, graph summary metadata, and sliding-window snapshot indices.
+- **Frontend**: `DatasetContext` provides reactive state (`activeDatasetId`, `activeDataset`, `activateDataset()`, `datasetVersion`).
+- **Zero Full-Page Reloads**: Activating a new dataset increments `datasetVersion`, automatically invalidating and refetching all queries (`useOverview`, `useEvents`, `useGraphNodes`, `useGraphEdges`, `useChains`, `useArtifacts`) via reactive hooks.
+
+### 2. Live Telemetry vs. Model Benchmark Separation
+TGDetect enforces a strict distinction between two categories of information:
+
+| Information Domain | Description | Examples | Provenance Rule |
+| :--- | :--- | :--- | :--- |
+| **Live Dataset Telemetry** | Derived exclusively from the currently active dataset. | Event count, malicious count, unique nodes, graph edges, attack chains, temporal span, topology. | **Must change** whenever the active dataset changes. |
+| **Model Benchmark Metrics** | Evaluates the production neural network checkpoint on held-out research data. | ROC-AUC (0.9983), PR-AUC (0.7065), Best F1 (0.8388), Recall @ 1% FPR (99.58%), 38,787 params. | **Never pretends** to be generated from uploaded telemetry. Labeled explicitly as held-out evaluation. |
+
+### 3. Truthful Empty States
+If an uploaded dataset contains zero events or produces zero graph relationships, TGDetect renders explicit, domain-specific empty states (`NO GRAPH TOPOLOGY AVAILABLE`, `TEMPORAL SIGNAL ABSENT`, `ATTACK CHAINS ABSENT`) with diagnostic instructions. The system **never silently substitutes canonical CTU-13 data**.
+
+---
+
+## System Architecture
+
+The following diagram illustrates the end-to-end dataflow from raw telemetry ingestion to interactive forensic visualization:
+
+```mermaid
+flowchart TD
+    subgraph INGESTION ["1. Ingestion & Validation"]
+        RAW[Raw Telemetry
+NetFlow / Sysmon / Synthetic] --> VAL[Format Detector &
+Schema Validator]
+        VAL --> DIAG[Parser Diagnostics &
+Field Verification]
+    end
+
+    subgraph PIPELINE ["2. Streaming GNN Construction Pipeline"]
+        DIAG --> NORM[Streaming Normalizer
+TGEvent Contract]
+        NORM --> LBL[Labeling Engine
+Parser / Seed / Heuristic]
+        LBL --> BLD[StreamingGraphBuilder
+Node & Edge Projection]
+        BLD --> TRK[AttackTracker Engine
+Multi-Strategy Chains]
+        TRK --> EXP[Parquet Exporter
+events, nodes, edges, chains]
+    end
+
+    subgraph BACKEND ["3. FastAPI Backend Core"]
+        EXP --> CACHE[(DataCache
+Authoritative Partition)]
+        CACHE --> API_OV[/api/overview]
+        CACHE --> API_EV[/api/events]
+        CACHE --> API_GR[/api/graph]
+        CACHE --> API_CH[/api/chains]
+        CACHE --> API_DS[/api/datasets]
+        CACHE --> API_AR[/api/artifacts]
+        CACHE --> API_MD[/api/model]
+    end
+
+    subgraph FRONTEND ["4. Synchronized Command Center"]
+        API_DS --> CTX[DatasetContext
+Active Dataset State]
+        CTX -.->|Synchronizes| UI_OV[Overview Deck]
+        CTX -.->|Synchronizes| UI_EV[Events Investigation]
+        CTX -.->|Synchronizes| UI_GR[Temporal Graph Viz]
+        CTX -.->|Synchronizes| UI_CH[Attack Chains]
+        CTX -.->|Synchronizes| UI_AR[Artifacts Inspector]
+        CTX -.->|Synchronizes| UI_AN[Security Analytics]
+    end
+
+    classDef proc fill:#002b36,stroke:#2aa198,stroke-width:1px,color:#93a1a1;
+    classDef sync fill:#073642,stroke:#268bd2,stroke-width:2px,color:#268bd2;
+    class RAW,VAL,DIAG,NORM,LBL,BLD,TRK,EXP,CACHE,API_OV,API_EV,API_GR,API_CH,API_DS,API_AR,API_MD,UI_OV,UI_EV,UI_GR,UI_CH,UI_AR,UI_AN proc;
+    class CTX sync;
 ```
 
 ---
 
-## 6. Authoritative Production Model (`ctu13_ho_c47`)
+## Key Capabilities
 
-TGDetect operates with **exactly one authoritative production model**: the CTU-13 Held-Out Botnet Model (`ctu13_ho_c47`). All metadata, parameters, and evaluations are streamed directly from the authentic checkpoint artifact.
+* **Dataset-Driven Investigation**: Upload real NetFlow (`.binetflow`, `.csv`), host event streams (`.jsonl`), or compressed archives (`.xz`, `.gz`, `.zip`). Once processed, telemetry immediately populates the entire investigation environment.
+* **Temporal Heterogeneous Graphs**: Renders directional communication graphs with force-directed physics simulation, mapping communication volume to node radii and edge weights.
+* **Granular Event Stream**: Filter hundreds of thousands of events by MITRE ATT&CK tactic, relation type, entity type, time window, or string query with sub-millisecond response.
+* **Attack Chain Reconstruction**: Correlates disparate malicious actions into cohesive attack paths using three distinct graph traversal strategies:
+  1. `entity_time`: Spatiotemporal correlation across communicating entities within configurable time windows.
+  2. `chain_id`: Grouping via ground-truth campaign markers or scenario identifiers.
+  3. `causal_parent`: Explicit causality tracing following parent-child process and socket hierarchies.
+* **5-Stage Telemetry Ingestion Sequence**: Visualizes packet inspection progression: detecting package format, inspecting flow structure, validating temporal fields, extracting graph candidates, and confirming schema validity.
+* **6-Stage GNN Pipeline Visualization**: Real-time telemetry pulse animating across the six pipeline stages during Parquet generation.
+* **Dual-Mode Command Center**:
+  - **Night Operations**: Obsidian/carbon surfaces (`#090d12`), restrained cyan signals (`#22d3ee`), and subtle topology background motion.
+  - **Solarized Light Operations**: Warm ivory surface (`#fdf6e3`), matching Solarized base2 sidebar (`#eee8d5`), sandstone borders (`#dfd7c2`), and deep slate typography (`#073642`).
 
-| Parameter / Dimension | Specification | Verification Source |
-|---|---|---|
-| **Model ID** | `ctu13_ho_c47` | `models/checkpoints/ctu13_ho_c47/best_model.pt` |
-| **Model Name** | CTU-13 Held-Out Model (Scenario 47) | Authoritative metadata |
-| **Architecture** | TemporalGNN (GraphSAGE + GRU) | `backend/models/tgnn.py` |
-| **Detection Target** | **Edge** (Per-Flow Classification) | Model configuration |
-| **Input Node Dim (`in_channels`)** | `1` (Scalar node density) | `best_model.pt` tensor shape |
-| **Edge Feature Dim (`edge_dim`)** | `37` (37 NetFlow directional features) | `best_model.pt` `edge_proj` weights |
-| **Hidden Channels** | `64` | `conv1.lin_l.weight` [64, 1] |
-| **GNN Layers** | 2 × `SAGEConv` with BatchNorm & Dropout | PyG 2.3+ specification |
-| **Temporal Recurrence** | 1 × `GRUCell` / `GRU` (hidden=64) | `best_model.pt` `gru` weights |
-| **Output Heads** | `node_classifier`, `snapshot_classifier`, `edge_classifier` | Dynamic linear output heads |
+---
+
+## Temporal Graph Representation
+
+TGDetect constructs a typed, directed multigraph $G = (V, E, \mathcal{T}_V, \mathcal{T}_E)$ where:
+
+### Entities (Nodes $v \in V$)
+Nodes represent distinct entities in the computing and networking environment:
+* `IP`: IPv4 or IPv6 network endpoints (e.g., `ip:147.32.84.165`, `ip:192.168.1.105`).
+* `Host`: Computer endpoints identified by hostname or machine GUID.
+* `Process`: Operating system processes qualified by process GUID and image path.
+* `User`: System accounts or domain security identifiers (SIDs).
+* `File`: Filesystem objects identified by canonical path or cryptographic hash.
+* `Socket`: Local or remote protocol sockets (IP + port pairs).
+
+### Relationships (Edges $e \in E$)
+Edges represent directed interactions occurring at timestamp $t$:
+* `NETWORK_FLOW`: Bidirectional or directional IP-to-IP network conversation carrying 37-dimensional flow features.
+* `CONNECTS_TO`: Network socket establishment initiated by an endpoint process.
+* `EXECUTES`: Parent process spawning a child process binary.
+* `READS` / `WRITES` / `DELETES`: File system I/O initiated by a process.
+* `AUTHENTICATES_TO` / `LOGON`: User credential authentication against a host.
+
+> *Note: Available entity and relationship types vary depending on the active dataset schema (e.g., CTU-13 NetFlow focuses on IP entities and `NETWORK_FLOW` relations, while host telemetry encompasses processes, files, and users).*
+
+---
+
+## Dataset Switching Workflow
+
+Switching the active telemetry partition is seamless and preserves operational continuity:
+
+```
+1. Select Target Partition    --> User selects partition in Datasets view or Top Rail
+2. Trigger Activation        --> POST /api/datasets/{dataset_id}/activate
+3. Synchronize Backend Cache  --> DataCache reloads graph Parquet, stats, and snapshots
+4. Global Context Update      --> DatasetContext increments datasetVersion
+5. Query Invalidation        --> SWR/Hooks detect version change and invalidate caches
+6. Authoritative Refetch      --> All 6 view controllers refetch live dataset data
+7. Synchronized Dashboard     --> Overview, Events, Graph, Chains, & Artifacts refresh
+```
+
+No full browser reload or hard refresh is required.
+
+---
+
+## Research & Model Foundation
+
+TGDetect incorporates a spatiotemporal Graph Neural Network trained to detect botnet activity and Advanced Persistent Threats (APTs) under extreme class imbalance.
+
+### Spatiotemporal Architecture (`TemporalGNN`)
+The neural network integrates spatial graph convolution with temporal recurrence:
+1. **Spatial Representation**: At each discrete time window $t$, a 2-layer **GraphSAGE** (`SAGEConv`) encoder aggregates structural neighborhood information with edge-feature projection:
+   $$\mathbf{h}_v^{(t)} = 	ext{SAGEConv}\left(\left\{\mathbf{h}_u^{(t)} : u \in \mathcal{N}(v)
+ight\}, \mathbf{e}_{uv}^{(t)}
+ight)$$
+2. **Temporal Recurrence**: A **Gated Recurrent Unit (GRU)** tracks entity state dynamics across sequenced temporal snapshots:
+   $$\mathbf{s}_v^{(t)} = 	ext{GRU}\left(\mathbf{h}_v^{(t)}, \mathbf{s}_v^{(t-1)}
+ight)$$
+3. **Edge Classifier Head**: A multi-layer perceptron predicts maliciousness directly on directional communication edges:
+   $$\hat{y}_{uv}^{(t)} = \sigma\left(\mathbf{W}_e \left[\mathbf{s}_u^{(t)} \,\|\, \mathbf{s}_v^{(t)} \,\|\, \mathbf{e}_{uv}^{(t)}
+ight] + b_e
+ight)$$
+
+### Production Checkpoint (`ctu13_ho_c47`)
+TGDetect operates with **exactly one authoritative production model**:
+
+| Model Attribute | Specification | Verification Source |
+| :--- | :--- | :--- |
+| **Model Checkpoint** | `ctu13_ho_c47` | `backend/models/checkpoints/ctu13_ho_c47/best_model.pt` |
+| **Architecture** | Spatiotemporal GNN (GraphSAGE + GRU) | `backend/models/tgnn.py` |
+| **Target Classification** | **Edge** (Per-Flow Threat Classification) | Verified model config |
 | **Trainable Parameters** | **38,787** | Verified via PyTorch `numel()` |
-| **State Dict Elements** | **39,045** (38,787 weights + 258 BN buffers) | Exact state dictionary audit |
+| **Input Node Dimension** | `1` (Scalar node density) | `in_channels=1` |
+| **Edge Feature Dimension** | `37` (NetFlow statistical features) | `edge_dim=37` |
+| **Hidden Embedding Dim** | `64` | `hidden_channels=64` |
 
-```text
-Input Graph Snapshot (x: [N, 1], edge_index: [2, E], edge_attr: [E, 37])
-                               │
-                               ▼
-            ┌────────────────────────────────────────┐
-            │ SAGEConv Layer 1 (64) + EdgeProj(37→64)│
-            │ BatchNorm1d (64) + Dropout (p=0.3)     │
-            └──────────────────┬─────────────────────┘
-                               ▼
-            ┌────────────────────────────────────────┐
-            │ SAGEConv Layer 2 (64) + EdgeProj(64→64)│
-            │ BatchNorm1d (64) + Dropout (p=0.3)     │
-            └──────────────────┬─────────────────────┘
-                               ▼
-            ┌────────────────────────────────────────┐
-            │ GRU Recurrence (64)                    │
-            │ Hidden state tracking across windows   │
-            └──────────────────┬─────────────────────┘
-                               │
-       ┌───────────────────────┼───────────────────────┐
-       ▼                       ▼                       ▼
-┌──────────────────┐  ┌──────────────────┐  ┌───────────────────────┐
-│ Node Classifier  │  │ Snapshot Head    │  │ Edge Classifier (Flow)│
-│ Linear(64 → 1)   │  │ Linear(64 → 1)   │  │ Concatenate [u || v]  │
-│ Compromised IP   │  │ Anomaly Scoring  │  │ Linear(128 → 1)       │
-└──────────────────┘  └──────────────────┘  └───────────────────────┘
-```
+### Held-Out Botnet Family Evaluation
+The model was trained on 4 botnet families (Rbot, fast-flux/Virut, NSIS.ay, Sogou) and evaluated on a **completely unseen family (Donbot / Scenario 47)** to test true zero-day generalization:
+
+| Evaluation Metric | Value | Operational Significance |
+| :--- | :--- | :--- |
+| **ROC-AUC** | **0.9983** | Threshold-free ranking quality across extreme class imbalance |
+| **PR-AUC** | **0.7065** | Precision-Recall trade-off (baseline random prevalence: 0.0087) |
+| **Best-F1** | **0.8388** | Balanced operating point (Precision: 0.7483, Recall: 0.9543) |
+| **Recall @ 1% FPR** | **99.58%** | Fixed alert-budget point (catches 99.6% of threats at ≤1% false alerts) |
+| **Accuracy** | **0.9972** | Overall classification accuracy on 1,068,851 test flows |
+
+> **Authenticity Guardrail**: These evaluation metrics reflect the performance of `ctu13_ho_c47` on the CTU-13 benchmark test capture. They are **never** displayed as statistics of newly uploaded user telemetry.
 
 ---
 
-## 7. Data Pipeline (6-Stage Parquet Normalization)
+## Technology Stack
 
-The TGDetect ingestion pipeline executes streaming 6-stage normalization with strict schema validation:
+### Backend Core
+* **FastAPI**: Asynchronous high-performance RESTful API framework.
+* **PyTorch 2.0+**: Deep learning compute engine with GPU and CPU execution support.
+* **PyTorch Geometric (PyG)**: Graph neural network convolutions (`SAGEConv`).
+* **PyArrow**: High-throughput columnar Parquet read/write serialization.
+* **NetworkX**: In-memory graph algorithms and multi-strategy chain path traversal.
+* **Pydantic v2**: Strict runtime data validation and contract enforcement.
+* **Uvicorn**: Lightning-fast ASGI production web server.
 
-```text
-[ 1. RAW TELEMETRY INGESTION ] (CTU-13 .binetflow, CSV, TSV)
-  ├── Streaming chunk reader handling Gzip / Zip archives without disk extraction
-  └── Pre-flight validator checking column presence, timestamps, and formatting
-                      │
-                      ▼
-[ 2. TGEVENT SCHEMA NORMALIZATION ]
-  ├── Coerces fields into canonical TGEvent schema:
-  │   {event_id, timestamp, source, destination, relation, label, tactics, attrs}
-  └── Generates canonical entity IDs (`ip:147.32.84.165`, `ip:192.168.1.1`)
-                      │
-                      ▼
-[ 3. FEATURE EXTRACTION & ATTACK TRACKING ]
-  ├── Extracts 37-dimensional NetFlow features (duration, protocol, ports, packet asymmetry)
-  └── Multi-strategy AttackTracker assigns causal chains (`chain_id`, `causal_parent`, `entity_time`)
-                      │
-                      ▼
-[ 4. COLUMNAR PARQUET PERSISTENCE ]
-  ├── PyArrow writes optimized, partitioned Apache Parquet artifacts:
-  │   - nodes.parquet (Unique IPs, types, degrees, first/last seen)
-  │   - edges.parquet (Directional flows, 37-dim attributes, binary labels)
-  │   - events.parquet (Normalized event log stream)
-  │   - chains_summary.parquet (Aggregated attack chain progressions)
-  └── graph_stats.json (Fast precomputed summary metrics)
-                      │
-                      ▼
-[ 5. TEMPORAL SNAPSHOT PARTITIONING ]
-  ├── Generates sliding-window snapshots (e.g. 60-second window, 30-second stride)
-  └── Exports PyTorch Geometric `Data` structures with zero temporal leakage
-                      │
-                      ▼
-[ 6. DYNAMIC ACTIVATION & SOC TRIAGE ]
-  └── Live hot-reloading of backend query engine without application restart
-```
+### Frontend Application
+* **Next.js 16 (App Router)**: Modern React framework with Turbopack compilation.
+* **React 19**: Declarative UI component architecture.
+* **TypeScript**: Strict type safety across API clients, models, and hooks.
+* **Tailwind CSS v4**: High-performance CSS engine with dynamic theming.
+* **Recharts**: Responsive SVG charting for temporal density and distribution analysis.
+* **HTML5 Canvas**: Force-directed physics simulation for large-scale graph rendering.
+* **Lucide React**: Clean, consistent technical iconography.
 
 ---
 
-## 8. Backend Implementation
-
-The backend is built with **FastAPI** and **Python 3.10+**, emphasizing async I/O, rigorous typing, and direct integration with ML artifacts:
-
-* `backend/api/main.py`: Application lifespan management, CORS configuration, and router mounting.
-* `backend/api/dependencies.py`: Unified dependency injection, authoritative checkpoint path resolution, active dataset state management, and NumPy-safe JSON serialization.
-* `backend/api/routes/overview.py`: Aggregate statistics for dashboard KPI cards.
-* `backend/api/routes/events.py`: Paginated and filtered event log querying.
-* `backend/api/routes/graph.py`: Node, edge, and topology extraction for visualization.
-* `backend/api/routes/chains.py`: Forensic attack chain reconstruction details.
-* `backend/api/routes/datasets.py`: Telemetry upload, pre-flight validation, pipeline processing, and dataset activation.
-* `backend/api/routes/artifacts.py`: Apache Parquet schema inspection, preview rows, and file download streaming.
-* `backend/api/routes/model.py`: Model checkpoint metadata, configuration, training history, evaluation reports, and test-split predictions.
-* `backend/models/tgnn.py`: Authoritative PyTorch Geometric spatiotemporal neural network implementation.
-
----
-
-## 9. Frontend Implementation
-
-The frontend is a **Next.js 16 (App Router, Turbopack)** single-page operational application:
-
-* **Dual-Theme Design Architecture**:
-  - **Night Operations (Dark Mode)**: Deep obsidian (`#06080d`) and carbon (`#0b0f17`) layered surfaces, restrained cyan/crimson lighting, fine hairline borders, and tactical HUD brackets.
-  - **Solarized Light Operations**: True Solarized Light palette with warm ivory/cream surfaces (`#fdf6e3`, `#fcf7ea`), deep solarized slate/teal text (`#073642`, `#586e75`), and calibrated high-contrast chart palettes.
-* **Atmospheric Background Motion**: Lightweight, GPU-conscious HTML5 canvas rendering drifting graph nodes, subtle temporal connection edges (4-8% opacity), and telemetry pulses. Pauses when hidden or when `prefers-reduced-motion` is active.
-* **Signature TGDetect Loading Experience**: Spatiotemporal graph initialization sequence (`INITIALIZING TELEMETRY` → `CONSTRUCTING TEMPORAL GRAPH` → `ANALYZING EDGE RELATIONSHIPS` → `READY`) with hexagonal geometry, session bypass, and instant transitions.
-* **Temporal Graph Visual Hero**: Interactive spatiotemporal canvas with coordinate HUD crosshairs, radar range rings, benign (emerald) / suspicious (amber) / malicious (crimson) visual hierarchy, edge flow pulses, interactive mouse zoom/pan, reset button, and node detail HUD.
-* **Deep URL Routing**: Two-way synchronization between browser URL parameters (`?page=...`, `?theme=dark|light`, `?sub=...`) and application state, supporting browser Back/Forward navigation and clean page reloads.
-* **Zero Fake Data Architecture**: Purely driven by authentic backend REST responses; displays explicit, honest empty or error states when backend services are unreachable.
-* **Desktop-First Command Center**: Optimized for 1366px, 1440px, and 1920px large displays with high information density, eliminating repetitive card walls in favor of purposeful tactical panels.
-
----
-
-## 10. Key Capabilities
-
-| Capability | Technical Mechanism | Operational Value |
-|---|---|---|
-| **Spatiotemporal Botnet Detection** | GraphSAGE + GRU on 60s temporal snapshots | Detects polymorphic botnets across time windows without static signatures |
-| **Out-of-Distribution Generalization** | Evaluation on completely unseen botnet family (Donbot) | Validates real-world defense against zero-day botnet campaigns |
-| **Operational Alert Budget Tuning** | Calibrated 1.0% False Positive Rate operating point | Yields 99.58% recall while bounding false alerts to an actionable volume |
-| **Attack Chain Forensic Timeline** | DAG causal parent tracing + sliding entity-time proximity | Automatically correlates multi-stage intrusion steps into actionable incident reports |
-| **Columnar Parquet Inspection** | PyArrow schema introspection and streaming HTTP downloads | Enables security engineers to directly audit and export forensic artifacts |
-| **Interactive Temporal Graph** | Canvas renderer with radar grid, glow edges, and node inspector | Empowers SOC analysts to visually trace malicious lateral movement paths |
-
----
-
-## 11. Dataset & Telemetry Pipeline
-
-TGDetect's production model is trained and benchmarked on the **CTU-13 Botnet Benchmark Dataset** (Garcia et al., 2011, Czech Technical University):
-
-* **Capture Format**: Bidirectional NetFlow (`.binetflow`) containing timestamp, duration, protocol, source IP/port, direction, destination IP/port, packets, bytes, and state.
-* **Training Partition**: Trained on 4 distinct botnet families:
-  * Scenario 52: **Rbot**
-  * Scenario 46: **Virut / Fast-Flux**
-  * Scenario 53: **NSIS.ay**
-  * Scenario 48: **Sogou**
-* **Held-Out Test Partition**: Evaluated on **CTU-13 Scenario 47**, which contains an entirely held-out botnet family: **Donbot**.
-* **Zero Target Leakage**: Node features are strictly 1-dimensional (type/density) to prevent target label leakage from degree heuristics; all predictive power stems from communication edge topology and 37 NetFlow flow attributes.
-
----
-
-## 12. Evaluation Methodology
-
-In high-throughput enterprise network monitoring, reporting only raw accuracy or in-distribution validation scores is misleading due to severe class imbalance. TGDetect evaluates model performance across **three standardized operating points**:
-
-1. **Threshold-Free Ranking Quality (ROC-AUC / PR-AUC)**:
-   Measures discrimination capability across all possible decision boundaries. PR-AUC is especially critical given the ~114:1 benign-to-malicious class imbalance.
-2. **Optimal F1 Operating Point ($	au^* \approx 0.0071$)**:
-   The point on the Precision-Recall curve that maximizes the harmonic mean of precision and recall ($F_1 = 0.8388$).
-3. **Operational 1.0% FPR Benchmark ($	au \approx 0.0003$)**:
-   The realistic deployment threshold where false positives are capped at 1% of benign background traffic, achieving **99.58% Recall** (detecting 9,217 of 9,256 attack flows).
-
----
-
-## 13. Verified Evaluation Metrics
-
-All metrics below are verified directly against the authentic test evaluation artifact (`models/checkpoints/ctu13_ho_c47/eval_test/metrics_test.json`):
-
-| Evaluation Metric | Value | Technical Context & Notes |
-|---|---|---|
-| **Held-Out Scenario** | **CTU-13 Scenario 47** | Unseen botnet family (**Donbot**) |
-| **Total Test Flows** | **1,068,851** | Comprehensive held-out capture |
-| **Malicious Flows** | **9,256** | 0.866% of total flows (heavy class imbalance) |
-| **Benign Flows** | **1,059,595** | 99.134% of total flows |
-| **ROC-AUC** | **0.9983** | Near-perfect threshold-free ranking |
-| **PR-AUC** | **0.7065** | High precision-recall trade-off under extreme skew |
-| **Best F1 Score** | **0.8388** | Evaluated at optimal threshold $	au^* = 0.0071$ |
-| **Precision (at Best F1)** | **0.7483** | 74.83% of flagged alerts are true botnet flows |
-| **Recall (at Best F1)** | **0.9543** | 95.43% true positive detection rate |
-| **Accuracy (at Best F1)** | **0.9968** | 99.68% total classification accuracy |
-| **Recall @ 1.0% FPR** | **99.58%** | **9,217 / 9,256 attacks detected** at 1% alert budget |
-| **F1 @ 1.0% FPR** | **0.6341** | Practical SOC deployment operating point |
-
-### Confusion Matrix (Test Split at Best F1 Threshold)
-
-```text
-                     Actual Benign        Actual Malicious
-Predicted Benign     1,056,624 (TN)            423 (FN)
-Predicted Malicious      2,971 (FP)          8,833 (TP)
-```
-
----
-
-## 14. Reproducibility
-
-The entire evaluation pipeline can be reproduced locally or scaled on cloud GPU infrastructure:
-
-```bash
-# Verify evaluation metrics against test split Parquet predictions
-PYTHONPATH=backend python3 -c "
-import json
-with open('backend/models/checkpoints/ctu13_ho_c47/eval_test/metrics_test.json') as f:
-    m = json.load(f)
-print(f"ROC-AUC: {m['roc_auc']:.4f}")
-print(f"PR-AUC:  {m['pr_auc']:.4f}")
-print(f"Best F1: {m['best_f1']:.4f}")
-print(f"Recall @ 1% FPR: {m['recall_at_1pct_fpr']:.4f}")
-"
-```
-
----
-
-## 15. Installation & Prerequisites
+## Installation & Running
 
 ### Prerequisites
-* **Linux / macOS** (Ubuntu 22.04 LTS recommended)
-* **Python 3.10+**
-* **Node.js 18+** and **npm** / **bun**
-* **PyTorch 2.0+** and **PyTorch Geometric (PyG)**
+* **Python**: `3.10` or higher
+* **Node.js**: `18.18` or higher
+* **npm**: `9.0` or higher
 
-### Step 1: Clone Repository
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/Pratham2511/TGDetect-Temporal-Graph.git
 cd TGDetect-Temporal-Graph
 ```
 
-### Step 2: Setup Backend Environment
+### 2. Set Up Python Backend
 ```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements-ml.txt
-pip install -r requirements-graph.txt
-cd ..
+# Create and activate Python virtual environment
+python3 -m venv backend/.venv
+source backend/.venv/bin/activate
+
+# Install graph builder and machine learning dependencies
+pip install -r backend/requirements-graph.txt
+pip install -r backend/requirements-ml.txt
 ```
 
-### Step 3: Setup Frontend Environment
+### 3. Set Up Frontend
 ```bash
 cd frontend
 npm install
 cd ..
 ```
 
----
+### 4. Launch the Platform
 
-## 16. Development Workflow
-
-Run tests and linters before committing:
-
+In terminal 1 (Backend Server):
 ```bash
-# Backend unit & integration tests
-PYTHONPATH=backend backend/.venv/bin/python3 -m unittest discover -s backend/tests
-
-# CTU-13 pipeline verification test
-PYTHONPATH=backend backend/.venv/bin/python3 -m unittest backend/tests/test_ctu13_pipeline.py
-
-# Frontend TypeScript typecheck
-cd frontend && npx tsc --noEmit && cd ..
-
-# Frontend production build
-cd frontend && npm run build && cd ..
-```
-
----
-
-## 17. Running the Backend
-
-Launch the FastAPI backend with hot-reload enabled:
-
-```bash
-cd /path/to/TGDetect-Temporal-Graph
 PYTHONPATH=backend backend/.venv/bin/python3 -m uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-* Backend Health: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
-* Interactive Swagger Docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-* OpenAPI ReDoc: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
-
----
-
-## 18. Running the Frontend
-
-Launch the Next.js development server:
-
+In terminal 2 (Frontend Interface):
 ```bash
 cd frontend
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in any modern browser.
+Open your browser to **`http://localhost:3000`** to access the TGDetect Command Center.
 
 ---
 
-## 19. Production & Deployment Information
-
-### Backend Production Deployment
-Run uvicorn with multi-worker concurrency behind a reverse proxy (e.g., NGINX / Caddy):
-
-```bash
-gunicorn -w 4 -k uvicorn.workers.UvicornWorker api.main:app --bind 0.0.0.0:8000
-```
-
-### Frontend Production Build
-```bash
-cd frontend
-npm run build
-npm run start -p 3000
-```
-
----
-
-## 20. Repository Structure
+## Project Structure
 
 ```text
 TGDetect-Temporal-Graph/
-├── backend/
-│   ├── api/
-│   │   ├── dependencies.py          # Paths, CORS, caching, NumPy-safe serialization
-│   │   ├── main.py                  # FastAPI entrypoint
-│   │   ├── routes/
-│   │   │   ├── analytics.py         # Summary & timeline security analytics
-│   │   │   ├── artifacts.py         # Parquet schema, preview & streaming download
-│   │   │   ├── chains.py            # Attack chains & subgraph endpoints
-│   │   │   ├── datasets.py          # Upload, validation, processing, activation
-│   │   │   ├── events.py            # Filtered TGEvent queries
-│   │   │   ├── graph.py             # Nodes, edges, snapshots
-│   │   │   ├── health.py            # Liveness probe
-│   │   │   └── model.py             # Checkpoints, config, summary, evaluations
-│   │   └── services/
-│   │       ├── artifacts_service.py # PyArrow Parquet inspection
-│   │       ├── dataset_validator.py # Pre-flight validation & diagnostics engine
-│   │       ├── datasets_service.py  # Processing job runner & catalog
-│   │       └── model_service.py     # Authoritative checkpoint inspector
-│   ├── data/
-│   │   ├── processed/               # Active columnar Parquet datasets (ctu13_c47)
-│   │   ├── snapshots/               # Sequenced temporal graph snapshots (.pkl)
-│   │   └── uploads/                 # Staged raw telemetry uploads
-│   ├── graph_builder/
-│   │   ├── builder.py               # StreamingGraphBuilder core engine
-│   │   ├── normalizer.py            # TGEvent normalizer & schema coercion
-│   │   ├── parsers.py               # CTU-13 NetFlow parser
-│   │   └── snapshots.py             # Sliding-window snapshot constructor
-│   ├── models/
-│   │   ├── checkpoints/
-│   │   │   └── ctu13_ho_c47/        # Authoritative CTU-13 model (best_model.pt + eval)
-│   │   ├── dataset.py               # Temporal snapshot PyTorch Dataset
-│   │   └── tgnn.py                  # TemporalGNN (SAGEConv + GRU + EdgeHead)
-│   ├── scripts/
-│   │   ├── smoke_test.py            # End-to-end smoke test
-│   │   └── train_tgnn.py            # CLI training pipeline
-│   └── tests/
-│       ├── test_api_integration.py  # 12 FastAPI integration test cases
-│       └── test_ctu13_pipeline.py   # 12 CTU-13 NetFlow & model verification tests
-├── docs/
-│   ├── API_CONTRACT.md              # Backend REST API contract
-│   └── images/                      # Fresh tactical command center screenshots
-├── frontend/
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── globals.css          # Design token system, cyber-grid, HUD brackets
-│   │   │   ├── layout.tsx           # Dark mode provider & viewport configuration
-│   │   │   └── page.tsx             # Root dashboard shell & responsive navigation
-│   │   ├── components/tgdetect/     # Modular operational page components
-│   │   │   ├── analytics/           # AnalyticsPage
-│   │   │   ├── artifacts/           # ArtifactsPage
-│   │   │   ├── chains/              # ChainsPage
-│   │   │   ├── datasets/            # DatasetsPage
-│   │   │   ├── events/              # EventsPage
-│   │   │   ├── graph/               # GraphPage
-│   │   │   ├── model/               # ModelPage
-│   │   │   ├── overview/            # OverviewPage
-│   │   │   └── shared/              # TemporalGraphViz (HTML5 canvas renderer)
-│   │   └── lib/
-│   │       ├── model-context.tsx    # Single-model authoritative context
-│   │       ├── theme-context.tsx    # Cyberpunk dark/light theme state
-│   │       └── tgdetect/            # API client, hooks, formatters, and types
-│   ├── next.config.ts               # Next.js configuration (devIndicators: false)
-│   ├── package.json
-│   └── tailwind.config.ts
-└── README.md
+├── backend/                        # Authoritative FastAPI backend & GNN core
+│   ├── api/                        # API routes, dependencies, and services
+│   │   ├── routes/                 # Endpoint routers (overview, events, graph, datasets)
+│   │   └── services/               # Data services (graph_service, datasets_service)
+│   ├── data/                       # Local data partitions
+│   │   ├── processed/              # Processed Parquet artifacts (ctu13_c47, etc.)
+│   │   └── uploads/                # Uploaded telemetry staging directory
+│   ├── graph_builder/              # Streaming graph construction pipeline
+│   │   ├── attack_tracker.py       # Multi-strategy attack chain reconstruction
+│   │   ├── builder.py              # StreamingGraphBuilder core engine
+│   │   ├── normalizer.py           # Canonical field normalization
+│   │   └── parsers.py              # CTU-13 NetFlow, Sysmon, & synthetic parsers
+│   ├── models/                     # GNN models and weights
+│   │   ├── checkpoints/            # Model checkpoints (ctu13_ho_c47)
+│   │   └── tgnn.py                 # GraphSAGE + GRU PyTorch module
+│   ├── scripts/                    # Training, evaluation, and snapshot scripts
+│   └── tests/                      # Python unit & integration tests
+├── frontend/                       # Next.js 16 tactical command center
+│   ├── public/                     # Static assets, icons, and branding
+│   └── src/
+│       ├── app/                    # Next.js App Router (layout.tsx, page.tsx, globals.css)
+│       ├── components/tgdetect/    # TGDetect forensic views
+│       │   ├── overview/           # Overview Command Deck
+│       │   ├── graph/              # Temporal Heterogeneous Graph canvas
+│       │   ├── events/             # Granular event investigation table
+│       │   ├── chains/             # Attack chain reconstruction inspector
+│       │   ├── datasets/           # Dataset ingestion & pipeline wizard
+│       │   ├── artifacts/          # Parquet & JSON artifact explorer
+│       │   └── shared/             # Tactical HUD badges, legends, and canvas
+│       └── lib/                    # DatasetContext, hooks, and API client
+└── docs/                           # Documentation, architectural references, & images
+    └── images/                     # Screenshot gallery referenced in README
 ```
 
 ---
 
-## 21. Research Provenance
+## Verification & Testing
 
-* **Origin**: Developed as an advanced spatiotemporal graph neural network detection system for modern cyber threats.
-* **Core Motivation**: Move beyond static NetFlow tuples and manual feature engineering toward relational, temporal graph learning capable of zero-day generalization.
-* **Open Science**: Fully transparent, reproducible methodology with checked-in model checkpoints, Parquet predictions, and evaluation scripts.
+Every commit to TGDetect is verified against four comprehensive automated test suites:
 
----
+```bash
+# 1. Backend Integration Tests (24 tests)
+PYTHONPATH=backend backend/.venv/bin/python3 -m unittest discover -s backend/tests
 
-## 22. Base Paper & Research Grounding
+# 2. CTU-13 Streaming Pipeline Tests (8 tests)
+PYTHONPATH=backend backend/.venv/bin/python3 -m unittest backend/tests/test_ctu13_pipeline.py
 
-TGDetect is grounded in foundational research across graph neural networks, temporal modeling, and botnet evaluation:
+# 3. Frontend TypeScript Typecheck (0 errors)
+cd frontend && npx tsc --noEmit
 
-1. **CTU-13 Benchmark Dataset**:
-   Garcia, S., Grill, M., Stiborek, J., & Zunino, A. (2014). *An empirical analysis of botnet detection using network traffic*. Computers & Security, 45, 100–124.
-2. **GraphSAGE Spatial Aggregation**:
-   Hamilton, W. L., Ying, R., & Leskovec, J. (2017). *Inductive Representation Learning on Large Graphs*. Advances in Neural Information Processing Systems (NeurIPS).
-3. **Gated Recurrent Units for Temporal Sequences**:
-   Cho, K., van Merriënboer, B., Gulcehre, C., Bahdanau, D., Bougares, F., Schwenk, H., & Bengio, Y. (2014). *Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation*. EMNLP.
-
----
-
-## 23. Limitations & Scope Notes
-
-* **Telemetry Scope**: TGDetect's production model is trained on network NetFlow traffic. While the graph schema supports host events (processes, files, users), the authoritative production model is optimized for network communication edges.
-* **Continual Learning**: Rehearsal-based continual learning across sequential botnet families is an active area of ongoing research; the current checkpoint is trained in a multi-scenario joint setting.
-* **Encrypted Payload Inspection**: TGDetect evaluates flow metadata (packet timing, byte counts, port dynamics) and does not require Deep Packet Inspection (DPI) or TLS payload decryption.
+# 4. Next.js Production Build
+cd frontend && npm run build
+```
 
 ---
 
-## 24. License
+## Design Philosophy
 
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+TGDetect is built to feel like an **authentic cybersecurity investigation instrument**, not a prototype dashboard mockup or generic SaaS interface.
+
+* **Information Density**: Maximizes high-signal forensic indicators while preserving visual structure through three containment levels: *Command Surfaces*, *Instrument Panels*, and *Inline Metrics*.
+* **Data Provenance**: Every metric, chart, and node displays its origin—clearly separating live operational telemetry from model benchmark evaluations.
+* **Operational Clarity**: Interfaces use high-contrast monospace typography, technical corner brackets, and restrained signal indicators rather than generic floating card walls.
+* **Purposeful Motion**: Animations are strictly functional—visualizing packet inspection scanning, temporal telemetry pulses, and force-directed graph physics.
+
+---
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
