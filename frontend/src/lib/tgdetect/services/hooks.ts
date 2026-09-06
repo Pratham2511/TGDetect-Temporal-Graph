@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import {
+  analyticsService,
   artifactService,
   chainService,
   datasetService,
@@ -188,4 +189,20 @@ export function useEvaluationRun(split: 'train' | 'val' | 'test', runId?: string
 
 export function usePredictions(split: 'train' | 'val' | 'test', modelId?: string) {
   return useAsync<PredictionRow[]>(() => trainingService.predictions(split, modelId), [split, modelId]);
+}
+
+export function useEventsAnalytics() {
+  return useAsync(() => analyticsService.eventsAnalytics(), []);
+}
+
+export function useGraphAnalytics() {
+  return useAsync(() => analyticsService.graphAnalytics(), []);
+}
+
+export function useAttacksAnalytics() {
+  return useAsync(() => analyticsService.attacksAnalytics(), []);
+}
+
+export function useDatasetsAnalytics() {
+  return useAsync(() => analyticsService.datasetsAnalytics(), []);
 }

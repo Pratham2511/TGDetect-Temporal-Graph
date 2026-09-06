@@ -27,7 +27,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { useGraphStats, useRecentMalicious, useTGNNSummary, useEvaluationRun } from '@/lib/tgdetect/services/hooks';
+import { useGraphStats, useRecentMalicious, useTGNNSummary, useEvaluationRun, useEventsAnalytics } from '@/lib/tgdetect/services/hooks';
 import { useModel } from '@/lib/model-context';
 import { Cpu, ShieldCheck, Target, CheckCircle, Crosshair } from 'lucide-react';
 import {
@@ -354,37 +354,24 @@ function KpiRow({ stats, activeModel }: { stats: GraphStats; activeModel?: any }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Events over time — stacked area chart (UI-derived visualization)
+// Events over time — stacked area chart (driven by real backend timeline)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function EventsOverTimeCard({ stats, className }: { stats: GraphStats; className?: string }) {
+  const { data: analytics, state } = useEventsAnalytics();
+
   const data = useMemo(() => {
-    // UI-only visualization: distribute known totals across the temporal span
-    // in 12 buckets with a malicious peak in the middle 40% of time. The
-    // buckets represent temporal span coverage, not a true per-bucket query
-    // (which the backend would expose via an API call — see Events page for
-    // real per-event filtering).
-    const BUCKETS = 12;
-    const span = Math.max(1, stats.graph.timestamp_span_s);
-    const start = stats.graph.earliest_timestamp;
-    const out: { label: string; benign: number; malicious: number }[] = [];
-    for (let i = 0; i < BUCKETS; i++) {
-      const t0 = start + (i / BUCKETS) * span;
-      const isAttack = i >= 3 && i <= 8;
-      const mal = isAttack
-        ? Math.round(stats.graph.malicious_events * (0.10 + Math.abs(Math.sin(i)) * 0.05))
-        : Math.round(stats.graph.malicious_events * 0.005);
-      const ben = Math.round(
-        (stats.graph.benign_events / BUCKETS) * (0.8 + Math.abs(Math.cos(i * 1.3)) * 0.4),
-      );
-      out.push({
-        label: formatEpochTime(t0).slice(0, 5),
-        benign: ben,
-        malicious: mal,
-      });
+    const rawTimeline = analytics?.timeline;
+    if (rawTimeline && rawTimeline.length > 0) {
+      return rawTimeline.map((b) => ({
+        label: formatEpochTime(b.bucket_start).slice(0, 5),
+        benign: b.benign,
+        malicious: b.malicious,
+      }));
     }
-    return out;
-  }, [stats]);
+    return [];
+  }, [analytics]);
+
   return (
     <div className={`tg-card p-4 ${className ?? ''}`}>
       <SectionTitle right={<div className="flex gap-3 text-[10px]">
@@ -396,32 +383,42 @@ function EventsOverTimeCard({ stats, className }: { stats: GraphStats; className
       <div className="text-[10px] text-[hsl(var(--muted-foreground))] mb-2">
         {formatEpoch(stats.graph.earliest_timestamp)} → {formatEpoch(stats.graph.latest_timestamp)} · {data.length} buckets
       </div>
-      <ResponsiveContainer width="100%" height={220}>
-        <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-          <defs>
-            <linearGradient id="benignGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={CHART_COLORS.green} stopOpacity={0.8} />
-              <stop offset="95%" stopColor={CHART_COLORS.green} stopOpacity={0.05} />
-            </linearGradient>
-            <linearGradient id="malGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={CHART_COLORS.red} stopOpacity={0.8} />
-              <stop offset="95%" stopColor={CHART_COLORS.red} stopOpacity={0.05} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid {...CHART_GRID_STYLE} />
-          <XAxis dataKey="label" {...CHART_AXIS_STYLE} interval="preserveStartEnd" />
-          <YAxis {...CHART_AXIS_STYLE} width={36} />
-          <Tooltip
-            {...CHART_TOOLTIP_STYLE}
-            formatter={(value: any, name: any) => [
-              typeof value === 'number' && !Number.isNaN(value) ? formatInt(value) : '0',
-              name,
-            ]}
-          />
-          <Area type="monotone" dataKey="benign" stackId="1" stroke={CHART_COLORS.green} strokeWidth={1.5} fill="url(#benignGrad)" />
-          <Area type="monotone" dataKey="malicious" stackId="1" stroke={CHART_COLORS.red} strokeWidth={1.5} fill="url(#malGrad)" />
-        </AreaChart>
-      </ResponsiveContainer>
+      {state === 'loading' ? (
+        <div className="h-[220px] flex items-center justify-center text-xs text-[hsl(var(--muted-foreground))]">
+          Loading authentic temporal event stream...
+        </div>
+      ) : data.length === 0 ? (
+        <div className="h-[220px] flex items-center justify-center text-xs text-[hsl(var(--muted-foreground))]">
+          No temporal events recorded for active dataset.
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={220}>
+          <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+            <defs>
+              <linearGradient id="benignGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={CHART_COLORS.green} stopOpacity={0.8} />
+                <stop offset="95%" stopColor={CHART_COLORS.green} stopOpacity={0.05} />
+              </linearGradient>
+              <linearGradient id="malGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={CHART_COLORS.red} stopOpacity={0.8} />
+                <stop offset="95%" stopColor={CHART_COLORS.red} stopOpacity={0.05} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid {...CHART_GRID_STYLE} />
+            <XAxis dataKey="label" {...CHART_AXIS_STYLE} interval="preserveStartEnd" />
+            <YAxis {...CHART_AXIS_STYLE} width={36} />
+            <Tooltip
+              {...CHART_TOOLTIP_STYLE}
+              formatter={(value: any, name: any) => [
+                typeof value === 'number' && !Number.isNaN(value) ? formatInt(value) : '0',
+                name,
+              ]}
+            />
+            <Area type="monotone" dataKey="benign" stackId="1" stroke={CHART_COLORS.green} strokeWidth={1.5} fill="url(#benignGrad)" />
+            <Area type="monotone" dataKey="malicious" stackId="1" stroke={CHART_COLORS.red} strokeWidth={1.5} fill="url(#malGrad)" />
+          </AreaChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }

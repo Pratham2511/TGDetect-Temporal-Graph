@@ -29,8 +29,10 @@ import type {
   TGNNModelConfig,
   TGNNModelSummary,
   TrainingRun,
+  ValidationReport,
 } from '../../types';
 import type {
+  AnalyticsService,
   ArtifactService,
   AttackChainService,
   DatasetService,
@@ -54,7 +56,7 @@ export class ApiDatasetService implements DatasetService {
       estimated_events: d.num_raw_events ?? d.estimated_events ?? null,
       created_at: d.created_at ?? null,
       last_job_id: 'job-mordor-empire-01',
-      tags: ['synthetic_demo', 'mordor_empire'],
+      tags: d.id.startsWith('ctu13') ? ['ctu13', 'netflow'] : ['synthetic_demo', 'mordor_empire'],
     }));
   }
 
@@ -72,11 +74,71 @@ export class ApiDatasetService implements DatasetService {
         estimated_events: d.num_raw_events ?? d.estimated_events ?? null,
         created_at: d.created_at ?? null,
         last_job_id: 'job-mordor-empire-01',
-        tags: ['synthetic_demo', 'mordor_empire'],
+        tags: d.id.startsWith('ctu13') ? ['ctu13', 'netflow'] : ['synthetic_demo', 'mordor_empire'],
       };
     } catch {
       return null;
     }
+  }
+
+  async upload(file: File, format?: string): Promise<ValidationReport> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (format && format !== 'auto') {
+      formData.append('format', format);
+    }
+    return api.upload<ValidationReport>('/api/datasets/upload', formData);
+  }
+
+  async validate(filePath: string, format?: string): Promise<ValidationReport> {
+    return api.post<ValidationReport>('/api/datasets/validate', {
+      file_path: filePath,
+      format: format && format !== 'auto' ? format : undefined,
+    });
+  }
+
+  async process(datasetId: string, format: string, sourcePath: string, config?: any): Promise<ProcessingJob> {
+    const raw = await api.post<any>('/api/datasets/process', {
+      dataset_id: datasetId,
+      format,
+      source_path: sourcePath,
+      config,
+    });
+    const cfg = raw.config || {};
+    return {
+      id: raw.id,
+      dataset_id: raw.dataset_id,
+      dataset_name: raw.dataset_name || raw.dataset_id,
+      config: {
+        kind: (cfg.dataset as DatasetKind) || (format as DatasetKind) || 'user_uploaded',
+        source_tag: datasetId,
+        label_mode: 'parser',
+        force_label: null,
+        label_window_s: 300,
+        no_label_propagation: false,
+        strategies: cfg.strategies || ['chain_id', 'causal_parent', 'entity_time'],
+        chain_window_s: 86400,
+        chain_max_hops: 2,
+        max_subgraphs: 100,
+        chunk_size: 50000,
+        limit: null,
+        use_networkx: false,
+      },
+      state: (raw.status === 'completed' ? 'completed' : raw.status) as any,
+      progress: (raw.progress_pct ?? 100) / 100,
+      current_step: raw.description || `Processing ${datasetId}`,
+      output_dir: cfg.out_dir || `data/processed/${datasetId}`,
+      graphs_dir: 'data/graphs',
+      started_at: raw.started_at ?? null,
+      ended_at: raw.completed_at ?? null,
+      elapsed_s: raw.elapsed_s ?? null,
+      stats_path: `data/processed/${datasetId}/graph_stats.json`,
+      error: raw.error ?? null,
+    };
+  }
+
+  async activate(datasetId: string): Promise<{ status: string; active_dataset: string }> {
+    return api.post<{ status: string; active_dataset: string }>(`/api/datasets/${encodeURIComponent(datasetId)}/activate`);
   }
 }
 
@@ -119,9 +181,10 @@ export class ApiEventService implements EventService {
   }
 
   async recentMalicious(limit: number): Promise<TGEvent[]> {
-    return api.get<TGEvent[]>('/api/events/recent-malicious', {
-      params: { limit },
+    const res = await api.get<{ items: TGEvent[]; total: number }>('/api/events', {
+      params: { labels: '1', limit },
     });
+    return res.items;
   }
 }
 
@@ -135,33 +198,21 @@ export class ApiGraphService implements GraphService {
   }
 
   async stats(): Promise<GraphStats> {
-    const s = await api.get<any>('/api/graph/stats');
-    if (s && s.normalization) {
-      const accepted = s.normalization.accepted ?? 0;
-      const rejected = s.normalization.rejected ?? 0;
-      if (s.normalization.seen == null) {
-        s.normalization.seen = accepted + rejected;
-      }
-    }
-    if (s && s.labeling) {
-      const total = s.graph?.total_events ?? s.labeling.total_events ?? 0;
-      const mal = s.labeling.malicious_events ?? s.graph?.malicious_events ?? 0;
-      if (s.labeling.benign_events == null) {
-        s.labeling.benign_events = s.graph?.benign_events ?? Math.max(0, total - mal);
-      }
-      if (s.labeling.total_events == null) {
-        s.labeling.total_events = total;
-      }
-    }
-    return s as GraphStats;
+    return api.get<GraphStats>('/api/graph/stats');
   }
 }
 
 export class ApiAttackChainService implements AttackChainService {
   async list(filter?: ChainFilter): Promise<AttackChainSummary[]> {
     const params: Record<string, string | number | boolean | null | undefined> = {};
-    if (filter?.strategies && filter.strategies.length > 0) {
-      params.strategy = filter.strategies[0];
+    if (filter) {
+      if (filter.strategies && filter.strategies.length > 0) {
+        params.strategy = filter.strategies[0];
+      }
+      if (filter.min_events !== undefined) params.min_events = filter.min_events;
+      if (filter.max_events !== undefined) params.max_events = filter.max_events;
+      if (filter.min_duration_s !== undefined) params.min_duration = filter.min_duration_s;
+      if (filter.max_duration_s !== undefined) params.max_duration = filter.max_duration_s;
     }
     return api.get<AttackChainSummary[]>('/api/chains', { params });
   }
@@ -189,7 +240,18 @@ export class ApiAttackChainService implements AttackChainService {
   }
 
   async allStrategies(): Promise<Record<ChainStrategy, AttackChainSummary[]>> {
-    return api.get<Record<ChainStrategy, AttackChainSummary[]>>('/api/chains/strategies');
+    const all = await api.get<AttackChainSummary[]>('/api/chains');
+    const out: Record<ChainStrategy, AttackChainSummary[]> = {
+      chain_id: [],
+      causal_parent: [],
+      entity_time: [],
+    };
+    for (const c of all) {
+      if (out[c.strategy]) {
+        out[c.strategy].push(c);
+      }
+    }
+    return out;
   }
 }
 
@@ -411,5 +473,41 @@ export class ApiProcessingService implements ProcessingService {
     } catch {
       return null;
     }
+  }
+}
+
+export class ApiAnalyticsService implements AnalyticsService {
+  async eventsAnalytics(): Promise<{
+    timeline: Array<{
+      bucket_start: number;
+      bucket_end: number;
+      total: number;
+      benign: number;
+      malicious: number;
+    }>;
+    tactics: Record<string, number>;
+    source_tags: Record<string, number>;
+  }> {
+    return api.get('/api/analytics/events');
+  }
+
+  async graphAnalytics(): Promise<{
+    node_types: Record<string, number>;
+    relations: Record<string, number>;
+    degree_distribution: Array<{ range: string; count: number }>;
+  }> {
+    return api.get('/api/analytics/graph');
+  }
+
+  async attacksAnalytics(): Promise<{
+    strategies: Record<string, number>;
+    length_histogram: Record<string, number>;
+    durations: Array<{ chain_id: string; strategy: string; duration_s: number }>;
+  }> {
+    return api.get('/api/analytics/attacks');
+  }
+
+  async datasetsAnalytics(): Promise<any> {
+    return api.get('/api/analytics/datasets');
   }
 }

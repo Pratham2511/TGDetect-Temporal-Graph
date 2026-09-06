@@ -31,6 +31,7 @@ def sanitize_json(val: Any) -> Any:
     return str(val)
 
 class DataCache:
+    _active_dataset_id: str = "mordor_empire"
     _events_df: Optional[pd.DataFrame] = None
     _nodes_df: Optional[pd.DataFrame] = None
     _edges_df: Optional[pd.DataFrame] = None
@@ -38,9 +39,32 @@ class DataCache:
     _graph_stats: Optional[Dict[str, Any]] = None
 
     @classmethod
+    def get_active_dataset_id(cls) -> str:
+        return cls._active_dataset_id
+
+    @classmethod
+    def set_active_dataset(cls, dataset_id: str) -> None:
+        if dataset_id and dataset_id != cls._active_dataset_id:
+            cls._active_dataset_id = dataset_id
+            cls.clear_cache()
+
+    @classmethod
+    def clear_cache(cls) -> None:
+        cls._events_df = None
+        cls._nodes_df = None
+        cls._edges_df = None
+        cls._chains_df = None
+        cls._graph_stats = None
+
+    @classmethod
+    def get_dataset_dir(cls, dataset_id: Optional[str] = None) -> Path:
+        target = dataset_id or cls._active_dataset_id
+        return BASE_DIR / "data" / "processed" / target
+
+    @classmethod
     def get_events_df(cls) -> pd.DataFrame:
         if cls._events_df is None:
-            path = DATA_PROCESSED_DIR / "events.parquet"
+            path = cls.get_dataset_dir() / "events.parquet"
             if path.exists():
                 df = pd.read_parquet(path)
                 # Parse attrs JSON string into dict
@@ -62,7 +86,7 @@ class DataCache:
     @classmethod
     def get_nodes_df(cls) -> pd.DataFrame:
         if cls._nodes_df is None:
-            path = DATA_PROCESSED_DIR / "nodes.parquet"
+            path = cls.get_dataset_dir() / "nodes.parquet"
             if path.exists():
                 cls._nodes_df = pd.read_parquet(path)
             else:
@@ -72,7 +96,7 @@ class DataCache:
     @classmethod
     def get_edges_df(cls) -> pd.DataFrame:
         if cls._edges_df is None:
-            path = DATA_PROCESSED_DIR / "edges.parquet"
+            path = cls.get_dataset_dir() / "edges.parquet"
             if path.exists():
                 cls._edges_df = pd.read_parquet(path)
             else:
@@ -82,7 +106,7 @@ class DataCache:
     @classmethod
     def get_chains_df(cls) -> pd.DataFrame:
         if cls._chains_df is None:
-            path = DATA_PROCESSED_DIR / "chains_summary.parquet"
+            path = cls.get_dataset_dir() / "chains_summary.parquet"
             if path.exists():
                 df = pd.read_parquet(path)
                 for col in ["tactic_sequence", "stage_sequence", "relation_sequence", "nodes", "event_ids"]:
@@ -96,7 +120,7 @@ class DataCache:
     @classmethod
     def get_graph_stats(cls) -> Dict[str, Any]:
         if cls._graph_stats is None:
-            path = DATA_PROCESSED_DIR / "graph_stats.json"
+            path = cls.get_dataset_dir() / "graph_stats.json"
             if path.exists():
                 with open(path, "r", encoding="utf-8") as f:
                     cls._graph_stats = json.load(f)

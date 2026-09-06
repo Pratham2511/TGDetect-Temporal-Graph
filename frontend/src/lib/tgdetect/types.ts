@@ -12,7 +12,7 @@
  *   - `scripts/evaluate_tgnn.py`    (EvaluationMetrics, Prediction)
  *
  * These types MUST stay 1:1 with the backend so that swapping
- * the mock service for a real API client requires zero UI changes.
+ * the client connects directly to the FastAPI backend with zero mock fabrication.
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -262,7 +262,7 @@ export interface MergedGraphStats {
 
 /** Frontend domain representation of an ingestible raw dataset. */
 export interface Dataset {
-  /** Stable id (frontend-generated for mock; future API will provide). */
+  /** Stable identifier for processing job. */
   id: string;
   name: string;
   kind: DatasetKind;
@@ -666,4 +666,46 @@ export interface AsyncResult<T> {
   state: LoadState;
   data: T | null;
   error: string | null;
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dataset Upload & Validation
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ValidationDiagnosticError {
+  line: number;
+  column?: string | null;
+  message: string;
+}
+
+export interface ValidationDiagnosticWarning {
+  line?: number | null;
+  message: string;
+}
+
+export interface ValidationReport {
+  status: 'valid' | 'valid_with_warnings' | 'invalid';
+  format: string;
+  format_label?: string;
+  detected_format: string;
+  total_rows_inspected: number;
+  valid_rows: number;
+  invalid_rows: number;
+  error_count: number;
+  warning_count: number;
+  errors: ValidationDiagnosticError[];
+  warnings: ValidationDiagnosticWarning[];
+  columns_detected: string[];
+  missing_required_columns: string[];
+  sample_events: any[];
+  saved_path?: string;
+  filename?: string;
+  file_info?: {
+    filename: string;
+    size_bytes: number;
+    readable: boolean;
+    archive_type?: string | null;
+    members?: string[];
+  };
 }

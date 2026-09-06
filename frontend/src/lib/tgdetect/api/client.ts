@@ -29,7 +29,7 @@ export async function apiClient<T>(
   path: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { timeoutMs = 10000, params, ...init } = options;
+  const { timeoutMs = 30000, params, ...init } = options;
 
   let url = path.startsWith('http') ? path : `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
@@ -104,14 +104,24 @@ export const api = {
     return apiClient<T>(path, { ...options, method: 'GET' });
   },
   post<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T> {
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
     return apiClient<T>(path, {
       ...options,
       method: 'POST',
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
+      body: isFormData ? (body as FormData) : body !== undefined ? JSON.stringify(body) : undefined,
+      headers: isFormData
+        ? options?.headers
+        : {
+            'Content-Type': 'application/json',
+            ...options?.headers,
+          },
+    });
+  },
+  upload<T>(path: string, formData: FormData, options?: RequestOptions): Promise<T> {
+    return apiClient<T>(path, {
+      ...options,
+      method: 'POST',
+      body: formData,
     });
   },
   checkHealth(): Promise<{ status: string; service: string; version: string; backend: string }> {
