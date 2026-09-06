@@ -97,9 +97,16 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
   const [healthError, setHealthError] = useState<string | null>(null);
   const [isLoadingModels, setIsLoadingModels] = useState<boolean>(false);
 
-  // Load saved model preference from localStorage on client mount
+  // Load saved model preference from URL searchParams or localStorage on client mount
   useEffect(() => {
     try {
+      if (typeof window !== 'undefined') {
+        const urlModel = new URLSearchParams(window.location.search).get('model');
+        if (urlModel && (urlModel === 'mordor_mixed' || urlModel === 'ctu13_ho_c47')) {
+          setActiveModelIdState(urlModel);
+          return;
+        }
+      }
       const saved = localStorage.getItem('tgdetect_active_model');
       if (saved && (saved === 'mordor_mixed' || saved === 'ctu13_ho_c47')) {
         setActiveModelIdState(saved);

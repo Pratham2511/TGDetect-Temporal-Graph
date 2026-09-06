@@ -249,7 +249,7 @@ export const CHAIN_STRATEGY_META: Record<ChainStrategy, ChainStrategyMeta> = {
 // Dataset kinds (graph_builder/parsers.py PARSERS registry)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const DATASET_KINDS: DatasetKind[] = ['synthetic', 'mordor', 'synthetic_demo'];
+export const DATASET_KINDS: DatasetKind[] = ['ctu13', 'synthetic', 'mordor', 'synthetic_demo'];
 
 export interface DatasetKindMeta {
   kind: DatasetKind;
@@ -261,6 +261,14 @@ export interface DatasetKindMeta {
 }
 
 export const DATASET_KIND_META: Record<DatasetKind, DatasetKindMeta> = {
+  ctu13: {
+    kind: 'ctu13',
+    label: 'CTU-13 NetFlow',
+    description: 'CTU-13 botnet capture dataset formatted as unidirectional NetFlow records',
+    supports_metadata_dir: false,
+    raw_format: 'CSV / TSV / NetFlow',
+    example_input: 'capture20110818.binetflow',
+  },
   synthetic: {
     kind: 'synthetic',
     label: 'Synthetic JSONL',

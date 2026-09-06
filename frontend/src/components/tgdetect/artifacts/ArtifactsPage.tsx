@@ -15,6 +15,7 @@ import {
   formatInt,
 } from '@/lib/tgdetect/formatters';
 import type { ArtifactKind, ArtifactMeta } from '@/lib/tgdetect/types';
+import { API_BASE_URL } from '@/lib/tgdetect/api/client';
 
 const ARTIFACT_LABELS: Record<ArtifactKind, string> = {
   events: 'events.parquet',
@@ -55,9 +56,11 @@ function ArtifactsPageInner({ initialJobId }: { initialJobId?: string | null }) 
 
   const artifactsRes = useArtifacts(effectiveJobId);
 
+  const effectiveKind = selectedKind ?? artifactsRes.data?.[0]?.kind ?? null;
+
   const selectedArtifact = useMemo(() => {
-    return artifactsRes.data?.find((a) => a.kind === selectedKind) ?? null;
-  }, [artifactsRes.data, selectedKind]);
+    return artifactsRes.data?.find((a) => a.kind === effectiveKind) ?? null;
+  }, [artifactsRes.data, effectiveKind]);
 
   return (
     <div className="space-y-4">
@@ -100,7 +103,7 @@ function ArtifactsPageInner({ initialJobId }: { initialJobId?: string | null }) 
                     type="button"
                     onClick={() => setSelectedKind(a.kind)}
                     className={`w-full text-left p-2 rounded border ${
-                      selectedKind === a.kind
+                      effectiveKind === a.kind
                         ? 'border-[hsl(var(--primary)/0.6)] bg-[hsl(var(--info-bg))]'
                         : 'border-[hsl(var(--border))] bg-[hsl(var(--card))] hover:border-[hsl(var(--primary)/0.35)]'
                     }`}
@@ -154,9 +157,13 @@ function ArtifactDetail({ artifact }: { artifact: ArtifactMeta | null }) {
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-[hsl(var(--border))]">{artifact.format}</span>
             <button
               type="button"
-              onClick={() => {/* placeholder for download — backend not connected */}}
-              className="px-2 py-1 text-[10px] font-mono border border-[hsl(var(--primary)/0.4)] text-[hsl(var(--primary))] rounded flex items-center gap-1 hover:bg-[hsl(var(--info-bg))]"
-              title="Backend not connected — placeholder"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.open(`${API_BASE_URL}/api/artifacts/${encodeURIComponent(artifact.kind)}/download`, '_blank');
+                }
+              }}
+              className="px-2 py-1 text-[10px] font-mono border border-[hsl(var(--primary)/0.4)] text-[hsl(var(--primary))] rounded flex items-center gap-1 hover:bg-[hsl(var(--info-bg))] transition-colors cursor-pointer"
+              title={`Download ${artifact.kind} file`}
             >
               <Download className="size-3" />
               export

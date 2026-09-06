@@ -9,6 +9,14 @@ router = APIRouter(tags=["model"])
 def list_models():
     return ModelService.list_models()
 
+@router.get("/models/{model_id}")
+def get_model(model_id: str):
+    models = ModelService.list_models()
+    for m in models:
+        if m.get("id") == model_id:
+            return m
+    raise HTTPException(status_code=404, detail=f"Model '{model_id}' not found")
+
 @router.get("/model/config")
 def get_model_config(
     model_id: Optional[str] = Query(None, description="Optional model identifier (mordor_mixed | ctu13_ho_c47)"),

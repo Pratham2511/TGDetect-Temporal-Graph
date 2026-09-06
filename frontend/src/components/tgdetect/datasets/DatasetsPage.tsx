@@ -49,25 +49,15 @@ export function DatasetsPage({ onNavigate }: { onNavigate?: (page: string, ctx?:
   const datasetsRes = useDatasets();
   const jobsRes = useJobs();
   const [selectedDatasetId, setSelectedDatasetId] = useState<string | null>('mordor_empire');
-  const [showUploadWizard, setShowUploadWizard] = useState(false);
+  const [showUploadWizard, setShowUploadWizard] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('upload') === 'true';
+    }
+    return false;
+  });
 
   const allDatasets = useMemo(() => {
-    const list = [...(datasetsRes.data ?? [])];
-    if (!list.some((d) => d.id === 'ctu13_c47')) {
-      list.push({
-        id: 'ctu13_c47',
-        name: 'CTU-13 Scenario 47 (NetFlow)',
-        kind: 'ctu13' as DatasetKind,
-        source: 'backend/models/checkpoints/ctu13_ho_c47',
-        metadata_dir: null,
-        size_bytes: 3006285,
-        estimated_events: 1068851,
-        created_at: 1788686113,
-        last_job_id: 'job-ctu13-ho-c47-01',
-        tags: ['ctu13', 'held_out', 'benchmark'],
-      });
-    }
-    return list;
+    return datasetsRes.data ?? [];
   }, [datasetsRes.data]);
 
   return (

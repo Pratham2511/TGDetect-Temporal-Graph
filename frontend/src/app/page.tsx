@@ -76,11 +76,39 @@ export default function Home() {
   } = useModel();
   const statsRes = useGraphStats();
 
+  // Initialize from URL searchParams or hash on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const p = params.get('page') || window.location.hash.replace('#', '');
+    if (p && NAV_ITEMS.some((item) => item.id === p)) {
+      setActivePage(p);
+    }
+  }, []);
+
+  // Listen to popstate (browser back/forward)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const p = params.get('page') || window.location.hash.replace('#', '');
+      if (p && NAV_ITEMS.some((item) => item.id === p)) {
+        setActivePage(p);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const navigate = useCallback((page: string, ctx?: Record<string, unknown>) => {
     setActivePage(page);
     setPageCtx((ctx as PageCtx) ?? {});
-    // Scroll to top on navigation
-    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('page', page);
+      window.history.pushState({}, '', url.toString());
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, []);
 
   const activeItem = useMemo(() => NAV_ITEMS.find((i) => i.id === activePage) ?? NAV_ITEMS[0], [activePage]);

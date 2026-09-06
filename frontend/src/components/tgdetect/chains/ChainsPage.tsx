@@ -64,6 +64,8 @@ export function ChainsPage({ initialChainId, onNavigate }: ChainsPageProps) {
     });
   }, [chainsRes.data, strategyFilter, search]);
 
+  const effectiveChainId = selectedChainId ?? filtered[0]?.chain_id ?? null;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
       {/* Left: chain list */}
@@ -110,7 +112,7 @@ export function ChainsPage({ initialChainId, onNavigate }: ChainsPageProps) {
             <div className="divide-y divide-[hsl(var(--border)/0.5)]">
               {filtered.map((c) => {
                 const severity = chainSeverity(c);
-                const isSelected = c.chain_id === selectedChainId;
+                const isSelected = c.chain_id === effectiveChainId;
                 return (
                   <button
                     key={c.chain_id}
@@ -143,7 +145,7 @@ export function ChainsPage({ initialChainId, onNavigate }: ChainsPageProps) {
       {/* Right: detail */}
       <div className="lg:col-span-2">
         <ChainDetailPanel
-          chainId={selectedChainId}
+          chainId={effectiveChainId}
           tab={tab}
           onTabChange={setTab}
           onNavigate={onNavigate}

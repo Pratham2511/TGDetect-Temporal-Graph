@@ -58,7 +58,16 @@ import type { EvalSplit } from '@/lib/tgdetect/types';
 type ModelTab = 'architecture' | 'snapshots' | 'training' | 'evaluation';
 
 export function ModelPage() {
-  const [tab, setTab] = useState<ModelTab>('architecture');
+  const [tab, setTab] = useState<ModelTab>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const sub = params.get('sub') || window.location.hash.replace('#', '');
+      if (sub === 'architecture' || sub === 'snapshots' || sub === 'training' || sub === 'evaluation') {
+        return sub as ModelTab;
+      }
+    }
+    return 'architecture';
+  });
   const { activeModel, activeModelId, setActiveModelId, models } = useModel();
 
   return (
@@ -178,12 +187,19 @@ function ArchitecturePanel({ modelId }: { modelId: string }) {
             <FlowArrow />
             <FlowNode index={3} label="GRU (over time)" sub={`${cfg.num_rnn_layers} layer(s) · input=${cfg.hidden_channels} → hidden=${cfg.out_channels}`} color="teal" />
             <FlowArrow />
-            <div className="grid grid-cols-2 gap-2">
-              <FlowNode index={4} label="Node classifier" sub={`Linear(${cfg.out_channels} → 1)`} color="danger" />
-              <FlowNode index={5} label="Snapshot classifier" sub={`Linear(${cfg.out_channels} → 1)`} color="amber" />
+            <div className={`grid ${summary.output_heads && summary.output_heads.length > 2 ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
+              {(summary.output_heads ?? ['node_classifier', 'snapshot_classifier']).map((head: string, idx: number) => (
+                <FlowNode
+                  key={head}
+                  index={4 + idx}
+                  label={head.replace(/_/g, ' ')}
+                  sub={head === 'edge_classifier' ? `Linear(${cfg.out_channels * 2} → 1)` : `Linear(${cfg.out_channels} → 1)`}
+                  color={head === 'node_classifier' ? 'danger' : head === 'snapshot_classifier' ? 'amber' : 'purple'}
+                />
+              ))}
             </div>
             <div className="text-[10px] text-[hsl(var(--muted-foreground))] mt-2">
-              Output: <span className="mono">node_logits [N,1]</span> + <span className="mono">snapshot_logit [1]</span> · padded to last snapshot's node set
+              Output: <span className="mono">{(summary.output_heads ?? ['node_classifier', 'snapshot_classifier']).map((h: string) => `${h.replace('_classifier', '')}_logits`).join(' + ')}</span> · dynamic head projection
             </div>
           </div>
         </div>
@@ -201,10 +217,10 @@ function ArchitecturePanel({ modelId }: { modelId: string }) {
             <Hyperparam label="dropout" value={cfg.dropout} />
             <Hyperparam label="node_types" value={cfg.node_types ?? '—'} hint="8 backend types" />
             <Hyperparam label="num_relations" value={cfg.num_relations ?? '—'} hint="14 backend relations" />
-            <Hyperparam label="total_params" value={formatInt(summary.total_parameters ?? 36098)} hint="36,098 model parameters" />
-            <Hyperparam label="trainable_params" value={formatInt(summary.trainable_parameters ?? 36098)} hint="36,098 trainable weights & biases" />
-            <Hyperparam label="bn_buffers" value={summary.bn_running_stats ?? 258} hint="258 BatchNorm running-stat buffers" />
-            <Hyperparam label="state_dict_elems" value={formatInt(summary.total_state_dict_elements ?? 36356)} hint="36,356 total state_dict elements" />
+            <Hyperparam label="total_params" value={formatInt(summary.total_parameters ?? 38787)} hint={`${formatInt(summary.total_parameters ?? 38787)} total parameters`} />
+            <Hyperparam label="trainable_params" value={formatInt(summary.trainable_parameters ?? 38787)} hint={`${formatInt(summary.trainable_parameters ?? 38787)} trainable weights & biases`} />
+            <Hyperparam label="bn_buffers" value={summary.bn_running_stats ?? 258} hint="BatchNorm running-stat buffers" />
+            <Hyperparam label="state_dict_elems" value={formatInt(summary.total_state_dict_elements ?? 39045)} hint={`${formatInt(summary.total_state_dict_elements ?? 39045)} state_dict elements`} />
           </div>
         </div>
       </div>
@@ -385,9 +401,9 @@ function TrainingPanel({ modelId }: { modelId: string }) {
                 name,
               ]}
             />
-            <Line type="monotone" dataKey="train_loss" stroke={CHART_COLORS.cyan} strokeWidth={1.5} dot={false} />
-            <Line type="monotone" dataKey="loss" stroke={CHART_COLORS.violet} strokeWidth={1.5} dot={false} />
-            <Line type="monotone" dataKey="threshold" stroke={CHART_COLORS.red} strokeWidth={1.5} dot={false} />
+            <Line isAnimationActive={false} type="monotone" dataKey="train_loss" stroke={CHART_COLORS.cyan} strokeWidth={1.5} dot={false} />
+            <Line isAnimationActive={false} type="monotone" dataKey="loss" stroke={CHART_COLORS.violet} strokeWidth={1.5} dot={false} />
+            <Line isAnimationActive={false} type="monotone" dataKey="threshold" stroke={CHART_COLORS.red} strokeWidth={1.5} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -407,8 +423,8 @@ function TrainingPanel({ modelId }: { modelId: string }) {
                   name,
                 ]}
               />
-              <Line type="monotone" dataKey="auc_roc" stroke={CHART_COLORS.cyan} strokeWidth={1.5} dot={false} />
-              <Line type="monotone" dataKey="auc_pr" stroke={CHART_COLORS.green} strokeWidth={1.5} dot={false} />
+              <Line isAnimationActive={false} type="monotone" dataKey="auc_roc" stroke={CHART_COLORS.cyan} strokeWidth={1.5} dot={false} />
+              <Line isAnimationActive={false} type="monotone" dataKey="auc_pr" stroke={CHART_COLORS.green} strokeWidth={1.5} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -426,9 +442,9 @@ function TrainingPanel({ modelId }: { modelId: string }) {
                   name,
                 ]}
               />
-              <Line type="monotone" dataKey="precision" stroke={CHART_COLORS.amber} strokeWidth={1.5} dot={false} />
-              <Line type="monotone" dataKey="recall" stroke={CHART_COLORS.teal} strokeWidth={1.5} dot={false} />
-              <Line type="monotone" dataKey="f1" stroke={CHART_COLORS.violet} strokeWidth={2} dot={false} />
+              <Line isAnimationActive={false} type="monotone" dataKey="precision" stroke={CHART_COLORS.amber} strokeWidth={1.5} dot={false} />
+              <Line isAnimationActive={false} type="monotone" dataKey="recall" stroke={CHART_COLORS.teal} strokeWidth={1.5} dot={false} />
+              <Line isAnimationActive={false} type="monotone" dataKey="f1" stroke={CHART_COLORS.violet} strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>

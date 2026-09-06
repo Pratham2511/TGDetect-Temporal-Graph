@@ -295,14 +295,27 @@ function DatasetAndModelSummaryRow({ activeModel, summaryData, stats }: { active
 // ─────────────────────────────────────────────────────────────────────────────
 
 function PipelineHeader({ stats, activeModel }: { stats: GraphStats; activeModel?: any }) {
+  const isCtu13 = stats.dataset.toLowerCase().includes('ctu13');
+  const isMordor = stats.dataset.toLowerCase().includes('mordor');
+  const badgeLabel = isCtu13
+    ? 'CTU-13 NetFlow Benchmark'
+    : isMordor
+    ? 'Mordor Cyber Range Telemetry'
+    : 'Normalized Telemetry Stream';
+  const badgeClass = isCtu13
+    ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-400'
+    : isMordor
+    ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400'
+    : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400';
+
   return (
     <div className="tg-card p-4">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <SectionTitle>Backend Pipeline · {stats.dataset}</SectionTitle>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning-bg))] text-[hsl(var(--warning))] font-semibold">
-              Synthetic Demonstration
+            <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-semibold ${badgeClass}`}>
+              {badgeLabel}
             </span>
           </div>
           <div className="mono text-xs text-[hsl(var(--muted-foreground))]" title={stats.input}>
@@ -414,8 +427,8 @@ function EventsOverTimeCard({ stats, className }: { stats: GraphStats; className
                 name,
               ]}
             />
-            <Area type="monotone" dataKey="benign" stackId="1" stroke={CHART_COLORS.green} strokeWidth={1.5} fill="url(#benignGrad)" />
-            <Area type="monotone" dataKey="malicious" stackId="1" stroke={CHART_COLORS.red} strokeWidth={1.5} fill="url(#malGrad)" />
+            <Area type="monotone" dataKey="benign" stackId="1" stroke={CHART_COLORS.green} strokeWidth={1.5} fill="url(#benignGrad)" isAnimationActive={false} />
+            <Area type="monotone" dataKey="malicious" stackId="1" stroke={CHART_COLORS.red} strokeWidth={1.5} fill="url(#malGrad)" isAnimationActive={false} />
           </AreaChart>
         </ResponsiveContainer>
       )}
@@ -443,7 +456,7 @@ function NodeTypeDistributionCard({ stats }: { stats: GraphStats }) {
       <div className="text-[10px] text-[hsl(var(--muted-foreground))] mb-2">{formatInt(stats.graph.total_nodes)} unique nodes · 8 backend types</div>
       <ResponsiveContainer width="100%" height={180}>
         <PieChart>
-          <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} innerRadius={35}>
+          <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} innerRadius={35} isAnimationActive={false}>
             {data.map((entry, i) => (
               <Cell key={i} fill={entry.color} stroke="hsl(var(--card))" strokeWidth={2} />
             ))}

@@ -53,7 +53,7 @@ export type LabelMode = 'parser' | 'force' | 'heuristic';
 export type ChainStrategy = 'chain_id' | 'causal_parent' | 'entity_time';
 
 /** Backend `parsers.PARSERS` registry keys. Only these two exist. */
-export type DatasetKind = 'synthetic' | 'mordor' | 'synthetic_demo';
+export type DatasetKind = 'ctu13' | 'synthetic' | 'mordor' | 'synthetic_demo';
 
 /** CLI `--split-mode` for `train_tgnn.py`. */
 export type SplitMode = 'time' | 'block';

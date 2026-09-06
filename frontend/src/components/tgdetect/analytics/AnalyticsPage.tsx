@@ -48,7 +48,16 @@ import type { ChainStrategy } from '@/lib/tgdetect/types';
 type AnalyticsTab = 'events' | 'graph' | 'attacks' | 'datasets';
 
 export function AnalyticsPage() {
-  const [tab, setTab] = useState<AnalyticsTab>('events');
+  const [tab, setTab] = useState<AnalyticsTab>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const sub = params.get('sub') || window.location.hash.replace('#', '');
+      if (sub === 'events' || sub === 'graph' || sub === 'attacks' || sub === 'datasets') {
+        return sub as AnalyticsTab;
+      }
+    }
+    return 'events';
+  });
   return (
     <div className="space-y-3">
       <div className="bg-[hsl(var(--card))] p-1.5 rounded-lg border border-[hsl(var(--border))] flex flex-wrap gap-1 shadow-xs">
@@ -154,8 +163,8 @@ function EventAnalytics() {
                 name,
               ]}
             />
-            <Bar dataKey="benign" stackId="1" fill={CHART_COLORS.green} />
-            <Bar dataKey="malicious" stackId="1" fill={CHART_COLORS.red} />
+            <Bar isAnimationActive={false} dataKey="benign" stackId="1" fill={CHART_COLORS.green} />
+            <Bar isAnimationActive={false} dataKey="malicious" stackId="1" fill={CHART_COLORS.red} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -169,7 +178,7 @@ function EventAnalytics() {
               <XAxis type="number" {...CHART_AXIS_STYLE} />
               <YAxis type="category" dataKey="name" {...CHART_AXIS_STYLE} width={120} />
               <Tooltip {...CHART_TOOLTIP_STYLE} />
-              <Bar dataKey="value" radius={[0, 2, 2, 0]}>
+              <Bar isAnimationActive={false} dataKey="value" radius={[0, 2, 2, 0]}>
                 {tacticData.map((_, i) => (
                   <Cell key={i} fill={CHART_COLORS.violet} />
                 ))}
@@ -181,7 +190,7 @@ function EventAnalytics() {
           <SectionTitle>Source tag distribution</SectionTitle>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
-              <Pie data={sourceData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+              <Pie isAnimationActive={false} data={sourceData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
                 {sourceData.map((_, i) => (
                   <Cell key={i} fill={[CHART_COLORS.cyan, CHART_COLORS.violet, CHART_COLORS.teal][i % 3]} />
                 ))}
@@ -255,7 +264,7 @@ function GraphAnalytics() {
           <SectionTitle>Node type distribution</SectionTitle>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
-              <Pie data={nodeTypeData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} innerRadius={40}>
+              <Pie isAnimationActive={false} data={nodeTypeData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} innerRadius={40}>
                 {nodeTypeData.map((entry, i) => (
                   <Cell key={i} fill={entry.color} stroke="hsl(var(--card))" strokeWidth={2} />
                 ))}
@@ -277,7 +286,7 @@ function GraphAnalytics() {
               <XAxis type="number" {...CHART_AXIS_STYLE} />
               <YAxis type="category" dataKey="label" {...CHART_AXIS_STYLE} width={90} />
               <Tooltip {...CHART_TOOLTIP_STYLE} />
-              <Bar dataKey="value" radius={[0, 2, 2, 0]}>
+              <Bar isAnimationActive={false} dataKey="value" radius={[0, 2, 2, 0]}>
                 {relationData.map((entry, i) => (
                   <Cell key={i} fill={entry.isAttack ? CHART_COLORS.red : CHART_COLORS.cyan} />
                 ))}
@@ -303,8 +312,8 @@ function GraphAnalytics() {
                 name,
               ]}
             />
-            <Line type="monotone" dataKey="nodes" stroke={CHART_COLORS.violet} strokeWidth={1.5} dot={false} />
-            <Line type="monotone" dataKey="edges" stroke={CHART_COLORS.cyan} strokeWidth={1.5} dot={false} />
+            <Line isAnimationActive={false} type="monotone" dataKey="nodes" stroke={CHART_COLORS.violet} strokeWidth={1.5} dot={false} />
+            <Line isAnimationActive={false} type="monotone" dataKey="edges" stroke={CHART_COLORS.cyan} strokeWidth={1.5} dot={false} />
           </LineChart>
         </ResponsiveContainer>
         <div className="flex gap-3 text-[10px] mt-1">
@@ -464,7 +473,7 @@ function AttackAnalytics() {
                 name,
               ]}
             />
-            <Bar dataKey="value" fill={CHART_COLORS.red} radius={[0, 2, 2, 0]} />
+            <Bar isAnimationActive={false} dataKey="value" fill={CHART_COLORS.red} radius={[0, 2, 2, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -565,7 +574,7 @@ function DatasetAnalytics() {
                     name,
                   ]}
                 />
-                <Bar dataKey="value" fill={CHART_COLORS.red} radius={[0, 2, 2, 0]} />
+                <Bar isAnimationActive={false} dataKey="value" fill={CHART_COLORS.red} radius={[0, 2, 2, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -586,7 +595,7 @@ function DatasetAnalytics() {
                 name,
               ]}
             />
-            <Bar dataKey="value" radius={[2, 2, 0, 0]}>
+            <Bar isAnimationActive={false} dataKey="value" radius={[2, 2, 0, 0]}>
               {labelingModeData.map((entry, i) => (
                 <Cell key={i} fill={entry.color} />
               ))}
