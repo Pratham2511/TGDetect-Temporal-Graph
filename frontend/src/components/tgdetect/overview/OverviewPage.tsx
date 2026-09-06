@@ -75,12 +75,7 @@ export function OverviewPage({ onNavigate }: { onNavigate?: (page: string, ctx?:
       <KpiRow stats={statsRes.data} activeModel={activeModel} />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <EventsOverTimeCard stats={statsRes.data} className="lg:col-span-2" />
-        <NodeTypeDistributionCard stats={statsRes.data} />
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <RelationDistributionCard stats={statsRes.data} />
-        <SourceTagCard stats={statsRes.data} />
-        <AttacksCard stats={statsRes.data} onNavigate={onNavigate} />
+        <TopologyAndAttacksCard stats={statsRes.data} onNavigate={onNavigate} />
       </div>
       <RecentMaliciousCard
         events={recentMalRes.data ?? []}
@@ -655,6 +650,108 @@ function RecentMaliciousCard({
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+
+function TopologyAndAttacksCard({ stats, onNavigate }: { stats: GraphStats; onNavigate?: (page: string) => void }) {
+  const nodeTypes = Object.entries(stats.graph.node_types || {});
+  const totalNodes = stats.graph.total_nodes || 1;
+  const relTypes = Object.entries(stats.graph.relation_types || {});
+  const totalEdges = stats.graph.total_edges || 1;
+  const attacks = stats.attacks;
+
+  return (
+    <div className="tg-card p-4 space-y-4 flex flex-col justify-between">
+      <div>
+        <div className="flex items-center justify-between border-b border-[hsl(var(--border))] pb-2 mb-3">
+          <SectionTitle>Graph Topology & Threat Matrix</SectionTitle>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)/0.2)]">
+            Heterogeneous Graph
+          </span>
+        </div>
+
+        {/* Node Distribution */}
+        <div className="space-y-2 mb-4">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-[hsl(var(--muted-foreground))] flex items-center justify-between">
+            <span>Node Entity Types</span>
+            <span className="font-bold text-[hsl(var(--foreground))]">{formatInt(stats.graph.total_nodes)} Total</span>
+          </div>
+          <div className="space-y-1.5">
+            {nodeTypes.map(([type, count]) => {
+              const pct = Math.round((count / totalNodes) * 100);
+              return (
+                <div key={type} className="p-2 rounded bg-[hsl(var(--background))] border border-[hsl(var(--border))] space-y-1">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="font-semibold text-[hsl(var(--foreground))]">{type}</span>
+                    <span className="text-[hsl(var(--muted-foreground))]">{formatInt(count)} ({pct}%)</span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-[hsl(var(--muted)/0.3)] overflow-hidden">
+                    <div className="h-full rounded-full bg-cyan-500" style={{ width: `${Math.max(5, pct)}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Edge Relations */}
+        <div className="space-y-2 mb-4">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-[hsl(var(--muted-foreground))] flex items-center justify-between">
+            <span>Temporal Relations</span>
+            <span className="font-bold text-[hsl(var(--foreground))]">{formatInt(stats.graph.total_edges)} Edges</span>
+          </div>
+          <div className="space-y-1.5">
+            {relTypes.map(([rel, count]) => {
+              const pct = Math.round((count / totalEdges) * 100);
+              return (
+                <div key={rel} className="p-2 rounded bg-[hsl(var(--background))] border border-[hsl(var(--border))] space-y-1">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="font-semibold text-[hsl(var(--primary))]">{rel}</span>
+                    <span className="text-[hsl(var(--muted-foreground))]">{formatInt(count)} ({pct}%)</span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-[hsl(var(--muted)/0.3)] overflow-hidden">
+                    <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.max(5, pct)}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Attack Attribution Footer */}
+      <div className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/5 space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-bold text-amber-500 flex items-center gap-1.5">
+            <GitBranch className="size-3.5" />
+            Attack Reconstruction
+          </span>
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('chains')}
+              className="text-[10px] text-amber-500 hover:underline font-mono"
+            >
+              Explore Chains →
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+          <div>
+            <span className="text-[hsl(var(--muted-foreground))]">Total Chains:</span>{' '}
+            <strong className="text-[hsl(var(--foreground))]">{formatInt(attacks.total_chains)}</strong>
+          </div>
+          <div>
+            <span className="text-[hsl(var(--muted-foreground))]">Tracked:</span>{' '}
+            <strong className="text-rose-400">{formatInt(attacks.malicious_events_tracked)}</strong>
+          </div>
+        </div>
+        <div className="text-[10px] text-[hsl(var(--muted-foreground))] font-mono">
+          Strategy: <span className="text-[hsl(var(--foreground))]">{Object.keys(attacks.chains_by_strategy || {}).join(', ') || 'Entity-Time'}</span>
+        </div>
+      </div>
     </div>
   );
 }

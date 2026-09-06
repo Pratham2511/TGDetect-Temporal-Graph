@@ -44,161 +44,158 @@
 }
 
 /* ────────────────────────────────────────────────────────────
-   LIGHT MODE (default / :root)
-   Background: warm-cool off-white
-   Cards: pure white with soft shadow
-   Text: near-black navy for maximum contrast
-   Sidebar: cool slate (light) in light mode
-   ──────────────────────────────────────────────────────────── */
-/* ────────────────────────────────────────────────────────────
-   LIGHT MODE (default / :root)
-   Foundations: Deep navy / blue-black for primary navigation
-   Canvas: Crisp cool-slate neutral (eliminating murky off-white)
-   Surfaces: Crisp pure white panels with precision hairline slate borders
-   Text: Deep navy slate for high contrast & technical legibility
+   THEME 1: SOLARIZED LIGHT OPERATIONS (:root)
+   Base: Warm parchment / ivory (#fdf6e3)
+   Surfaces: Layered crisp warm cream (#fffcf4 / #eee8d5)
+   Borders: Sandstone slate (#dfd7c2)
+   Text: Solarized base02 / base01 deep navy-teal (#073642 / #586e75)
+   Accents: Solarized Blue, Cyan, Green, Amber, Red
    ──────────────────────────────────────────────────────────── */
 :root {
-  /* ── Surfaces ─────────────────────────────────────────────────────── */
-  --background: 215 25% 95%;        /* #F0F4F8 — crisp cool-slate neutral */
-  --card: 0 0% 100%;               /* #FFFFFF — crisp white panels */
-  --popover: 0 0% 100%;
-  --card-hover: 215 25% 98%;       /* #F8FAFC — clean subtle hover */
-  --elevated: 0 0% 100%;           /* modals, dropdowns */
+  /* Surfaces */
+  --background: 44 87% 94%;        /* #fdf6e3 — Solarized base3 warm parchment */
+  --card: 44 65% 97%;              /* #fffcf4 — crisp elevated cream */
+  --popover: 44 65% 97%;
+  --card-hover: 44 55% 92%;        /* #f6eee0 — warm interactive hover */
+  --elevated: 44 48% 89%;          /* #eee8d5 — Solarized base2 */
 
-  /* ── Text ─────────────────────────────────────────────────────────── */
-  --foreground: 222 47% 11%;        /* #0F172A — slate-900 high contrast */
-  --card-foreground: 222 47% 11%;
-  --popover-foreground: 222 47% 11%;
-  --muted-foreground: 215 16% 47%;  /* #64748B — slate-500 technical mid-gray */
+  /* Text */
+  --foreground: 192 81% 14%;       /* #073642 — Solarized base02 deep slate-navy */
+  --card-foreground: 192 81% 14%;
+  --popover-foreground: 192 81% 14%;
+  --muted-foreground: 196 13% 40%; /* #586e75 — Solarized base01 */
 
-  /* ── Primary (electric cyan-blue for analytical focus) ─────────────── */
-  --primary: 199 89% 38%;          /* #0284C7 — sky-600 technical cyan */
-  --primary-foreground: 0 0% 100%;
-  --primary-dim: 199 89% 32%;       /* hover state */
+  /* Primary Accent — Solarized Blue */
+  --primary: 205 69% 45%;         /* #268bd2 */
+  --primary-foreground: 44 87% 96%;
+  --primary-dim: 205 69% 38%;
 
-  /* ── Interactive surfaces ─────────────────────────────────────────── */
-  --secondary: 215 25% 92%;         /* #E2E8F0 */
-  --secondary-foreground: 222 47% 11%;
-  --muted: 215 25% 92%;
-  --accent: 215 25% 90%;
-  --accent-foreground: 222 47% 11%;
+  /* Secondary & Interactive */
+  --secondary: 44 35% 88%;        /* #e8e1cc */
+  --secondary-foreground: 192 81% 14%;
+  --muted: 44 35% 88%;
+  --accent: 175 59% 40%;          /* #2aa198 — Solarized Cyan */
+  --accent-foreground: 44 87% 96%;
 
-  /* ── State ────────────────────────────────────────────────────────── */
-  --destructive: 0 75% 48%;        /* #DC2626 — threat / malicious only */
-  --destructive-foreground: 0 0% 98%;
+  /* State */
+  --destructive: 1 71% 52%;       /* #dc322f — Solarized Red */
+  --destructive-foreground: 44 87% 96%;
 
-  /* ── Structure ────────────────────────────────────────────────────── */
-  --border: 215 20% 86%;            /* #CBD5E1 — crisp hairline border */
-  --border-light: 215 20% 92%;      /* #E2E8F0 — nested dividers */
-  --input: 215 20% 86%;
-  --ring: 199 89% 38%;
-  --radius: 0.375rem;              /* 6px precision radius */
+  /* Structure */
+  --border: 42 28% 80%;           /* #dfd7c2 — warm sandstone hairline */
+  --border-light: 42 25% 86%;     /* #ebe5d3 */
+  --input: 42 28% 80%;
+  --ring: 205 69% 45%;
+  --radius: 0.375rem;
 
-  /* ── Semantic status (Strictly Controlled) ────────────────────────── */
-  --success: 142 72% 32%;           /* #15803D — benign / safe only */
-  --success-bg: 142 60% 95%;
-  --warning: 38 92% 44%;            /* #D97706 — warning / attention only */
-  --warning-bg: 48 95% 95%;
-  --danger: 0 75% 48%;              /* #DC2626 — threat / malicious only */
-  --danger-bg: 0 85% 96%;
-  --info: 199 89% 38%;              /* #0284C7 — graph & system telemetry */
-  --info-bg: 199 85% 96%;
-  --purple: 262 60% 50%;            /* #7C3AED — TGNN ML engineering */
-  --purple-bg: 262 75% 96%;
-  --teal: 173 65% 35%;              /* #0F766E — attack chains & topology */
+  /* Semantic Status Signals */
+  --success: 68 100% 30%;         /* #859900 — Solarized Green */
+  --success-bg: 68 50% 90%;
+  --warning: 45 100% 35%;         /* #b58900 — Solarized Yellow/Amber */
+  --warning-bg: 45 50% 90%;
+  --danger: 1 71% 52%;            /* #dc322f — Solarized Red */
+  --danger-bg: 1 60% 92%;
+  --info: 175 59% 40%;            /* #2aa198 — Solarized Cyan */
+  --info-bg: 175 40% 90%;
+  --purple: 237 43% 55%;          /* #6c71c4 — Solarized Violet */
+  --purple-bg: 237 35% 92%;
+  --teal: 175 59% 40%;
 
-  /* ── Sidebar — Deep navy foundation in light mode for strong hierarchy ── */
-  --sidebar-bg: 222 47% 9%;          /* #0B1320 — deep technical navy */
-  --sidebar-border: 222 30% 16%;      /* #1B263B — hairline division */
-  --sidebar-item-hover: 222 35% 15%;  /* #172338 */
-  --sidebar-item-active: 215 30% 20%; /* #24354F */
-  --sidebar-text: 215 20% 70%;        /* #94A3B8 — readable muted nav */
-  --sidebar-text-active: 199 89% 65%; /* #38BDF8 — active cyan highlight */
-  --sidebar-logo-sub: 215 15% 55%;    /* #64748B */
-  --sidebar-logo-text: 210 40% 98%;   /* #F8FAFC — crisp high contrast */
+  /* Sidebar — Solarized Base03 deep slate foundation */
+  --sidebar-bg: 192 100% 11%;     /* #002b36 — Solarized base03 */
+  --sidebar-border: 192 60% 16%;  /* #083844 */
+  --sidebar-item-hover: 192 50% 16%;
+  --sidebar-item-active: 175 59% 22%;
+  --sidebar-text: 180 7% 70%;     /* #93a1a1 */
+  --sidebar-text-active: 175 59% 60%; /* #2aa198 */
+  --sidebar-logo-sub: 180 7% 55%;
+  --sidebar-logo-text: 44 87% 94%;
 
-  /* ── Chart colors (tuned for high contrast on light surfaces) ──────── */
-  --chart-1: 199 89% 38%;           /* cyan */
-  --chart-2: 262 60% 50%;           /* violet / TGNN */
-  --chart-3: 142 72% 32%;           /* green / benign */
-  --chart-4: 38 92% 44%;            /* amber / warning */
-  --chart-5: 0 75% 48%;             /* red / threat */
-  --chart-6: 173 65% 35%;           /* teal / chains */
+  /* Chart palette — Tuned for Solarized Light contrast */
+  --chart-1: 205 69% 45%;         /* Blue */
+  --chart-2: 237 43% 55%;         /* Violet */
+  --chart-3: 68 100% 30%;         /* Green / Benign */
+  --chart-4: 45 100% 35%;         /* Amber / Warning */
+  --chart-5: 1 71% 52%;          /* Red / Threat */
+  --chart-6: 175 59% 40%;         /* Cyan / Telemetry */
 }
 
 /* ────────────────────────────────────────────────────────────
-   DARK MODE (.dark class on <html>)
-   Background: deep navy — NOT flat dark gray
-   Cards: layered navy with visible depth
-   Text: warm blue-white — NOT pure white
+   THEME 2: NIGHT OPERATIONS (.dark)
+   Canvas: Obsidian void (#06080d)
+   Surfaces: Layered Carbon (#0b0f17 / #111724 / #172033)
+   Borders: Thin luminous rules (rgba(255,255,255,0.08))
+   Text: Crisp warm cybersecurity text (#f8fafc / #94a3b8)
+   Accents: Luminous Cyber Cyan (#38bdf8), Threat Crimson (#f24040)
    ──────────────────────────────────────────────────────────── */
 .dark {
-  /* Surfaces — Obsidian / Carbon tactical command center matching tgdetect.vercel.app */
-  --background: 224 71% 4%;      /* #030712 — deep obsidian canvas */
-  --card: 224 60% 7%;            /* #070d1a — elevated carbon panel */
-  --popover: 224 60% 7%;
-  --card-hover: 224 50% 11%;     /* #0e172a — hover depth */
-  --elevated: 224 45% 13%;       /* #111c33 — modals / elevated HUD panels */
+  /* Surfaces */
+  --background: 220 37% 4%;       /* #06080d — deep obsidian void */
+  --card: 218 35% 7%;             /* #0b0f17 — carbon primary surface */
+  --popover: 218 35% 7%;
+  --card-hover: 220 35% 10%;      /* #101622 — subtle hover depth */
+  --elevated: 220 36% 11%;        /* #111724 — elevated panel */
+  --elevated-high: 221 37% 15%;   /* #172033 — HUD / modal surface */
 
-  /* Text — high-contrast warm cybersecurity text */
-  --foreground: 213 35% 92%;     /* #e2ecf7 — crisp primary text */
-  --card-foreground: 213 35% 92%;
-  --popover-foreground: 213 35% 92%;
-  --muted-foreground: 215 20% 62%; /* #859db7 — readable technical muted text */
+  /* Text */
+  --foreground: 210 40% 98%;      /* #f8fafc — crisp primary */
+  --card-foreground: 210 40% 98%;
+  --popover-foreground: 210 40% 98%;
+  --muted-foreground: 215 20% 65%;/* #94a3b8 — technical secondary */
 
-  /* Brand / Primary — electric luminous cyan (#00f2fe / #38bdf8) */
-  --primary: 189 94% 54%;        /* #00f2fe — cyber cyan */
-  --primary-foreground: 224 71% 4%; /* dark text on primary button */
-  --primary-dim: 199 89% 48%;    /* #0ea5e9 — dimmer interactive */
+  /* Brand / Primary — Luminous Cyber Cyan */
+  --primary: 199 89% 60%;         /* #38bdf8 — electric cyan */
+  --primary-foreground: 220 37% 4%;
+  --primary-dim: 199 89% 45%;
 
-  /* Interactive surfaces */
-  --secondary: 224 45% 10%;      /* #091222 */
-  --secondary-foreground: 213 35% 92%;
-  --muted: 224 45% 10%;
-  --accent: 224 45% 14%;
-  --accent-foreground: 213 35% 92%;
+  /* Secondary & Interactive */
+  --secondary: 220 35% 10%;       /* #101622 */
+  --secondary-foreground: 210 40% 98%;
+  --muted: 220 35% 10%;
+  --accent: 199 89% 60%;
+  --accent-foreground: 220 37% 4%;
 
   /* State */
-  --destructive: 347 87% 55%;    /* #f43f5e crimson */
+  --destructive: 0 88% 60%;       /* #f24040 — threat crimson */
   --destructive-foreground: 0 0% 98%;
 
-  /* Structure — luminous thin borders */
-  --border: 217 33% 17%;         /* #182438 — visible technical border */
-  --border-light: 217 33% 13%;   /* #111a29 */
-  --input: 217 33% 17%;
-  --ring: 189 94% 54%;
+  /* Structure */
+  --border: 220 25% 14%;          /* rgba(255,255,255,0.08) */
+  --border-light: 220 25% 10%;
+  --input: 220 25% 14%;
+  --ring: 199 89% 60%;
   --radius: 0.375rem;
 
-  /* ── Semantic status (luminous cyber accents) ── */
-  --success: 151 68% 46%;         /* #10b981 emerald */
-  --success-bg: 151 68% 8%;
-  --warning: 38 92% 55%;          /* #f59e0b amber */
-  --warning-bg: 38 92% 8%;
-  --danger: 347 87% 60%;          /* #f43f5e crimson */
-  --danger-bg: 347 87% 8%;
-  --info: 189 94% 54%;            /* #00f2fe cyan */
-  --info-bg: 189 94% 8%;
-  --purple: 243 75% 68%;          /* #818cf8 indigo/violet */
-  --purple-bg: 243 75% 8%;
-  --teal: 173 80% 45%;            /* #14b8a6 */
+  /* Semantic Status Signals */
+  --success: 142 70% 48%;         /* #24c75f — emerald benign */
+  --success-bg: 142 60% 8%;
+  --warning: 37 92% 55%;          /* #f6a320 — operational amber */
+  --warning-bg: 37 60% 8%;
+  --danger: 0 88% 60%;            /* #f24040 — threat crimson */
+  --danger-bg: 0 60% 8%;
+  --info: 199 89% 60%;            /* #38bdf8 — luminous cyan */
+  --info-bg: 199 60% 8%;
+  --purple: 262 75% 72%;          /* #a78bfa — TGNN violet */
+  --purple-bg: 262 50% 8%;
+  --teal: 173 80% 50%;            /* #2dd4bf — attack chains teal */
 
-  /* ── Sidebar — obsidian command rail ── */
-  --sidebar-bg: 224 75% 3%;      /* #02050e — deepest obsidian */
-  --sidebar-border: 217 33% 14%;  /* #111b2d */
-  --sidebar-item-hover: 217 33% 10%;
-  --sidebar-item-active: 189 94% 12%; /* #022432 */
-  --sidebar-text: 213 25% 62%;    /* #829cb4 */
-  --sidebar-text-active: 189 94% 70%; /* #67e8f9 */
-  --sidebar-logo-sub: 213 25% 45%;
-  --sidebar-logo-text: 213 35% 92%;
+  /* Sidebar — Deep obsidian command rail */
+  --sidebar-bg: 222 47% 3%;       /* #04060a */
+  --sidebar-border: 220 25% 10%;
+  --sidebar-item-hover: 220 30% 8%;
+  --sidebar-item-active: 199 89% 12%; /* #022432 */
+  --sidebar-text: 215 20% 65%;
+  --sidebar-text-active: 199 89% 65%; /* #67e8f9 */
+  --sidebar-logo-sub: 215 15% 45%;
+  --sidebar-logo-text: 210 40% 98%;
 
-  /* ── Chart palette ── */
-  --chart-1: 189 94% 54%;         /* cyan */
-  --chart-2: 243 75% 68%;         /* indigo/violet */
-  --chart-3: 151 68% 46%;         /* emerald */
-  --chart-4: 38 92% 55%;          /* amber */
-  --chart-5: 347 87% 60%;         /* crimson */
-  --chart-6: 173 80% 45%;         /* teal */
+  /* Chart palette — Night operations */
+  --chart-1: 199 89% 60%;         /* cyan */
+  --chart-2: 262 75% 72%;         /* violet */
+  --chart-3: 142 70% 48%;         /* emerald */
+  --chart-4: 37 92% 55%;          /* amber */
+  --chart-5: 0 88% 60%;           /* crimson */
+  --chart-6: 173 80% 50%;         /* teal */
 }
 
 @layer base {
@@ -214,128 +211,95 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
-    /* Smooth theme transition — prevents flash on toggle */
-    transition: background-color 300ms ease, color 300ms ease;
+    transition: background-color 250ms ease, color 250ms ease;
   }
 }
 
-/* Scrollbar styling — dark mode */
-.dark ::-webkit-scrollbar { width: 6px; height: 6px; }
-.dark ::-webkit-scrollbar-track { background: hsl(var(--background)); }
-.dark ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
-.dark ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
-
-/* Light mode scrollbar */
+/* Custom Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: hsl(var(--background)); }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
 
-/* Hide scrollbar for tab overflow */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* ── Sidebar ──────────────────────────────────────────────────────────────── */
+/* ── Shell Structures ──────────────────────────────────────────────────────── */
 .sidebar-shell {
   background-color: hsl(var(--sidebar-bg));
   border-right: 1px solid hsl(var(--sidebar-border));
 }
 
-/* ── Top Header ──────────────────────────────────────────────────────────── */
 .header-shell {
   background-color: hsl(var(--card));
   border-bottom: 1px solid hsl(var(--border));
 }
-.dark .header-shell {
-  background-color: hsl(var(--card));
-  border-bottom: 1px solid hsl(var(--border));
-}
 
-/* ── Card & Panel component base ─────────────────────────────────────────── */
-.tg-card {
-  background-color: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  border-radius: 0.375rem; /* 6px crisp technical radius */
-  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
-}
-:root .tg-card {
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
-}
-.dark .tg-card {
-  box-shadow: none;
-}
-.tg-card:hover {
-  border-color: hsl(var(--primary) / 0.4);
-}
-
+/* ── Asymmetric Panels & Surfaces (NO generic card wall) ───────────────────── */
 .tg-panel {
   background-color: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: 0.375rem;
-  overflow: hidden;
-  transition: border-color 150ms ease;
+  transition: border-color 200ms ease, background-color 200ms ease, box-shadow 200ms ease;
 }
+
 :root .tg-panel {
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 3px rgba(7, 54, 66, 0.04), 0 1px 2px rgba(7, 54, 66, 0.02);
 }
+
 .dark .tg-panel {
-  box-shadow: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
-.tg-panel-header {
-  padding: 0.625rem 0.875rem;
+
+.tg-panel:hover {
+  border-color: hsl(var(--primary) / 0.35);
+}
+
+/* Embedded subsurface for secondary metrics */
+.tg-subsurface {
+  background-color: hsl(var(--background) / 0.6);
+  border: 1px solid hsl(var(--border) / 0.6);
+  border-radius: 0.25rem;
+}
+
+/* Tactical HUD header bar inside panels */
+.tg-hud-header {
+  padding: 0.5rem 0.875rem;
   border-bottom: 1px solid hsl(var(--border));
-  background-color: hsl(var(--card));
+  background: linear-gradient(90deg, hsl(var(--card)) 0%, hsl(var(--primary) / 0.03) 100%);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
 }
 
-/* ── Status badge base classes ─────────────────────────────────────────── */
+/* ── Controlled Glow System (communicates hierarchy, not random neon) ──────── */
+.glow-primary {
+  box-shadow: 0 0 16px hsl(var(--primary) / 0.15);
+}
+
+.glow-threat {
+  box-shadow: 0 0 16px hsl(var(--danger) / 0.2);
+}
+
+.glow-success {
+  box-shadow: 0 0 16px hsl(var(--success) / 0.15);
+}
+
+/* ── Badges ───────────────────────────────────────────────────────────────── */
 .badge-success { background: hsl(var(--success-bg)); color: hsl(var(--success)); border: 1px solid hsl(var(--success) / 0.3); }
 .badge-warning { background: hsl(var(--warning-bg)); color: hsl(var(--warning)); border: 1px solid hsl(var(--warning) / 0.3); }
 .badge-danger { background: hsl(var(--danger-bg)); color: hsl(var(--danger)); border: 1px solid hsl(var(--danger) / 0.3); }
 .badge-info { background: hsl(var(--info-bg)); color: hsl(var(--info)); border: 1px solid hsl(var(--info) / 0.3); }
 .badge-purple { background: hsl(var(--purple-bg)); color: hsl(var(--purple)); border: 1px solid hsl(var(--purple) / 0.3); }
-.badge-teal { background: hsl(173 60% 96%); color: hsl(var(--teal)); border: 1px solid hsl(var(--teal) / 0.3); }
-.dark .badge-teal { background: hsl(173 58% 10%); color: hsl(173 58% 60%); border: 1px solid hsl(173 58% 30%); }
+.badge-teal { background: hsl(var(--teal) / 0.1); color: hsl(var(--teal)); border: 1px solid hsl(var(--teal) / 0.3); }
 
-/* ── Typography helpers ─────────────────────────────────────────────────── */
-.section-title { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: hsl(var(--muted-foreground)); }
-.metric-value { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+/* ── Typography & Technical Data Formats ──────────────────────────────────── */
+.section-title { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: hsl(var(--muted-foreground)); }
+.metric-value { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .metric-value-sm { font-size: 1.1875rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .mono { font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace; }
 
-/* ── Tactical Cybersecurity HUD Styling & Grids ───────────────────────────── */
-.cyber-grid {
-  background-image: radial-gradient(circle, rgba(56, 189, 248, 0.07) 1px, transparent 1px);
-  background-size: 24px 24px;
-}
-
-.radar-sweep-bg {
-  background: radial-gradient(circle at center, rgba(0, 242, 254, 0.04) 0%, transparent 70%);
-}
-
-.luminous-card {
-  position: relative;
-  background-color: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  border-radius: 0.375rem;
-  transition: all 200ms ease;
-}
-.dark .luminous-card:hover {
-  border-color: rgba(56, 189, 248, 0.35);
-  box-shadow: 0 0 15px rgba(0, 242, 254, 0.06);
-}
-
-.hud-panel-header {
-  padding: 0.625rem 0.875rem;
-  border-bottom: 1px solid hsl(var(--border));
-  background: linear-gradient(90deg, hsl(var(--card)) 0%, rgba(56, 189, 248, 0.02) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
+/* ── HUD Framing & Technical Detail Accents ───────────────────────────────── */
 .hud-bracket {
   position: relative;
 }
@@ -360,4 +324,10 @@
   border-bottom: 2px solid hsl(var(--primary));
   border-right: 2px solid hsl(var(--primary));
   pointer-events: none;
+}
+
+/* Subtle cyber coordinate grid background */
+.cyber-grid {
+  background-image: radial-gradient(circle, hsl(var(--primary) / 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
 }

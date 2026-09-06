@@ -16,7 +16,11 @@
 
 TGDetect models computer network telemetry as an evolving, directed, heterogeneous temporal graph. By combining spatial neighborhood message-passing via GraphSAGE with temporal recurrence via Gated Recurrent Units (GRU), TGDetect detects stealthy, multi-stage cyber threats—such as botnet command-and-control (C2), lateral movement, and data exfiltration—at line rate without relying on brittle static signatures or synthetic heuristic metrics.
 
-![TGDetect Tactical Operations Command Center](docs/images/01_overview_dashboard.png)
+<p align="center">
+  <img src="docs/images/01_overview_dashboard.png" alt="TGDetect Night Operations Command Center" width="49%" />
+  <img src="docs/images/01b_overview_solarized_light.png" alt="TGDetect Solarized Light Command Center" width="49%" />
+</p>
+<p align="center"><em>TGDetect Tactical Operations Command Center — Night Operations (left) & Solarized Light Operations (right)</em></p>
 
 ---
 
@@ -207,11 +211,15 @@ The backend is built with **FastAPI** and **Python 3.10+**, emphasizing async I/
 
 The frontend is a **Next.js 16 (App Router, Turbopack)** single-page operational application:
 
-* **Tactical Visual System**: Obsidian/carbon dark palette (`#030712`, `#070d1a`, `#0e172a`), cyber grid motifs (`.cyber-grid`), luminous cyan/crimson telemetry accents, and tactical HUD corner brackets (`.hud-bracket`).
-* **Deep URL Routing**: Two-way synchronization between browser URL parameters (`?page=...`, `?model=...`, `?sub=...`) and application state, supporting browser Back/Forward navigation and clean page reloads.
-* **Interactive Canvas Visualizer**: Custom HTML5 Canvas temporal graph renderer featuring concentric radar range rings, glowing crimson malicious attack edges, and selected-node tactical HUD overlays.
+* **Dual-Theme Design Architecture**:
+  - **Night Operations (Dark Mode)**: Deep obsidian (`#06080d`) and carbon (`#0b0f17`) layered surfaces, restrained cyan/crimson lighting, fine hairline borders, and tactical HUD brackets.
+  - **Solarized Light Operations**: True Solarized Light palette with warm ivory/cream surfaces (`#fdf6e3`, `#fcf7ea`), deep solarized slate/teal text (`#073642`, `#586e75`), and calibrated high-contrast chart palettes.
+* **Atmospheric Background Motion**: Lightweight, GPU-conscious HTML5 canvas rendering drifting graph nodes, subtle temporal connection edges (4-8% opacity), and telemetry pulses. Pauses when hidden or when `prefers-reduced-motion` is active.
+* **Signature TGDetect Loading Experience**: Spatiotemporal graph initialization sequence (`INITIALIZING TELEMETRY` → `CONSTRUCTING TEMPORAL GRAPH` → `ANALYZING EDGE RELATIONSHIPS` → `READY`) with hexagonal geometry, session bypass, and instant transitions.
+* **Temporal Graph Visual Hero**: Interactive spatiotemporal canvas with coordinate HUD crosshairs, radar range rings, benign (emerald) / suspicious (amber) / malicious (crimson) visual hierarchy, edge flow pulses, interactive mouse zoom/pan, reset button, and node detail HUD.
+* **Deep URL Routing**: Two-way synchronization between browser URL parameters (`?page=...`, `?theme=dark|light`, `?sub=...`) and application state, supporting browser Back/Forward navigation and clean page reloads.
 * **Zero Fake Data Architecture**: Purely driven by authentic backend REST responses; displays explicit, honest empty or error states when backend services are unreachable.
-* **Mobile Responsive Shell**: Collapsible sidebar with mobile drawer navigation, optimizing layout density for viewports from 390px (mobile) to 4K displays.
+* **Desktop-First Command Center**: Optimized for 1366px, 1440px, and 1920px large displays with high information density, eliminating repetitive card walls in favor of purposeful tactical panels.
 
 ---
 

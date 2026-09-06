@@ -16,7 +16,12 @@ function subscribe(callback: () => void) {
 }
 
 function getSnapshot(): Theme {
-  return (localStorage.getItem('tgdetect-theme') as Theme) || 'dark';
+  if (typeof window !== 'undefined') {
+    const urlTheme = new URLSearchParams(window.location.search).get('theme');
+    if (urlTheme === 'light' || urlTheme === 'dark') return urlTheme;
+    return (localStorage.getItem('tgdetect-theme') as Theme) || 'dark';
+  }
+  return 'dark';
 }
 
 function getServerSnapshot(): Theme {

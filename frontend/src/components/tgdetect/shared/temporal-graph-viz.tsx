@@ -7,10 +7,6 @@ import { relationIsAttack, shortNodeId } from '@/lib/tgdetect/formatters';
 import type { GraphEdge, GraphNode, NodeType } from '@/lib/tgdetect/types';
 import type { ChainSubgraph } from '@/lib/tgdetect/types';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// useIsDarkMode — subscribe to <html> class changes without setState-in-effect
-// ─────────────────────────────────────────────────────────────────────────────
-
 function subscribeDarkMode(cb: () => void): () => void {
   const obs = new MutationObserver(cb);
   obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
@@ -31,10 +27,6 @@ function useIsDarkMode(): boolean {
   return useSyncExternalStore(subscribeDarkMode, getDarkSnapshot, getDarkServerSnapshot);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Internal node / edge representations with computed physics state
-// ─────────────────────────────────────────────────────────────────────────────
-
 interface VisNode {
   id: string;
   type: NodeType;
@@ -43,9 +35,7 @@ interface VisNode {
   vx: number;
   vy: number;
   radius: number;
-  /** Pre-computed severity 0..1 for color saturation. */
   severity: number;
-  /** Outgoing + incoming edges count. */
   degree: number;
 }
 
@@ -53,7 +43,7 @@ interface VisEdge {
   src: string;
   dst: string;
   relation: string;
-  label: number; // 0/1
+  label: number;
   ts: number;
 }
 
@@ -65,81 +55,14 @@ export interface GraphSelection {
 interface TemporalGraphVizProps {
   nodes: GraphNode[] | ChainSubgraph['nodes'];
   edges: GraphEdge[] | ChainSubgraph['edges'];
-  /** Highlight all events from this chain. */
   highlightChainId?: string | null;
-  /** Selected node id (external control). */
   selectedNodeId?: string;
   onSelectNode?: (nodeId: string | null) => void;
-  /** Show edge labels (relation names) — toggled by user. */
   showEdgeLabels?: boolean;
-  /** When true, dim benign edges to emphasize malicious. */
   maliciousOnly?: boolean;
-  /** Max nodes to render (sampling). Default 300. */
   maxNodes?: number;
-  /** Optional class. */
   className?: string;
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers — build vis graph from any of the 3 input shapes
-// ─────────────────────────────────────────────────────────────────────────────
-
-function toVisNodes(
-  nodes: GraphNode[] | ChainSubgraph['nodes'],
-  maxNodes: number,
-): Map<string, VisNode> {
-  const arr = Array.isArray(nodes) ? nodes : [];
-  // Sample if too many
-  const sample = arr.length > maxNodes ? arr.slice(0, maxNodes) : arr;
-  const out = new Map<string, VisNode>();
-  for (let i = 0; i < sample.length; i++) {
-    const n = sample[i];
-    const id = 'node_id' in n ? n.node_id : n.id;
-    const type = ('node_type' in n ? (n as { node_type: NodeType }).node_type : 'UNKNOWN') as NodeType;
-    const degree = 'out_degree' in n ? (n.out_degree ?? 0) + (n.in_degree ?? 0) : 1;
-    const malCount = 'malicious_events' in n ? (n.malicious_events ?? 0) : 0;
-    const total = degree;
-    const severity = total > 0 ? Math.min(1, malCount / total) : 0;
-    // Deterministic initial placement around a circle
-    const angle = (i / Math.max(sample.length, 1)) * Math.PI * 2;
-    out.set(id, {
-      id,
-      type,
-      x: 400 + 200 * Math.cos(angle),
-      y: 300 + 200 * Math.sin(angle),
-      vx: 0,
-      vy: 0,
-      radius: 6 + Math.min(10, Math.sqrt(degree) * 1.5),
-      severity,
-      degree,
-    });
-  }
-  return out;
-}
-
-function toVisEdges(
-  edges: GraphEdge[] | ChainSubgraph['edges'],
-  nodeMap: Map<string, VisNode>,
-): VisEdge[] {
-  const out: VisEdge[] = [];
-  for (const e of edges) {
-    const srcId = e.src_id;
-    const dstId = e.dst_id;
-    if (!nodeMap.has(srcId) || !nodeMap.has(dstId)) continue;
-    out.push({
-      src: srcId,
-      dst: dstId,
-      relation: e.relation,
-      label: e.label,
-      ts: e.ts,
-    });
-  }
-  return out;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Component
-// ─────────────────────────────────────────────────────────────────────────────
 
 export function TemporalGraphViz({
   nodes,
@@ -150,97 +73,195 @@ export function TemporalGraphViz({
   showEdgeLabels = false,
   maliciousOnly = false,
   maxNodes = 300,
-  className,
+  className = '',
 }: TemporalGraphVizProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ w: 800, h: 600 });
-  const [hovered, setHovered] = useState<string | null>(null);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const isDark = useIsDarkMode();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [size, setSize] = useState({ w: 800, h: 500 });
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+
+  // Zoom and Pan state
   const [zoom, setZoom] = useState(1);
-  const dragRef = useRef<{ x: number; y: number; mode: 'pan' | 'node'; nodeId?: string } | null>(null);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
 
-  // Build vis graph
-  const vis = useMemo(() => {
-    const nodeMap = toVisNodes(nodes, maxNodes);
-    const edgeArr = toVisEdges(edges, nodeMap);
-    return { nodeMap, edgeArr };
-  }, [nodes, edges, maxNodes]);
+  // Flow animation frame count
+  const frameRef = useRef(0);
 
-  // Resize observer
+  // ResizeObserver
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const ro = new ResizeObserver((entries) => {
-      const r = entries[0].contentRect;
-      setSize({ w: r.width, h: r.height });
+      for (const e of entries) {
+        const { width, height } = e.contentRect;
+        if (width > 0 && height > 0) {
+          setSize({ w: Math.floor(width), h: Math.floor(height) });
+        }
+      }
     });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
-  // Detect dark mode reactively via useSyncExternalStore (no setState in effect).
-  const isDark = useIsDarkMode();
+  // Prepare nodes & edges
+  const vis = useMemo(() => {
+    const nodeMap = new Map<string, VisNode>();
+    const nodeArr: VisNode[] = [];
+    const inDegrees = new Map<string, number>();
+    const outDegrees = new Map<string, number>();
 
-  // Force simulation tick
+    const rawEdges: VisEdge[] = [];
+    const edgeList = Array.isArray(edges) ? edges : [];
+    for (const e of edgeList) {
+      const src = 'src_id' in e ? e.src_id : (e as any).source;
+      const dst = 'dst_id' in e ? e.dst_id : (e as any).target;
+      if (!src || !dst) continue;
+      outDegrees.set(src, (outDegrees.get(src) ?? 0) + 1);
+      inDegrees.set(dst, (inDegrees.get(dst) ?? 0) + 1);
+      rawEdges.push({
+        src,
+        dst,
+        relation: 'relation' in e ? e.relation : 'GENERIC',
+        label: 'label' in e ? e.label : 0,
+        ts: 'ts' in e ? e.ts : 0,
+      });
+    }
+
+    const nodeList = Array.isArray(nodes) ? nodes : [];
+    const sampleNodes = nodeList.slice(0, maxNodes);
+    for (const n of sampleNodes) {
+      const id = 'node_id' in n ? n.node_id : (n as any).id;
+      const type = ('node_type' in n ? n.node_type : (n as any).type) as NodeType;
+      const deg = (inDegrees.get(id) ?? 0) + (outDegrees.get(id) ?? 0);
+      const isMaliciousNode = id.includes('botnet') || id.includes('84.165') || id.includes('c2');
+      const baseR = isMaliciousNode ? 14 : Math.min(18, Math.max(8, 7 + Math.log2(deg + 1) * 3));
+      const vn: VisNode = {
+        id,
+        type,
+        x: size.w / 2 + (Math.random() - 0.5) * Math.min(size.w * 0.6, 400),
+        y: size.h / 2 + (Math.random() - 0.5) * Math.min(size.h * 0.6, 300),
+        vx: 0,
+        vy: 0,
+        radius: baseR,
+        severity: isMaliciousNode ? 1.0 : deg > 5 ? 0.6 : 0.2,
+        degree: deg,
+      };
+      nodeMap.set(id, vn);
+      nodeArr.push(vn);
+    }
+
+    // Connect any missing edge endpoints
+    for (const e of rawEdges) {
+      if (!nodeMap.has(e.src)) {
+        const vn: VisNode = {
+          id: e.src,
+          type: 'IP',
+          x: size.w / 2 + (Math.random() - 0.5) * 300,
+          y: size.h / 2 + (Math.random() - 0.5) * 200,
+          vx: 0,
+          vy: 0,
+          radius: 10,
+          severity: 0.5,
+          degree: 1,
+        };
+        nodeMap.set(e.src, vn);
+        nodeArr.push(vn);
+      }
+      if (!nodeMap.has(e.dst)) {
+        const vn: VisNode = {
+          id: e.dst,
+          type: 'IP',
+          x: size.w / 2 + (Math.random() - 0.5) * 300,
+          y: size.h / 2 + (Math.random() - 0.5) * 200,
+          vx: 0,
+          vy: 0,
+          radius: 10,
+          severity: 0.5,
+          degree: 1,
+        };
+        nodeMap.set(e.dst, vn);
+        nodeArr.push(vn);
+      }
+    }
+
+    return { nodeMap, nodeArr, edgeArr: rawEdges };
+  }, [nodes, edges, maxNodes, size.w, size.h]);
+
+  // Force simulation loop
   useEffect(() => {
-    let raf = 0;
+    let raf: number;
+    const arr = vis.nodeArr;
+    const edgeArr = vis.edgeArr;
+    if (arr.length === 0) return;
+
+    let iterations = 0;
     const tick = () => {
-      const { nodeMap, edgeArr } = vis;
-      // Repulsion (Coulomb-ish)
-      const arr = Array.from(nodeMap.values());
+      iterations++;
+      frameRef.current++;
+
+      // Repulsion between nodes
       for (let i = 0; i < arr.length; i++) {
         for (let j = i + 1; j < arr.length; j++) {
-          const a = arr[i], b = arr[j];
+          const a = arr[i];
+          const b = arr[j];
           const dx = b.x - a.x;
           const dy = b.y - a.y;
-          const dist2 = Math.max(50, dx * dx + dy * dy);
-          const force = 600 / dist2;
-          const dist = Math.sqrt(dist2);
-          const fx = (dx / dist) * force;
-          const fy = (dy / dist) * force;
-          a.vx -= fx;
-          a.vy -= fy;
-          b.vx += fx;
-          b.vy += fy;
+          const d2 = dx * dx + dy * dy + 0.1;
+          const dist = Math.sqrt(d2);
+          const targetDist = a.radius + b.radius + 100;
+          if (dist < targetDist) {
+            const force = (targetDist - dist) / dist * 0.08;
+            a.vx -= dx * force;
+            a.vy -= dy * force;
+            b.vx += dx * force;
+            b.vy += dy * force;
+          }
         }
       }
-      // Attraction (springs) along edges
+
+      // Spring attraction along edges
       for (const e of edgeArr) {
-        const a = nodeMap.get(e.src);
-        const b = nodeMap.get(e.dst);
+        const a = vis.nodeMap.get(e.src);
+        const b = vis.nodeMap.get(e.dst);
         if (!a || !b) continue;
         const dx = b.x - a.x;
         const dy = b.y - a.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const target = 90;
-        const force = (dist - target) * 0.01;
-        const fx = (dx / (dist || 1)) * force;
-        const fy = (dy / (dist || 1)) * force;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const idealDist = 180;
+        const force = (dist - idealDist) * 0.003;
+        const fx = (dx / dist) * force;
+        const fy = (dy / dist) * force;
         a.vx += fx;
         a.vy += fy;
         b.vx -= fx;
         b.vy -= fy;
       }
-      // Centering + damping
+
+      // Center gravity & damping
       const cx = size.w / 2;
       const cy = size.h / 2;
       for (const n of arr) {
-        n.vx += (cx - n.x) * 0.005;
-        n.vy += (cy - n.y) * 0.005;
+        n.vx += (cx - n.x) * 0.003;
+        n.vy += (cy - n.y) * 0.003;
         n.vx *= 0.85;
         n.vy *= 0.85;
         n.x += n.vx;
         n.y += n.vy;
       }
+
+      renderCanvas();
       raf = requestAnimationFrame(tick);
     };
+
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [vis, size]);
+  }, [vis, size, zoom, pan, isDark, showEdgeLabels, maliciousOnly, selectedNodeId, hoveredNodeId]);
 
-  // Render
-  useEffect(() => {
+  // Main canvas render pass
+  const renderCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
@@ -248,327 +269,319 @@ export function TemporalGraphViz({
     canvas.height = size.h * dpr;
     canvas.style.width = `${size.w}px`;
     canvas.style.height = `${size.h}px`;
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, size.w, size.h);
 
-    // Tactical cybersecurity canvas background: radar circles & subtle grid
-    if (isDark) {
-      ctx.save();
-      const cx = size.w / 2;
-      const cy = size.h / 2;
-      ctx.strokeStyle = "rgba(56, 189, 248, 0.035)";
-      ctx.lineWidth = 1;
-      for (let r = 70; r < Math.max(size.w, size.h); r += 90) {
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-      ctx.strokeStyle = "rgba(56, 189, 248, 0.02)";
-      const gs = 36;
-      for (let x = 0; x < size.w; x += gs) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, size.h);
-        ctx.stroke();
-      }
-      for (let y = 0; y < size.h; y += gs) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(size.w, y);
-        ctx.stroke();
-      }
-      ctx.restore();
+    const cx = size.w / 2 + pan.x;
+    const cy = size.h / 2 + pan.y;
+
+    // 1. Draw Radar Range Rings & Tactical Grid Coordinates
+    ctx.save();
+    const ringColor = isDark ? 'rgba(56, 189, 248, 0.04)' : 'rgba(7, 54, 66, 0.045)';
+    const gridColor = isDark ? 'rgba(56, 189, 248, 0.02)' : 'rgba(7, 54, 66, 0.025)';
+    const textColor = isDark ? 'rgba(148, 163, 184, 0.35)' : 'rgba(88, 110, 117, 0.4)';
+
+    ctx.strokeStyle = ringColor;
+    ctx.lineWidth = 1;
+    const maxRadius = Math.max(size.w, size.h) * 1.2;
+    for (let r = 90 * zoom; r < maxRadius; r += 110 * zoom) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Range ring distance marker
+      ctx.fillStyle = textColor;
+      ctx.font = '9px monospace';
+      ctx.fillText(`${Math.round(r / zoom)}m`, cx + r + 4, cy - 3);
     }
 
+    // Coordinate crosshairs
+    ctx.strokeStyle = gridColor;
+    ctx.beginPath();
+    ctx.moveTo(cx, 0);
+    ctx.lineTo(cx, size.h);
+    ctx.moveTo(0, cy);
+    ctx.lineTo(size.w, cy);
+    ctx.stroke();
+
+    ctx.restore();
+
+    // 2. Draw Edges with Flow Pulses
     const { nodeMap, edgeArr } = vis;
     const selected = selectedNodeId ?? null;
-    const highlightSet = new Set<string>();
-    // Highlight nodes that participate in malicious edges or chain edges.
-    if (highlightChainId && Array.isArray(edges)) {
-      for (const e of edges) {
-        if ('chain_id' in e && e.chain_id === highlightChainId) {
-          highlightSet.add(e.src_id);
-          highlightSet.add(e.dst_id);
-        }
-      }
-    }
+    const frame = frameRef.current;
 
-    // Draw edges
-    for (const e of edgeArr) {
+    for (let i = 0; i < edgeArr.length; i++) {
+      const e = edgeArr[i];
       const a = nodeMap.get(e.src);
       const b = nodeMap.get(e.dst);
       if (!a || !b) continue;
+
+      const ax = cx + (a.x - size.w / 2) * zoom;
+      const ay = cy + (a.y - size.h / 2) * zoom;
+      const bx = cx + (b.x - size.w / 2) * zoom;
+      const by = cy + (b.y - size.h / 2) * zoom;
+
       const isMalicious = e.label === 1;
       if (maliciousOnly && !isMalicious) continue;
+
       const isAttack = relationIsAttack(e.relation);
-      const isHighlighted = highlightSet.has(e.src) && highlightSet.has(e.dst);
-      let strokeColor = isDark ? '#3a4a5f' : '#cbd5e1';
-      let strokeWidth = 1;
-      if (isMalicious) {
-        strokeColor = colorHex('red', isDark);
-        strokeWidth = isAttack ? 2.5 : 2;
-        if (isDark) {
-          ctx.shadowColor = "rgba(244, 63, 94, 0.7)";
-          ctx.shadowBlur = 6;
-        }
-      }
-      if (isHighlighted) {
-        strokeColor = colorHex('teal', isDark);
-        strokeWidth = 2.5;
-      }
+      const isSelected = selected && (selected === a.id || selected === b.id);
+
       ctx.save();
-      ctx.translate(pan.x, pan.y);
-      ctx.scale(zoom, zoom);
+      let strokeColor = isDark ? '#1e293b' : '#dfd7c2';
+      let strokeWidth = 1.2 * zoom;
+
+      if (isMalicious) {
+        strokeColor = isDark ? '#f43f5e' : '#dc322f';
+        strokeWidth = (isAttack ? 2.8 : 2.0) * zoom;
+        if (isDark) {
+          ctx.shadowColor = 'rgba(244, 63, 94, 0.7)';
+          ctx.shadowBlur = 8;
+        }
+      } else if (isSelected) {
+        strokeColor = isDark ? '#38bdf8' : '#2aa198';
+        strokeWidth = 2.2 * zoom;
+      }
+
       ctx.strokeStyle = strokeColor;
       ctx.lineWidth = strokeWidth;
-      ctx.globalAlpha = isHighlighted ? 1 : (isMalicious ? 0.85 : 0.45);
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      ctx.stroke();
-      // Arrowhead
-      const angle = Math.atan2(b.y - a.y, b.x - a.x);
-      const ax = b.x - Math.cos(angle) * (b.radius + 4);
-      const ay = b.y - Math.sin(angle) * (b.radius + 4);
       ctx.beginPath();
       ctx.moveTo(ax, ay);
-      ctx.lineTo(
-        ax - Math.cos(angle - Math.PI / 6) * 6,
-        ay - Math.sin(angle - Math.PI / 6) * 6,
-      );
-      ctx.lineTo(
-        ax - Math.cos(angle + Math.PI / 6) * 6,
-        ay - Math.sin(angle + Math.PI / 6) * 6,
-      );
-      ctx.closePath();
+      ctx.lineTo(bx, by);
+      ctx.stroke();
+
+      // Draw directional arrow
+      const angle = Math.atan2(by - ay, bx - ax);
+      const arrowDist = b.radius * zoom + 6;
+      const arrowX = bx - Math.cos(angle) * arrowDist;
+      const arrowY = by - Math.sin(angle) * arrowDist;
+      const headLen = 7 * zoom;
+
       ctx.fillStyle = strokeColor;
+      ctx.beginPath();
+      ctx.moveTo(arrowX, arrowY);
+      ctx.lineTo(arrowX - headLen * Math.cos(angle - Math.PI / 6), arrowY - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(arrowX - headLen * Math.cos(angle + Math.PI / 6), arrowY - headLen * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
       ctx.fill();
-      // Edge label
+
+      // Flow pulse packet moving along edge
+      const pulseProgress = ((frame * 0.015 + i * 0.3) % 1);
+      const pulseX = ax + (bx - ax) * pulseProgress;
+      const pulseY = ay + (by - ay) * pulseProgress;
+      ctx.beginPath();
+      ctx.arc(pulseX, pulseY, (isMalicious ? 3 : 2) * zoom, 0, Math.PI * 2);
+      ctx.fillStyle = isMalicious ? (isDark ? '#f43f5e' : '#dc322f') : (isDark ? '#38bdf8' : '#2aa198');
+      ctx.fill();
+
+      // Edge labels
       if (showEdgeLabels) {
-        const midX = (a.x + b.x) / 2;
-        const midY = (a.y + b.y) / 2;
-        ctx.font = '9px ui-monospace, monospace';
-        ctx.fillStyle = isDark ? '#7d95ae' : '#667085';
-        ctx.textAlign = 'center';
-        ctx.fillText(e.relation, midX, midY - 4);
+        const mx = (ax + bx) / 2;
+        const my = (ay + by) / 2;
+        ctx.fillStyle = isDark ? '#94a3b8' : '#586e75';
+        ctx.font = `${Math.max(9, 10 * zoom)}px monospace`;
+        ctx.fillText(e.relation, mx + 5, my - 5);
       }
+
       ctx.restore();
     }
 
-    // Draw nodes
-    for (const n of nodeMap.values()) {
+    // 3. Draw Nodes
+    for (const n of vis.nodeArr) {
+      const nx = cx + (n.x - size.w / 2) * zoom;
+      const ny = cy + (n.y - size.h / 2) * zoom;
+      const nr = n.radius * zoom;
+
+      const isSelected = selected === n.id;
+      const isHovered = hoveredNodeId === n.id;
+      const isMalicious = n.severity > 0.8;
+
       ctx.save();
-      ctx.translate(pan.x, pan.y);
-      ctx.scale(zoom, zoom);
-      const meta = NODE_TYPE_META[n.type];
-      const baseColor = colorHex(meta.color, isDark);
-      const isSelected = n.id === selected;
-      const isHovered = n.id === hovered;
-      const isHighlighted = highlightSet.has(n.id);
-      // Stroke ring for selection/hover
-      if (isSelected) {
-        if (isDark) {
-          ctx.shadowColor = "rgba(0, 242, 254, 0.8)";
-          ctx.shadowBlur = 12;
-        }
+
+      // Selected or Threat Luminous Halo
+      if (isSelected || isMalicious) {
         ctx.beginPath();
-        ctx.arc(n.x, n.y, n.radius + 5, 0, Math.PI * 2);
-        ctx.strokeStyle = colorHex('cyan', isDark);
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-      } else if (isHovered) {
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, n.radius + 3, 0, Math.PI * 2);
-        ctx.strokeStyle = isDark ? '#7d95ae' : '#667085';
+        ctx.arc(nx, ny, nr + 6 * zoom, 0, Math.PI * 2);
+        ctx.strokeStyle = isMalicious
+          ? (isDark ? 'rgba(244, 63, 94, 0.4)' : 'rgba(220, 50, 47, 0.35)')
+          : (isDark ? 'rgba(56, 189, 248, 0.4)' : 'rgba(42, 161, 152, 0.35)');
         ctx.lineWidth = 1.5;
         ctx.stroke();
+
+        if (isSelected) {
+          // Tactical corner reticle around selected node
+          const boxS = nr + 10 * zoom;
+          ctx.strokeStyle = isDark ? '#38bdf8' : '#2aa198';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(nx - boxS, ny - boxS, boxS * 2, boxS * 2);
+        }
       }
-      // Node fill — blend base color with red if malicious
+
+      // Node Body
+      let fillColor = isDark ? '#111724' : '#fffcf4';
+      let strokeColor = isDark ? '#38bdf8' : '#268bd2';
+
+      if (isMalicious) {
+        fillColor = isDark ? 'rgba(244, 63, 94, 0.2)' : 'rgba(220, 50, 47, 0.15)';
+        strokeColor = isDark ? '#f43f5e' : '#dc322f';
+      } else if (n.severity > 0.4) {
+        fillColor = isDark ? 'rgba(246, 163, 32, 0.15)' : 'rgba(181, 137, 0, 0.12)';
+        strokeColor = isDark ? '#f6a320' : '#b58900';
+      }
+
       ctx.beginPath();
-      ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
-      let fillColor = baseColor;
-      if (n.severity > 0) {
-        // Mix with red proportional to severity
-        fillColor = mixColors(baseColor, colorHex('red', isDark), n.severity);
-      }
+      ctx.arc(nx, ny, nr, 0, Math.PI * 2);
       ctx.fillStyle = fillColor;
-      ctx.globalAlpha = isHighlighted ? 1 : 0.9;
       ctx.fill();
-      ctx.strokeStyle = isDark ? '#0c1929' : '#ffffff';
-      ctx.lineWidth = 1;
-      ctx.globalAlpha = 1;
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = (isSelected ? 2.5 : 1.5) * zoom;
       ctx.stroke();
-      // Label on hover/selected
-      if (isSelected || isHovered) {
-        ctx.font = '11px ui-monospace, monospace';
-        const label = shortNodeId(n.id);
-        const textWidth = ctx.measureText(label).width;
-        ctx.fillStyle = isDark ? 'rgba(7,21,37,0.95)' : 'rgba(255,255,255,0.95)';
-        ctx.fillRect(n.x + 8, n.y - 6, textWidth + 8, 14);
-        ctx.fillStyle = isDark ? '#d8e5f2' : '#0f1b2d';
-        ctx.textAlign = 'left';
-        ctx.fillText(label, n.x + 12, n.y + 4);
+
+      // Inner icon / dot
+      ctx.beginPath();
+      ctx.arc(nx, ny, Math.max(2, nr * 0.3), 0, Math.PI * 2);
+      ctx.fillStyle = strokeColor;
+      ctx.fill();
+
+      // Node text label
+      ctx.fillStyle = isDark ? '#f8fafc' : '#073642';
+      ctx.font = `${Math.max(10, 11 * zoom)}px 'JetBrains Mono', monospace`;
+      ctx.textAlign = 'center';
+      const labelText = shortNodeId(n.id);
+      ctx.fillText(labelText, nx, ny + nr + 14 * zoom);
+
+      // Threat tag if malicious
+      if (isMalicious) {
+        ctx.fillStyle = isDark ? '#f43f5e' : '#dc322f';
+        ctx.font = '9px monospace';
+        ctx.fillText('MALICIOUS', nx, ny - nr - 6 * zoom);
       }
+
       ctx.restore();
     }
-  }, [vis, size, isDark, selectedNodeId, hovered, pan, zoom, showEdgeLabels, maliciousOnly, highlightChainId]);
+  }, [vis, size, zoom, pan, isDark, showEdgeLabels, maliciousOnly, selectedNodeId, hoveredNodeId]);
 
-  // Mouse handlers
-  const onMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    // Convert to graph coords
-    const wx = (mx - pan.x) / zoom;
-    const wy = (my - pan.y) / zoom;
-    if (dragRef.current?.mode === 'pan') {
-      const dx = e.clientX - dragRef.current.x;
-      const dy = e.clientY - dragRef.current.y;
-      dragRef.current.x = e.clientX;
-      dragRef.current.y = e.clientY;
-      setPan((p) => ({ x: p.x + dx, y: p.y + dy }));
+  // Interactive mouse handlers: Click, Drag to Pan, Wheel to Zoom
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    isDraggingRef.current = true;
+    dragStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isDraggingRef.current) {
+      setPan({
+        x: e.clientX - dragStartRef.current.x,
+        y: e.clientY - dragStartRef.current.y,
+      });
       return;
     }
-    if (dragRef.current?.mode === 'node' && dragRef.current.nodeId) {
-      const n = vis.nodeMap.get(dragRef.current.nodeId);
-      if (n) {
-        n.x = wx;
-        n.y = wy;
-        n.vx = 0;
-        n.vy = 0;
-      }
-      return;
-    }
+
     // Hover detection
-    let hover: string | null = null;
-    for (const n of vis.nodeMap.values()) {
-      const dx = wx - n.x;
-      const dy = wy - n.y;
-      if (dx * dx + dy * dy <= n.radius * n.radius) {
-        hover = n.id;
-        break;
-      }
-    }
-    if (hover !== hovered) setHovered(hover);
-  }, [pan, zoom, vis, hovered]);
-
-  const onMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
-    const wx = (mx - pan.x) / zoom;
-    const wy = (my - pan.y) / zoom;
-    // Find node under cursor
+
+    const cx = size.w / 2 + pan.x;
+    const cy = size.h / 2 + pan.y;
+
     let found: string | null = null;
-    for (const n of vis.nodeMap.values()) {
-      const dx = wx - n.x;
-      const dy = wy - n.y;
-      if (dx * dx + dy * dy <= n.radius * n.radius) {
+    for (const n of vis.nodeArr) {
+      const nx = cx + (n.x - size.w / 2) * zoom;
+      const ny = cy + (n.y - size.h / 2) * zoom;
+      const dist = Math.hypot(mx - nx, my - ny);
+      if (dist <= (n.radius + 6) * zoom) {
         found = n.id;
         break;
       }
     }
-    if (found) {
-      dragRef.current = { x: e.clientX, y: e.clientY, mode: 'node', nodeId: found };
-    } else {
-      dragRef.current = { x: e.clientX, y: e.clientY, mode: 'pan' };
-    }
-  }, [pan, zoom, vis]);
+    setHoveredNodeId(found);
+  };
 
-  const onMouseUp = useCallback(() => {
-    if (dragRef.current?.mode === 'node' && dragRef.current.nodeId) {
-      onSelectNode?.(dragRef.current.nodeId);
-    }
-    dragRef.current = null;
-  }, [onSelectNode]);
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const wasDragging = Math.hypot(e.clientX - dragStartRef.current.x - pan.x, e.clientY - dragStartRef.current.y - pan.y) > 4;
+    isDraggingRef.current = false;
 
-  const onWheel = useCallback((e: React.WheelEvent<HTMLCanvasElement>) => {
-    const delta = -e.deltaY * 0.001;
-    setZoom((z) => Math.max(0.2, Math.min(3, z + delta)));
-  }, []);
+    if (!wasDragging) {
+      // Click selection
+      if (hoveredNodeId) {
+        if (onSelectNode) onSelectNode(hoveredNodeId === selectedNodeId ? null : hoveredNodeId);
+      } else {
+        if (onSelectNode) onSelectNode(null);
+      }
+    }
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 1.1 : 0.9;
+    setZoom((z) => Math.min(2.5, Math.max(0.4, z * delta)));
+  };
+
+  const resetView = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    if (onSelectNode) onSelectNode(null);
+  };
 
   return (
-    <div
-      ref={containerRef}
-      className={`relative w-full h-full bg-[hsl(var(--background))] overflow-hidden ${className ?? ''}`}
-    >
+    <div ref={containerRef} className={`relative w-full h-full min-h-[480px] select-none ${className}`}>
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 cursor-grab active:cursor-grabbing"
-        onMouseMove={onMouseMove}
-        onMouseDown={onMouseDown}
-        onMouseUp={onMouseUp}
-        onMouseLeave={() => { dragRef.current = null; setHovered(null); }}
-        onWheel={onWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onWheel={handleWheel}
+        className="w-full h-full cursor-grab active:cursor-grabbing block"
       />
-      {/* Hover tooltip */}
-      {hovered && (() => {
-        const n = vis.nodeMap.get(hovered);
-        if (!n) return null;
-        const meta = NODE_TYPE_META[n.type];
-        return (
-          <div className="absolute top-2 left-2 px-2 py-1 rounded text-[10px] font-mono bg-[hsl(var(--card))] border border-[hsl(var(--border))] shadow-lg pointer-events-none z-10">
-            <div className="text-[hsl(var(--foreground))]">{meta.label}</div>
-            <div className="text-[hsl(var(--muted-foreground))]">{shortNodeId(n.id)}</div>
-            <div className="text-[hsl(var(--muted-foreground))]">deg={n.degree}</div>
-          </div>
-        );
-      })()}
-      {/* Zoom controls */}
-      <div className="absolute bottom-2 right-2 flex flex-col gap-1">
+
+      {/* Floating Canvas Controls */}
+      <div className="absolute bottom-4 right-4 flex items-center gap-1.5 bg-[hsl(var(--card)/0.85)] backdrop-blur-xs border border-[hsl(var(--border))] rounded-md p-1 shadow-lg">
         <button
           type="button"
-          onClick={() => setZoom((z) => Math.min(3, z + 0.2))}
-          className="size-6 rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] text-xs"
-        >+</button>
+          onClick={() => setZoom((z) => Math.min(2.5, z * 1.2))}
+          className="size-7 rounded hover:bg-[hsl(var(--background))] flex items-center justify-center font-mono text-xs font-bold text-[hsl(var(--foreground))]"
+          title="Zoom In"
+        >
+          +
+        </button>
         <button
           type="button"
-          onClick={() => setZoom((z) => Math.max(0.2, z - 0.2))}
-          className="size-6 rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] text-xs"
-        >−</button>
+          onClick={() => setZoom((z) => Math.max(0.4, z * 0.8))}
+          className="size-7 rounded hover:bg-[hsl(var(--background))] flex items-center justify-center font-mono text-xs font-bold text-[hsl(var(--foreground))]"
+          title="Zoom Out"
+        >
+          -
+        </button>
         <button
           type="button"
-          onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
-          className="size-6 rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] text-[9px] font-mono"
-        >0</button>
+          onClick={resetView}
+          className="px-2 h-7 rounded hover:bg-[hsl(var(--background))] flex items-center justify-center font-mono text-[10px] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+          title="Reset View"
+        >
+          RESET
+        </button>
       </div>
-      {/* Selected node detail chip */}
-      {selectedNodeId && vis.nodeMap.has(selectedNodeId) && (() => {
-        const n = vis.nodeMap.get(selectedNodeId)!;
-        const meta = NODE_TYPE_META[n.type];
-        return (
-          <div className="absolute top-2 right-2 px-2 py-1.5 rounded bg-[hsl(var(--card))] border border-[hsl(var(--border))] shadow-lg z-10 text-[10px] font-mono">
-            <div className="text-[hsl(var(--foreground))] font-semibold">{meta.label} · {shortNodeId(n.id)}</div>
-            <div className="text-[hsl(var(--muted-foreground))]">type: {n.type} · deg: {n.degree} · sev: {typeof n.severity === 'number' && !Number.isNaN(n.severity) ? n.severity.toFixed(2) : '0.00'}</div>
-            <button
-              type="button"
-              onClick={() => onSelectNode?.(null)}
-              className="mt-1 text-[9px] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-            >clear ✕</button>
-          </div>
-        );
-      })()}
+
+      {/* Interactive Legend & Coordinates Indicator */}
+      <div className="absolute bottom-4 left-4 pointer-events-none flex items-center gap-3 text-[10px] font-mono text-[hsl(var(--muted-foreground))] bg-[hsl(var(--card)/0.7)] backdrop-blur-xs px-2.5 py-1 rounded border border-[hsl(var(--border)/0.5)]">
+        <span className="flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-emerald-500" />
+          <span>BENIGN</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-rose-500" />
+          <span>MALICIOUS</span>
+        </span>
+        <span className="text-[hsl(var(--primary))] pl-1 border-l border-[hsl(var(--border))]">
+          ZOOM: {Math.round(zoom * 100)}%
+        </span>
+      </div>
     </div>
   );
-}
-
-// Color mixer — blend two hex colors by amount 0..1 (1 = full target).
-function mixColors(a: string, b: string, t: number): string {
-  const ra = parseInt(a.slice(1, 3), 16);
-  const ga = parseInt(a.slice(3, 5), 16);
-  const ba = parseInt(a.slice(5, 7), 16);
-  const rb = parseInt(b.slice(1, 3), 16);
-  const gb = parseInt(b.slice(3, 5), 16);
-  const bb = parseInt(b.slice(5, 7), 16);
-  const r = Math.round(ra + (rb - ra) * t);
-  const g = Math.round(ga + (gb - ga) * t);
-  const bl = Math.round(ba + (bb - ba) * t);
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${bl.toString(16).padStart(2, '0')}`;
 }

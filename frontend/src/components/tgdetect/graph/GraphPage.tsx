@@ -139,17 +139,17 @@ export function GraphPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Re
 
         {/* Canvas - Star of Platform */}
         <div className="lg:col-span-3 space-y-2">
-          <div className="tg-card hud-bracket p-0 overflow-hidden h-[72vh] relative border-cyan-500/30 bg-[#030712] shadow-[0_0_20px_rgba(0,242,254,0.06)]">
+          <div className="tg-panel hud-bracket p-0 overflow-hidden h-[74vh] relative border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-lg">
             {/* Tactical HUD Header Bar */}
-            <div className="absolute top-0 inset-x-0 z-10 px-3 py-1.5 bg-[#070d1a]/90 backdrop-blur-md border-b border-cyan-500/20 flex items-center justify-between gap-2 text-[10px] font-mono pointer-events-none">
+            <div className="absolute top-0 inset-x-0 z-10 px-3.5 py-2 bg-[hsl(var(--card)/0.92)] backdrop-blur-md border-b border-[hsl(var(--border))] flex items-center justify-between gap-2 text-[10px] font-mono pointer-events-none">
               <div className="flex items-center gap-2 pointer-events-auto">
-                <span className="size-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                <span className="font-bold tracking-wider text-cyan-300">SYS://TEMPORAL_GRAPH // CTU-13 TOPOLOGY</span>
+                <span className="size-1.5 rounded-full bg-[hsl(var(--primary))] animate-pulse" />
+                <span className="font-bold tracking-wider text-[hsl(var(--primary))]">SYS://TEMPORAL_GRAPH // CTU-13 TOPOLOGY</span>
               </div>
-              <div className="flex items-center gap-3 text-[10px] text-cyan-400/80">
-                <span>NODES: <strong className="text-white">{filteredNodes.length}</strong></span>
+              <div className="flex items-center gap-3 text-[10px] text-[hsl(var(--muted-foreground))]">
+                <span>NODES: <strong className="text-[hsl(var(--foreground))]">{filteredNodes.length}</strong></span>
                 <span>•</span>
-                <span>EDGES: <strong className="text-white">{filteredEdges.length}</strong></span>
+                <span>EDGES: <strong className="text-[hsl(var(--foreground))]">{filteredEdges.length}</strong></span>
                 <span>•</span>
                 <span>MALICIOUS: <strong className={filteredEdges.filter(e => e.label === 1).length > 0 ? "text-rose-400 font-bold" : "text-emerald-400"}>{filteredEdges.filter(e => e.label === 1).length}</strong></span>
               </div>
@@ -175,7 +175,7 @@ export function GraphPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Re
 
             {/* Tactical HUD Footer Overlay */}
             <div className="absolute bottom-2 left-3 z-10 pointer-events-none">
-              <div className="text-[9px] font-mono text-cyan-400/60 bg-[#070d1a]/80 backdrop-blur-xs px-2 py-0.5 rounded border border-cyan-500/20">
+              <div className="text-[9px] font-mono text-[hsl(var(--muted-foreground))] bg-[hsl(var(--card)/0.88)] backdrop-blur-xs px-2.5 py-1 rounded border border-[hsl(var(--border))]">
                 PAN: DRAG · ZOOM: SCROLL · SELECT: CLICK NODE
               </div>
             </div>

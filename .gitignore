@@ -123,3 +123,10 @@ CLAUDE.md
 /download/
 /upload/
 /tool-results/
+.continue/
+.qmind/
+.directory
+docs/baseline_audit/
+backend/data/fixtures/
+backend/data/processed/test_e2e_simulation/
+backend/data/uploads/

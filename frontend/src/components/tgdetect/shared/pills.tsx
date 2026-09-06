@@ -1,5 +1,7 @@
 'use client';
 
+import { TGDetectLoader } from './TGDetectLoader';
+
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { NODE_TYPE_META, RELATION_TYPE_META } from '@/lib/tgdetect/constants';
@@ -326,11 +328,10 @@ export function EmptyState({
   );
 }
 
-export function LoadingState({ label = 'Loading…', className }: { label?: string; className?: string }) {
+export function LoadingState({ label = 'Streaming telemetry & temporal graph...', className }: { label?: string; className?: string }) {
   return (
-    <div className={cn('flex items-center justify-center py-12 text-xs text-[hsl(var(--muted-foreground))]', className)}>
-      <div className="size-3 mr-2 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
-      {label}
+    <div className={cn('py-8', className)}>
+      <TGDetectLoader message={label} />
     </div>
   );
 }

@@ -18,6 +18,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react';
+import { BackgroundMotion } from '@/components/tgdetect/shared/BackgroundMotion';
 import { OverviewPage } from '@/components/tgdetect/overview/OverviewPage';
 import { EventsPage } from '@/components/tgdetect/events/EventsPage';
 import { GraphPage } from '@/components/tgdetect/graph/GraphPage';
@@ -117,7 +118,8 @@ export default function Home() {
   const activeItem = useMemo(() => NAV_ITEMS.find((i) => i.id === activePage) ?? NAV_ITEMS[0], [activePage]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+    <div className="min-h-screen flex flex-col bg-[hsl(var(--background))] text-[hsl(var(--foreground))] relative overflow-x-hidden">
+      <BackgroundMotion />
       <div className="flex flex-1">
         {/* Sidebar */}
         <aside
