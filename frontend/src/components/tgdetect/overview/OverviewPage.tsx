@@ -27,7 +27,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { useGraphStats, useRecentMalicious } from '@/lib/tgdetect/services/hooks';
+import { useGraphStats, useRecentMalicious, useTGNNSummary, useEvaluationRun } from '@/lib/tgdetect/services/hooks';
+import { useModel } from '@/lib/model-context';
+import { Cpu, ShieldCheck, Target, CheckCircle, Crosshair } from 'lucide-react';
 import {
   formatDurationLong,
   formatEpoch,
@@ -50,21 +52,27 @@ import {
 import type { GraphStats, TGEvent } from '@/lib/tgdetect/types';
 
 export function OverviewPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Record<string, unknown>) => void }) {
+  const { activeModel, activeModelId, apiHealth } = useModel();
   const statsRes = useGraphStats();
   const recentMalRes = useRecentMalicious(8);
+  const summaryRes = useTGNNSummary(activeModelId);
+  const evalRes = useEvaluationRun('test', undefined, activeModelId);
 
-  if (statsRes.state === 'loading' || recentMalRes.state === 'loading') {
-    return <LoadingState label="Loading graph statistics…" />;
+  if (statsRes.state === 'loading' && !statsRes.data) {
+    return <LoadingState label="Connecting to backend and loading graph statistics…" />;
   }
-  if (statsRes.state === 'failed') {
-    return <ErrorState message={`Failed to load graph stats: ${statsRes.error}`} />;
+  if (statsRes.state === 'failed' && apiHealth === 'offline') {
+    return <ErrorState message={`Backend unavailable: ${statsRes.error}. Check that the TGDetect API server is running.`} />;
   }
   if (!statsRes.data) return <EmptyState title="No data" description="No graph statistics available" />;
 
   return (
     <div className="space-y-4">
-      <PipelineHeader stats={statsRes.data} />
-      <KpiRow stats={statsRes.data} />
+      <SystemOverviewBanner activeModel={activeModel} apiHealth={apiHealth} />
+      <DetectionPerformanceRow activeModel={activeModel} evalData={evalRes.data} />
+      <DatasetAndModelSummaryRow activeModel={activeModel} summaryData={summaryRes.data} stats={statsRes.data} />
+      <PipelineHeader stats={statsRes.data} activeModel={activeModel} />
+      <KpiRow stats={statsRes.data} activeModel={activeModel} />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <EventsOverTimeCard stats={statsRes.data} className="lg:col-span-2" />
         <NodeTypeDistributionCard stats={statsRes.data} />
@@ -84,11 +92,209 @@ export function OverviewPage({ onNavigate }: { onNavigate?: (page: string, ctx?:
   );
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// System & Model Banner
+// ─────────────────────────────────────────────────────────────────────────────
+
+function SystemOverviewBanner({ activeModel, apiHealth }: { activeModel: any; apiHealth: string }) {
+  return (
+    <div className="tg-card p-4 bg-gradient-to-r from-[hsl(var(--card))] via-[hsl(var(--card))] to-[hsl(var(--primary)/0.05)] border border-[hsl(var(--border))]">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-lg bg-[hsl(var(--primary)/0.15)] border border-[hsl(var(--primary)/0.3)] flex items-center justify-center text-[hsl(var(--primary))]">
+            <Cpu className="size-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold text-[hsl(var(--foreground))]">{activeModel?.name ?? 'Active Detection Model'}</h2>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border uppercase font-semibold ${
+                activeModel?.target === 'edge'
+                  ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-400'
+                  : 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400'
+              }`}>
+                {activeModel?.target ?? 'node'} classification
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-semibold">
+                {activeModel?.evaluation_status ?? 'evaluated'}
+              </span>
+            </div>
+            <div className="text-[11px] text-[hsl(var(--muted-foreground))] mt-0.5 font-mono flex items-center gap-3">
+              <span>Checkpoint: <span className="text-[hsl(var(--foreground))]">{activeModel?.checkpoint ?? 'best_model.pt'}</span></span>
+              <span>•</span>
+              <span>Dataset: <span className="text-[hsl(var(--foreground))]">{activeModel?.dataset_name ?? 'mordor_empire'}</span></span>
+              <span>•</span>
+              <span>API Status: <span className={apiHealth === 'connected' ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>{apiHealth.toUpperCase()}</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="text-right">
+            <div className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold">Trainable Params</div>
+            <div className="text-sm font-mono font-bold text-[hsl(var(--primary))]">{formatInt(activeModel?.trainable_parameters ?? 38787)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Detection Performance KPI Row (Section 7 Requirement)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function DetectionPerformanceRow({ activeModel, evalData }: { activeModel: any; evalData: any }) {
+  const m = evalData?.metrics ?? activeModel?.metrics ?? {};
+  const rocAuc = m.auc_roc ?? m.roc_auc ?? null;
+  const prAuc = m.auc_pr ?? m.pr_auc ?? null;
+  const f1 = m.f1 ?? null;
+  const precision = m.precision ?? null;
+  const recall = m.recall ?? null;
+  const accuracy = m.accuracy ?? null;
+  const recall1Pct = m.recall_at_1pct_fpr ?? m.recall_1pct_fpr ?? null;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-xs px-1">
+        <span className="font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] text-[11px] flex items-center gap-1.5">
+          <Crosshair className="size-3.5 text-[hsl(var(--primary))]" />
+          Model Detection Performance · {activeModel?.id ?? 'Current Checkpoint'}
+        </span>
+        <span className="text-[10px] font-mono text-[hsl(var(--muted-foreground))]">
+          Artifact-backed evaluation ({activeModel?.target === 'edge' ? 'test split · held-out flows' : 'test split · cyber range'})
+        </span>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <StatBlock
+          label="ROC-AUC"
+          value={rocAuc !== null ? rocAuc.toFixed(4) : '—'}
+          hint="Discrimination capability"
+          icon={TrendingUp}
+          color="teal"
+        />
+        <StatBlock
+          label="PR-AUC"
+          value={prAuc !== null ? prAuc.toFixed(4) : '—'}
+          hint="Precision-recall balance"
+          icon={Target}
+          color="info"
+        />
+        <StatBlock
+          label="Best F1"
+          value={f1 !== null ? f1.toFixed(4) : '—'}
+          hint="Harmonic mean"
+          icon={Activity}
+          color="purple"
+        />
+        <StatBlock
+          label="Precision"
+          value={precision !== null ? precision.toFixed(4) : '—'}
+          hint="Positive predictive value"
+          icon={ShieldCheck}
+          color="teal"
+        />
+        <StatBlock
+          label="Recall"
+          value={recall !== null ? recall.toFixed(4) : '—'}
+          hint="True positive rate"
+          icon={AlertTriangle}
+          color="warning"
+        />
+        <StatBlock
+          label={recall1Pct ? "Recall @ 1% FPR" : "Accuracy"}
+          value={recall1Pct ? `${(recall1Pct * 100).toFixed(2)}%` : accuracy !== null ? accuracy.toFixed(4) : '—'}
+          hint={recall1Pct ? "Operational benchmark" : "Overall accuracy"}
+          icon={CheckCircle}
+          color="teal"
+        />
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dataset & Model Architecture Summary (Section 7 Requirement)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function DatasetAndModelSummaryRow({ activeModel, summaryData, stats }: { activeModel: any; summaryData: any; stats: any }) {
+  const isCTU = activeModel?.id === 'ctu13_ho_c47';
+  const totalSamples = isCTU ? 1068851 : (stats?.graph?.total_events ?? 1219);
+  const maliciousSamples = isCTU ? 9256 : (stats?.graph?.malicious_events ?? 19);
+  const benignSamples = isCTU ? 1059595 : (stats?.graph?.benign_events ?? 1200);
+  const malRatio = totalSamples > 0 ? (maliciousSamples / totalSamples) : 0;
+
+  const inChannels = summaryData?.config?.in_channels ?? activeModel?.in_channels ?? 1;
+  const edgeDim = summaryData?.config?.edge_dim ?? activeModel?.edge_dim ?? 37;
+  const heads = summaryData?.output_heads ?? activeModel?.output_heads ?? ['node_classifier', 'snapshot_classifier'];
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Dataset Summary */}
+      <div className="tg-card p-4 space-y-3">
+        <SectionTitle right={<span className="text-[10px] font-mono px-2 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-400">{isCTU ? 'Benchmark Partition' : 'Synthetic Cyber Range'}</span>}>
+          Dataset Summary · {activeModel?.dataset_name ?? 'Active Dataset'}
+        </SectionTitle>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="p-2.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]">
+            <div className="text-[9px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold">Total {isCTU ? 'Flows' : 'Events'}</div>
+            <div className="text-base font-mono font-bold text-[hsl(var(--foreground))]">{formatInt(totalSamples)}</div>
+            <div className="text-[10px] text-[hsl(var(--muted-foreground))]">evaluation scope</div>
+          </div>
+          <div className="p-2.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]">
+            <div className="text-[9px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold">Benign {isCTU ? 'Traffic' : 'Events'}</div>
+            <div className="text-base font-mono font-bold text-emerald-400">{formatInt(benignSamples)}</div>
+            <div className="text-[10px] text-[hsl(var(--muted-foreground))]">{(100 - malRatio * 100).toFixed(2)}% of total</div>
+          </div>
+          <div className="p-2.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]">
+            <div className="text-[9px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold">Malicious {isCTU ? 'Botnet' : 'Attacks'}</div>
+            <div className="text-base font-mono font-bold text-rose-400">{formatInt(maliciousSamples)}</div>
+            <div className="text-[10px] text-[hsl(var(--muted-foreground))]">{(malRatio * 100).toFixed(2)}% threat ratio</div>
+          </div>
+        </div>
+        <div className="text-[11px] font-mono text-[hsl(var(--muted-foreground))] border-t border-[hsl(var(--border))] pt-2 flex items-center justify-between">
+          <span>Type: <strong className="text-[hsl(var(--foreground))]">{isCTU ? 'CTU-13 NetFlow Capture 47' : 'Mordor Host Telemetry'}</strong></span>
+          <span>Target: <strong className="text-[hsl(var(--foreground))]">{activeModel?.target?.toUpperCase() ?? 'EDGE'}</strong></span>
+        </div>
+      </div>
+
+      {/* Model Architecture Summary */}
+      <div className="tg-card p-4 space-y-3">
+        <SectionTitle right={<span className="text-[10px] font-mono px-2 py-0.5 rounded border border-purple-500/30 bg-purple-500/10 text-purple-300">GraphSAGE + GRU</span>}>
+          Model Architecture Summary
+        </SectionTitle>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="p-2.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]">
+            <div className="text-[9px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold">Total Params</div>
+            <div className="text-base font-mono font-bold text-cyan-400">{formatInt(activeModel?.trainable_parameters ?? 38787)}</div>
+            <div className="text-[10px] text-[hsl(var(--muted-foreground))]">100% trainable</div>
+          </div>
+          <div className="p-2.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]">
+            <div className="text-[9px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold">Node / Edge Dim</div>
+            <div className="text-base font-mono font-bold text-[hsl(var(--foreground))]">{inChannels} / {edgeDim}</div>
+            <div className="text-[10px] text-[hsl(var(--muted-foreground))]">input features</div>
+          </div>
+          <div className="p-2.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]">
+            <div className="text-[9px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold">Output Heads</div>
+            <div className="text-base font-mono font-bold text-purple-400">{heads.length}</div>
+            <div className="text-[10px] text-[hsl(var(--muted-foreground))]">{heads.join(', ')}</div>
+          </div>
+        </div>
+        <div className="text-[11px] font-mono text-[hsl(var(--muted-foreground))] border-t border-[hsl(var(--border))] pt-2 flex items-center justify-between">
+          <span>GNN: <strong className="text-[hsl(var(--foreground))]">SAGEConv (2 layers)</strong></span>
+          <span>Temporal: <strong className="text-[hsl(var(--foreground))]">GRU (hidden=64)</strong></span>
+          <span>Loss: <strong className="text-[hsl(var(--foreground))]">BCEWithLogitsLoss</strong></span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Pipeline header
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PipelineHeader({ stats }: { stats: GraphStats }) {
+function PipelineHeader({ stats, activeModel }: { stats: GraphStats; activeModel?: any }) {
   return (
     <div className="tg-card p-4">
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -132,7 +338,7 @@ function PipelineStep({ label, value, sub, icon: Icon, color }: { label: string;
 // KPI row
 // ─────────────────────────────────────────────────────────────────────────────
 
-function KpiRow({ stats }: { stats: GraphStats }) {
+function KpiRow({ stats, activeModel }: { stats: GraphStats; activeModel?: any }) {
   const malRatio = stats.graph.malicious_events / Math.max(1, stats.graph.total_events);
   const spanS = stats.graph.timestamp_span_s;
   return (

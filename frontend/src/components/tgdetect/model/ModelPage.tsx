@@ -25,6 +25,7 @@ import {
   YAxis,
 } from 'recharts';
 import {
+  useEvaluationRun,
   useEvaluationRuns,
   usePredictions,
   useSnapshotMeta,
@@ -33,6 +34,7 @@ import {
   useTGNNSummary,
   useTrainingRun,
 } from '@/lib/tgdetect/services/hooks';
+import { useModel } from '@/lib/model-context';
 import {
   formatDurationLong,
   formatFloat,
@@ -57,8 +59,52 @@ type ModelTab = 'architecture' | 'snapshots' | 'training' | 'evaluation';
 
 export function ModelPage() {
   const [tab, setTab] = useState<ModelTab>('architecture');
+  const { activeModel, activeModelId, setActiveModelId, models } = useModel();
+
   return (
     <div className="space-y-3">
+      {/* Model Selection Banner */}
+      <div className="tg-card p-3 flex items-center justify-between gap-3 flex-wrap bg-gradient-to-r from-[hsl(var(--card))] via-[hsl(var(--card))] to-[hsl(var(--primary)/0.05)] border border-[hsl(var(--border))]">
+        <div className="flex items-center gap-2.5">
+          <div className="size-8 rounded bg-[hsl(var(--primary)/0.15)] border border-[hsl(var(--primary)/0.3)] flex items-center justify-center text-[hsl(var(--primary))] font-mono font-bold text-xs">
+            {activeModel?.target === 'edge' ? 'E' : 'N'}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-[hsl(var(--foreground))]">{activeModel?.name}</span>
+              <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded border font-semibold uppercase ${
+                activeModel?.target === 'edge'
+                  ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-400'
+                  : 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400'
+              }`}>
+                {activeModel?.target ?? 'node'} target
+              </span>
+            </div>
+            <div className="text-[10px] text-[hsl(var(--muted-foreground))] font-mono">
+              checkpoint: <span className="text-[hsl(var(--foreground))]">{activeModel?.checkpoint}</span> · params: <span className="text-[hsl(var(--primary))]">{formatInt(activeModel?.trainable_parameters ?? 38787)}</span> · dataset: <span className="text-[hsl(var(--foreground))]">{activeModel?.dataset_name}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-[hsl(var(--muted-foreground))] uppercase font-mono mr-1">Switch Model:</span>
+          {models.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => setActiveModelId(m.id)}
+              className={`px-2.5 py-1 text-[11px] font-mono rounded border transition-all ${
+                activeModelId === m.id
+                  ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.15)] text-[hsl(var(--primary))] font-semibold shadow-xs'
+                  : 'border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
+              }`}
+            >
+              {m.id}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="bg-[hsl(var(--card))] p-1.5 rounded-lg border border-[hsl(var(--border))] flex flex-wrap gap-1 shadow-xs">
         {([
           { id: 'architecture', label: 'Architecture', icon: Brain },
@@ -86,10 +132,10 @@ export function ModelPage() {
         })}
       </div>
 
-      {tab === 'architecture' && <ArchitecturePanel />}
-      {tab === 'snapshots' && <SnapshotsPanel />}
-      {tab === 'training' && <TrainingPanel />}
-      {tab === 'evaluation' && <EvaluationPanel />}
+      {tab === 'architecture' && <ArchitecturePanel modelId={activeModelId} />}
+      {tab === 'snapshots' && <SnapshotsPanel modelId={activeModelId} />}
+      {tab === 'training' && <TrainingPanel modelId={activeModelId} />}
+      {tab === 'evaluation' && <EvaluationPanel modelId={activeModelId} />}
     </div>
   );
 }
@@ -98,9 +144,9 @@ export function ModelPage() {
 // Architecture
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ArchitecturePanel() {
-  const configRes = useTGNNConfig();
-  const summaryRes = useTGNNSummary();
+function ArchitecturePanel({ modelId }: { modelId: string }) {
+  const configRes = useTGNNConfig(modelId);
+  const summaryRes = useTGNNSummary(modelId);
   if (configRes.state === 'loading' || summaryRes.state === 'loading') return <LoadingState label="Loading model config…" />;
   if (!configRes.data || !summaryRes.data) return <EmptyState title="No model config" />;
   const cfg = configRes.data;
@@ -214,7 +260,7 @@ function Hyperparam({ label, value, hint }: { label: string; value: string | num
 // Snapshots
 // ─────────────────────────────────────────────────────────────────────────────
 
-function SnapshotsPanel() {
+function SnapshotsPanel({ modelId }: { modelId?: string } = {}) {
   const metaRes = useSnapshotMeta();
   const snapsRes = useSnapshots(120);
   if (metaRes.state === 'loading' || snapsRes.state === 'loading') return <LoadingState label="Loading snapshots…" />;
@@ -270,8 +316,8 @@ function SnapshotsPanel() {
 // Training
 // ─────────────────────────────────────────────────────────────────────────────
 
-function TrainingPanel() {
-  const runRes = useTrainingRun();
+function TrainingPanel({ modelId }: { modelId: string }) {
+  const runRes = useTrainingRun(modelId);
   if (runRes.state === 'loading') return <LoadingState label="Loading training run…" />;
   if (!runRes.data) return <EmptyState title="No training run" />;
   const run = runRes.data;
@@ -436,44 +482,45 @@ function TrainingPanel() {
 // Evaluation
 // ─────────────────────────────────────────────────────────────────────────────
 
-function EvaluationPanel() {
-  const runsRes = useEvaluationRuns();
+function EvaluationPanel({ modelId }: { modelId: string }) {
   const [split, setSplit] = useState<EvalSplit>('test');
-  const predsRes = usePredictions(split);
-  if (runsRes.state === 'loading') return <LoadingState label="Loading evaluation…" />;
-  
-  const availableSplits = new Set((runsRes.data ?? []).map((r) => r.split));
-  const run = (runsRes.data ?? []).find((r) => r.split === split) ?? null;
+  const evalRes = useEvaluationRun(split, undefined, modelId);
+  const predsRes = usePredictions(split, modelId);
+
+  if (evalRes.state === 'loading') return <LoadingState label="Loading model evaluation…" />;
+
+  const run = evalRes.data;
   const m = run?.metrics;
-  const cm = m ? confusionMatrixView(m.confusion_matrix) : null;
+  const cm = m?.confusion_matrix ? confusionMatrixView(m.confusion_matrix) : null;
 
   return (
     <div className="space-y-3">
       <div className="tg-card p-3 flex items-center gap-3 flex-wrap">
-        <SectionTitle className="flex-1">Evaluation</SectionTitle>
+        <SectionTitle className="flex-1">
+          Evaluation · {modelId} ({run?.target?.toUpperCase() ?? 'TARGET'})
+        </SectionTitle>
         <div className="flex gap-1">
           {(['train', 'val', 'test'] as EvalSplit[]).map((s) => {
-            const hasRun = availableSplits.has(s);
+            const isSelected = split === s;
             return (
               <button
                 key={s}
                 type="button"
                 onClick={() => setSplit(s)}
                 className={`px-2 py-1 text-[10px] font-mono border rounded transition-colors ${
-                  split === s
-                    ? 'border-[hsl(var(--primary)/0.6)] bg-[hsl(var(--info-bg))] font-semibold'
-                    : 'border-[hsl(var(--border))] bg-[hsl(var(--card))]'
-                } ${!hasRun ? 'opacity-50' : ''}`}
-                title={hasRun ? `${s} split` : `${s} (no evaluation artifact present on disk)`}
+                  isSelected
+                    ? 'border-[hsl(var(--primary)/0.6)] bg-[hsl(var(--info-bg))] font-semibold text-[hsl(var(--primary))]'
+                    : 'border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--muted-foreground))]'
+                }`}
               >
-                {s}{!hasRun ? ' (n/a)' : ''}
+                {s}
               </button>
             );
           })}
         </div>
       </div>
 
-      {!run || !m || !cm ? (
+      {!run || !m ? (
         <div className="tg-card p-6">
           <EmptyState
             title={`No evaluation artifact for split="${split}"`}
@@ -503,20 +550,38 @@ function EvaluationPanel() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <div className="tg-card p-4">
               <SectionTitle>Confusion Matrix</SectionTitle>
-              <div className="grid grid-cols-2 gap-2 mt-3 max-w-md mx-auto">
-                <CmCell label="TN" value={cm.tn} color="success" />
-                <CmCell label="FP" value={cm.fp} color="danger" />
-                <CmCell label="FN" value={cm.fn} color="warning" />
-                <CmCell label="TP" value={cm.tp} color="info" />
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] font-mono">
-                <div>TPR (recall): <span className="text-[hsl(var(--info))]">{formatFloat(cm.tpr, 4)}</span></div>
-                <div>FPR: <span className="text-[hsl(var(--danger))]">{formatFloat(cm.fpr, 4)}</span></div>
-                <div>TNR (specificity): <span className="text-[hsl(var(--success))]">{formatFloat(cm.tnr, 4)}</span></div>
-                <div>FNR: <span className="text-[hsl(var(--warning))]">{formatFloat(cm.fnr, 4)}</span></div>
-                <div>PPV (precision): <span className="text-[hsl(var(--info))]">{formatFloat(cm.ppv, 4)}</span></div>
-                <div>NPV: <span className="text-[hsl(var(--success))]">{formatFloat(cm.npv, 4)}</span></div>
-              </div>
+              {cm ? (
+                <>
+                  <div className="grid grid-cols-2 gap-2 mt-3 max-w-md mx-auto">
+                    <CmCell label="TN" value={cm.tn} color="success" />
+                    <CmCell label="FP" value={cm.fp} color="danger" />
+                    <CmCell label="FN" value={cm.fn} color="warning" />
+                    <CmCell label="TP" value={cm.tp} color="info" />
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] font-mono">
+                    <div>TPR (recall): <span className="text-[hsl(var(--info))]">{formatFloat(cm.tpr, 4)}</span></div>
+                    <div>FPR: <span className="text-[hsl(var(--danger))]">{formatFloat(cm.fpr, 4)}</span></div>
+                    <div>TNR (specificity): <span className="text-[hsl(var(--success))]">{formatFloat(cm.tnr, 4)}</span></div>
+                    <div>FNR: <span className="text-[hsl(var(--warning))]">{formatFloat(cm.fnr, 4)}</span></div>
+                    <div>PPV (precision): <span className="text-[hsl(var(--info))]">{formatFloat(cm.ppv, 4)}</span></div>
+                    <div>NPV: <span className="text-[hsl(var(--success))]">{formatFloat(cm.npv, 4)}</span></div>
+                  </div>
+                </>
+              ) : (
+                <div className="p-4 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-center my-4">
+                  <div className="text-xs text-[hsl(var(--muted-foreground))] mb-1 font-mono">
+                    Aggregate confusion matrix not computed in raw artifact
+                  </div>
+                  <div className="text-[11px] text-[hsl(var(--foreground))] font-medium">
+                    Model evaluated across threshold operating points:
+                  </div>
+                  <div className="mt-2 text-[10px] font-mono text-[hsl(var(--muted-foreground))] space-y-0.5">
+                    <div>Recall @ 1% FPR: <span className="text-emerald-400 font-semibold">{m.recall_at_1pct_fpr != null ? `${(m.recall_at_1pct_fpr * 100).toFixed(2)}%` : '—'}</span></div>
+                    <div>Threshold @ 1% FPR: <span className="text-[hsl(var(--foreground))]">{m.threshold_at_1pct_fpr != null ? formatFloat(m.threshold_at_1pct_fpr, 6) : '—'}</span></div>
+                    <div>Optimal Threshold: <span className="text-[hsl(var(--foreground))]">{m.threshold_best != null ? formatFloat(m.threshold_best, 6) : '—'}</span></div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="tg-card p-4">

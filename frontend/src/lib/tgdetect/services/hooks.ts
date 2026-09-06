@@ -21,6 +21,7 @@ import type {
   GraphEdge,
   GraphNode,
   GraphStats,
+  ModelMeta,
   PredictionRow,
   ProcessingJob,
   SnapshotInfo,
@@ -150,12 +151,16 @@ export function useArtifacts(jobId: string | null) {
   return useAsync<ArtifactMeta[]>(() => (jobId ? artifactService.listForJob(jobId) : Promise.resolve([])), [jobId]);
 }
 
-export function useTGNNConfig() {
-  return useAsync<TGNNModelConfig>(() => modelService.tgnnConfig(), []);
+export function useModels() {
+  return useAsync<ModelMeta[]>(() => modelService.models(), []);
 }
 
-export function useTGNNSummary() {
-  return useAsync<TGNNModelSummary>(() => modelService.tgnnSummary(), []);
+export function useTGNNConfig(modelId?: string) {
+  return useAsync<TGNNModelConfig>(() => modelService.tgnnConfig(modelId), [modelId]);
+}
+
+export function useTGNNSummary(modelId?: string) {
+  return useAsync<TGNNModelSummary>(() => modelService.tgnnSummary(modelId), [modelId]);
 }
 
 export function useSnapshotMeta() {
@@ -166,14 +171,21 @@ export function useSnapshots(limit?: number) {
   return useAsync<SnapshotInfo[]>(() => modelService.snapshots(limit), [limit]);
 }
 
-export function useTrainingRun() {
-  return useAsync<TrainingRun>(() => trainingService.currentRun(), []);
+export function useTrainingRun(modelId?: string) {
+  return useAsync<TrainingRun>(() => trainingService.currentRun(modelId), [modelId]);
 }
 
 export function useEvaluationRuns() {
   return useAsync<EvaluationRun[]>(() => trainingService.evaluationRuns(), []);
 }
 
-export function usePredictions(split: 'train' | 'val' | 'test') {
-  return useAsync<PredictionRow[]>(() => trainingService.predictions(split), [split]);
+export function useEvaluationRun(split: 'train' | 'val' | 'test', runId?: string, modelId?: string) {
+  return useAsync<EvaluationRun | null>(
+    () => trainingService.evaluationRun(split, runId, modelId),
+    [split, runId, modelId]
+  );
+}
+
+export function usePredictions(split: 'train' | 'val' | 'test', modelId?: string) {
+  return useAsync<PredictionRow[]>(() => trainingService.predictions(split, modelId), [split, modelId]);
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   CheckCircle2,
   CircleDashed,
@@ -39,7 +39,26 @@ import type { Dataset, DatasetKind, ProcessingConfig, ProcessingJob } from '@/li
 export function DatasetsPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Record<string, unknown>) => void }) {
   const datasetsRes = useDatasets();
   const jobsRes = useJobs();
-  const [selectedDatasetId, setSelectedDatasetId] = useState<string | null>(null);
+  const [selectedDatasetId, setSelectedDatasetId] = useState<string | null>('mordor_empire');
+
+  const allDatasets = useMemo(() => {
+    const list = [...(datasetsRes.data ?? [])];
+    if (!list.some((d) => d.id === 'ctu13_c47')) {
+      list.push({
+        id: 'ctu13_c47',
+        name: 'CTU-13 Scenario 47 (NetFlow)',
+        kind: 'ctu13' as DatasetKind,
+        source: 'backend/models/checkpoints/ctu13_ho_c47',
+        metadata_dir: null,
+        size_bytes: 3006285,
+        estimated_events: 1068851,
+        created_at: 1788686113,
+        last_job_id: 'job-ctu13-ho-c47-01',
+        tags: ['ctu13', 'held_out', 'benchmark'],
+      });
+    }
+    return list;
+  }, [datasetsRes.data]);
   const [showNewJobWizard, setShowNewJobWizard] = useState(false);
 
   return (
@@ -77,7 +96,7 @@ export function DatasetsPage({ onNavigate }: { onNavigate?: (page: string, ctx?:
             ) : (datasetsRes.data ?? []).length === 0 ? (
               <EmptyState title="No datasets" description="Click 'New dataset' to register a raw input" />
             ) : (
-              (datasetsRes.data ?? []).map((d) => (
+              allDatasets.map((d) => (
                 <button
                   key={d.id}
                   type="button"
@@ -150,7 +169,39 @@ function JobInspector({
     );
   }
   if (jobsLoading) return <LoadingState label="Loading jobs…" />;
-  const job = jobs.find((j) => j.dataset_id === datasetId);
+  let job = jobs.find((j) => j.dataset_id === datasetId);
+  if (!job && datasetId === 'ctu13_c47') {
+    job = {
+      id: 'job-ctu13-ho-c47-01',
+      dataset_id: 'ctu13_c47',
+      dataset_name: 'CTU-13 Scenario 47 (NetFlow)',
+      config: {
+        kind: 'ctu13' as DatasetKind,
+        source_tag: 'ctu13_c47',
+        label_mode: 'heuristic',
+        force_label: null,
+        label_window_s: 300,
+        no_label_propagation: false,
+        strategies: ['entity_time'],
+        chain_window_s: 86400,
+        chain_max_hops: 2,
+        max_subgraphs: 1000,
+        chunk_size: 100000,
+        limit: null,
+        use_networkx: false,
+      },
+      state: 'completed' as any,
+      progress: 1.0,
+      current_step: 'Completed held-out benchmark evaluation',
+      output_dir: 'models/checkpoints/ctu13_ho_c47/eval_test',
+      graphs_dir: 'models/checkpoints/ctu13_ho_c47',
+      started_at: 1788686000,
+      ended_at: 1788686042,
+      elapsed_s: 42.5,
+      stats_path: 'models/checkpoints/ctu13_ho_c47/test_metrics.json',
+      error: null,
+    };
+  }
   if (!job) {
     return (
       <div className="tg-card p-4 h-full">

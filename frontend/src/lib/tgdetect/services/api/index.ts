@@ -20,6 +20,7 @@ import type {
   GraphEdge,
   GraphNode,
   GraphStats,
+  ModelMeta,
   PredictionRow,
   ProcessingJob,
   SnapshotInfo,
@@ -219,12 +220,20 @@ export class ApiArtifactService implements ArtifactService {
 }
 
 export class ApiModelService implements ModelService {
-  async tgnnConfig(): Promise<TGNNModelConfig> {
-    return api.get<TGNNModelConfig>('/api/model/config');
+  async models(): Promise<ModelMeta[]> {
+    return api.get<ModelMeta[]>('/api/models');
   }
 
-  async tgnnSummary(): Promise<TGNNModelSummary> {
-    return api.get<TGNNModelSummary>('/api/model/summary');
+  async tgnnConfig(modelId?: string): Promise<TGNNModelConfig> {
+    return api.get<TGNNModelConfig>('/api/model/config', {
+      params: modelId ? { model_id: modelId } : undefined,
+    });
+  }
+
+  async tgnnSummary(modelId?: string): Promise<TGNNModelSummary> {
+    return api.get<TGNNModelSummary>('/api/model/summary', {
+      params: modelId ? { model_id: modelId } : undefined,
+    });
   }
 
   async snapshotMeta(): Promise<SnapshotMeta> {
@@ -254,8 +263,10 @@ export class ApiModelService implements ModelService {
 }
 
 export class ApiTrainingService implements TrainingService {
-  async currentRun(): Promise<TrainingRun> {
-    const raw = await api.get<any>('/api/model/training');
+  async currentRun(modelId?: string): Promise<TrainingRun> {
+    const raw = await api.get<any>('/api/model/training', {
+      params: modelId ? { model_id: modelId } : undefined,
+    });
     const history = raw.history || [];
     const bestEpochMetric = history.find((h: any) => h.epoch === raw.best_epoch) || history[0] || {};
     const cfg = raw.config || {};
@@ -316,28 +327,38 @@ export class ApiTrainingService implements TrainingService {
     };
   }
 
-  async history(): Promise<TrainingRun['history']> {
-    return api.get<TrainingRun['history']>('/api/model/training/history');
+  async history(modelId?: string): Promise<TrainingRun['history']> {
+    return api.get<TrainingRun['history']>('/api/model/training/history', {
+      params: modelId ? { model_id: modelId } : undefined,
+    });
   }
 
   async evaluationRuns(): Promise<EvaluationRun[]> {
     return api.get<EvaluationRun[]>('/api/model/evaluation/runs');
   }
 
-  async evaluationRun(split: 'train' | 'val' | 'test'): Promise<EvaluationRun | null> {
+  async evaluationRun(split: 'train' | 'val' | 'test', runId?: string, modelId?: string): Promise<EvaluationRun | null> {
     try {
       return await api.get<EvaluationRun>('/api/model/evaluation', {
-        params: { split },
+        params: {
+          split,
+          ...(runId ? { run_id: runId } : {}),
+          ...(modelId ? { model_id: modelId } : {}),
+        },
       });
     } catch {
       return null;
     }
   }
 
-  async predictions(split: 'train' | 'val' | 'test'): Promise<PredictionRow[]> {
+  async predictions(split: 'train' | 'val' | 'test', modelId?: string): Promise<PredictionRow[]> {
     try {
       return await api.get<PredictionRow[]>('/api/model/predictions', {
-        params: { split, limit: 100 },
+        params: {
+          split,
+          limit: 100,
+          ...(modelId ? { model_id: modelId } : {}),
+        },
       });
     } catch {
       return [];

@@ -62,6 +62,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 # Register routes under /api
 api_prefix = "/api"
+app.include_router(health.router)
 app.include_router(health.router, prefix=api_prefix)
 app.include_router(overview.router, prefix=api_prefix)
 app.include_router(events.router, prefix=api_prefix)

@@ -393,23 +393,77 @@ export interface TGNNModelConfig {
   dropout: number; // default 0.3
   node_types: number | null;
   num_relations: number | null;
+  learning_rate?: number;
+  weight_decay?: number;
+  gnn_type?: string;
+  rnn_type?: string;
+  has_node_classifier?: boolean;
+  has_snapshot_classifier?: boolean;
+  has_edge_classifier?: boolean;
+  target?: 'node' | 'edge';
 }
 
 export interface TGNNModelSummary {
-  architecture: 'TemporalGNN';
-  gnn_operator: 'GraphSAGE (SAGEConv)';
-  temporal_aggregator: 'GRU';
-  output_heads: ['node_classifier', 'snapshot_classifier'];
-  loss: 'BCEWithLogitsLoss';
-  has_attention: false;
-  has_transformer: false;
-  has_llm: false;
+  architecture: string;
+  model_name?: string;
+  architecture_type?: string;
+  target?: 'node' | 'edge';
+  gnn_operator: string;
+  temporal_aggregator: string;
+  output_heads: string[];
+  loss: string;
+  has_attention: boolean;
+  has_transformer: boolean;
+  has_llm: boolean;
   total_parameters?: number;
   trainable_parameters?: number;
   non_trainable_parameters?: number;
   bn_running_stats?: number;
   total_state_dict_elements?: number;
+  checkpoint_path?: string;
   config: TGNNModelConfig;
+  layers?: Array<{
+    name: string;
+    type: string;
+    input_dim?: number;
+    output_dim?: number;
+    num_features?: number;
+    input_size?: number;
+    hidden_size?: number;
+    num_layers?: number;
+    in_features?: number;
+    out_features?: number;
+  }>;
+}
+
+export interface ModelMeta {
+  id: string;
+  name: string;
+  description: string;
+  target: 'node' | 'edge';
+  dataset_id: string;
+  dataset_name: string;
+  checkpoint: string;
+  checkpoint_path: string;
+  trainable_parameters: number;
+  total_parameters: number;
+  in_channels: number;
+  edge_dim: number;
+  output_heads: string[];
+  has_edge_classifier: boolean;
+  evaluation_run_id?: string;
+  evaluation_status: string;
+  metrics?: {
+    roc_auc?: number;
+    pr_auc?: number;
+    f1?: number;
+    precision?: number;
+    recall?: number;
+    accuracy?: number;
+    recall_1pct_fpr?: number;
+    samples?: number;
+    positives?: number;
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -539,7 +593,13 @@ export interface EvaluationMetrics {
   auc_roc: number | null;
   /** `null` if only one class present in the split. */
   auc_pr: number | null;
-  confusion_matrix: ConfusionMatrix;
+  confusion_matrix: ConfusionMatrix | null;
+  recall_at_1pct_fpr?: number | null;
+  threshold_best?: number | null;
+  threshold_at_1pct_fpr?: number | null;
+  saved_threshold?: number | null;
+  f1_at_saved_threshold?: number | null;
+  accuracy_at_saved_threshold?: number | null;
 }
 
 export interface EvaluationRun {
@@ -547,10 +607,13 @@ export interface EvaluationRun {
   training_run_id: string;
   checkpoint_path: string;
   split: EvalSplit;
+  target?: 'node' | 'edge';
   metrics: EvaluationMetrics;
   predictions_path: string | null;
   started_at: number | null;
   ended_at: number | null;
+  checkpoint?: string;
+  evaluated_at?: number | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

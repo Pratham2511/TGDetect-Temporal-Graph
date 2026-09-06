@@ -52,6 +52,7 @@ import type {
   GraphEdge,
   GraphNode,
   GraphStats,
+  ModelMeta,
   PredictionRow,
   ProcessingJob,
   SnapshotInfo,
@@ -107,18 +108,19 @@ export interface ArtifactService {
 }
 
 export interface ModelService {
-  tgnnConfig(): Promise<TGNNModelConfig>;
-  tgnnSummary(): Promise<TGNNModelSummary>;
+  models(): Promise<ModelMeta[]>;
+  tgnnConfig(modelId?: string): Promise<TGNNModelConfig>;
+  tgnnSummary(modelId?: string): Promise<TGNNModelSummary>;
   snapshotMeta(): Promise<SnapshotMeta>;
   snapshots(limit?: number): Promise<SnapshotInfo[]>;
 }
 
 export interface TrainingService {
-  currentRun(): Promise<TrainingRun>;
-  history(): Promise<TrainingRun['history']>;
+  currentRun(modelId?: string): Promise<TrainingRun>;
+  history(modelId?: string): Promise<TrainingRun['history']>;
   evaluationRuns(): Promise<EvaluationRun[]>;
-  evaluationRun(split: 'train' | 'val' | 'test'): Promise<EvaluationRun | null>;
-  predictions(split: 'train' | 'val' | 'test'): Promise<PredictionRow[]>;
+  evaluationRun(split: 'train' | 'val' | 'test', runId?: string, modelId?: string): Promise<EvaluationRun | null>;
+  predictions(split: 'train' | 'val' | 'test', modelId?: string): Promise<PredictionRow[]>;
 }
 
 export interface ProcessingService {
@@ -274,11 +276,73 @@ class MockArtifactService implements ArtifactService {
 }
 
 class MockModelService implements ModelService {
-  async tgnnConfig(): Promise<TGNNModelConfig> {
+  async models(): Promise<ModelMeta[]> {
+    await delay(40);
+    return [
+      {
+        id: 'mordor_mixed',
+        name: 'Mordor Mixed (Host Threat)',
+        description: 'TemporalGNN (GraphSAGE + GRU) trained on Mordor multi-stage cyber range host telemetry',
+        target: 'node',
+        dataset_id: 'mordor_empire',
+        dataset_name: 'Mordor Empire (Synthetic Demo)',
+        checkpoint: 'best_model.pt',
+        checkpoint_path: 'models/checkpoints/mordor_mixed/best_model.pt',
+        trainable_parameters: 36098,
+        total_parameters: 36098,
+        in_channels: 10,
+        edge_dim: 8,
+        output_heads: ['node_classifier', 'snapshot_classifier'],
+        has_edge_classifier: false,
+        evaluation_run_id: 'eval_test_mordor_mixed',
+        evaluation_status: 'evaluated',
+        metrics: {
+          roc_auc: 0.7447,
+          pr_auc: 0.2363,
+          f1: 0.1004,
+          precision: 0.0528,
+          recall: 1.0,
+          accuracy: 0.0528,
+          samples: 20290,
+          positives: 1072,
+        },
+      },
+      {
+        id: 'ctu13_ho_c47',
+        name: 'CTU-13 Held-Out (Scenario 47)',
+        description: 'TemporalGNN (GraphSAGE + GRU + EdgeHead) trained on CTU-13 botnet captures and evaluated on held-out Scenario 47',
+        target: 'edge',
+        dataset_id: 'ctu13_c47',
+        dataset_name: 'CTU-13 Scenario 47 (NetFlow)',
+        checkpoint: 'best_model.pt',
+        checkpoint_path: 'models/checkpoints/ctu13_ho_c47/best_model.pt',
+        trainable_parameters: 38787,
+        total_parameters: 38787,
+        in_channels: 1,
+        edge_dim: 37,
+        output_heads: ['node_classifier', 'snapshot_classifier', 'edge_classifier'],
+        has_edge_classifier: true,
+        evaluation_run_id: 'eval_test_ctu13_ho_c47',
+        evaluation_status: 'evaluated',
+        metrics: {
+          roc_auc: 0.9983,
+          pr_auc: 0.7065,
+          f1: 0.8388,
+          precision: 0.7483,
+          recall: 0.9543,
+          accuracy: 0.9968,
+          recall_1pct_fpr: 0.9958,
+          samples: 1068851,
+          positives: 9256,
+        },
+      },
+    ];
+  }
+  async tgnnConfig(_modelId?: string): Promise<TGNNModelConfig> {
     await delay(40);
     return mockTGNNConfig();
   }
-  async tgnnSummary(): Promise<TGNNModelSummary> {
+  async tgnnSummary(_modelId?: string): Promise<TGNNModelSummary> {
     await delay(40);
     return mockTGNNSummary();
   }
@@ -293,11 +357,11 @@ class MockModelService implements ModelService {
 }
 
 class MockTrainingService implements TrainingService {
-  async currentRun(): Promise<TrainingRun> {
+  async currentRun(_modelId?: string): Promise<TrainingRun> {
     await delay(40);
     return mockTrainingRun();
   }
-  async history(): Promise<TrainingRun['history']> {
+  async history(_modelId?: string): Promise<TrainingRun['history']> {
     await delay(60);
     return mockTrainingHistory();
   }
@@ -305,11 +369,11 @@ class MockTrainingService implements TrainingService {
     await delay(60);
     return mockEvaluationRuns();
   }
-  async evaluationRun(split: 'train' | 'val' | 'test'): Promise<EvaluationRun | null> {
+  async evaluationRun(split: 'train' | 'val' | 'test', _runId?: string, _modelId?: string): Promise<EvaluationRun | null> {
     await delay(40);
     return mockEvaluationRun(split);
   }
-  async predictions(split: 'train' | 'val' | 'test'): Promise<PredictionRow[]> {
+  async predictions(split: 'train' | 'val' | 'test', _modelId?: string): Promise<PredictionRow[]> {
     await delay(80);
     return mockPredictions(split);
   }
