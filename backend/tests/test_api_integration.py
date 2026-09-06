@@ -99,10 +99,12 @@ class TestApiIntegration(unittest.TestCase):
         r_ds = client.get("/api/datasets")
         self.assertEqual(r_ds.status_code, 200)
         ds = r_ds.json()
-        self.assertEqual(len(ds), 1)
-        self.assertEqual(ds[0]["id"], "ctu13_c47")
-        self.assertEqual(ds[0]["kind"], "ctu13")
-        self.assertEqual(ds[0]["num_raw_events"], 1068851)
+        self.assertGreaterEqual(len(ds), 1)
+        ids = [d["id"] for d in ds]
+        self.assertIn("ctu13_c47", ids)
+        ctu = next(d for d in ds if d["id"] == "ctu13_c47")
+        self.assertEqual(ctu["kind"], "ctu13")
+        self.assertEqual(ctu["num_raw_events"], 1068851)
 
         r_jobs = client.get("/api/jobs")
         self.assertEqual(r_jobs.status_code, 200)

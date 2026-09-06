@@ -12,6 +12,7 @@ import {
   processingService,
   trainingService,
 } from './index';
+import { useDataset } from '@/lib/dataset-context';
 import type {
   ArtifactMeta,
   AttackChainSummary,
@@ -32,6 +33,7 @@ import type {
   TGNNModelSummary,
   TrainingRun,
   EvaluationRun,
+  OverviewTelemetry,
 } from '../types';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -86,58 +88,71 @@ function useAsync<T>(fn: () => Promise<T>, deps: unknown[]): AsyncValue<T> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useDatasets() {
-  return useAsync<Dataset[]>(() => datasetService.list(), []);
+  const { datasetVersion } = useDataset();
+  return useAsync<Dataset[]>(() => datasetService.list(), [datasetVersion]);
 }
 
 export function useEvents(filter?: EventFilter) {
+  const { datasetVersion } = useDataset();
   return useAsync(
     () => eventService.list(filter),
-    [filter?.event_id_query, filter?.labels?.join(','), filter?.node_types?.join(','), filter?.relations?.join(','), filter?.source_tags?.join(','), filter?.tactics?.join(','), filter?.chain_ids?.join(','), filter?.start_ts, filter?.end_ts, filter?.limit, filter?.offset],
+    [datasetVersion, filter?.event_id_query, filter?.labels?.join(','), filter?.node_types?.join(','), filter?.relations?.join(','), filter?.source_tags?.join(','), filter?.tactics?.join(','), filter?.chain_ids?.join(','), filter?.start_ts, filter?.end_ts, filter?.limit, filter?.offset],
   );
 }
 
 export function useEvent(eventId: string | null) {
-  return useAsync(() => (eventId ? eventService.get(eventId) : Promise.resolve(null)), [eventId]);
+  const { datasetVersion } = useDataset();
+  return useAsync(() => (eventId ? eventService.get(eventId) : Promise.resolve(null)), [eventId, datasetVersion]);
 }
 
 export function useChainEvents(chainId: string | null) {
-  return useAsync(() => (chainId ? eventService.byChain(chainId) : Promise.resolve([])), [chainId]);
+  const { datasetVersion } = useDataset();
+  return useAsync(() => (chainId ? eventService.byChain(chainId) : Promise.resolve([])), [chainId, datasetVersion]);
 }
 
 export function useNodeEvents(nodeId: string | null) {
-  return useAsync(() => (nodeId ? eventService.byNode(nodeId) : Promise.resolve([])), [nodeId]);
+  const { datasetVersion } = useDataset();
+  return useAsync(() => (nodeId ? eventService.byNode(nodeId) : Promise.resolve([])), [nodeId, datasetVersion]);
 }
 
 export function useRecentMalicious(limit: number) {
-  return useAsync(() => eventService.recentMalicious(limit), [limit]);
+  const { datasetVersion } = useDataset();
+  return useAsync(() => eventService.recentMalicious(limit), [limit, datasetVersion]);
 }
 
 export function useGraphNodes() {
-  return useAsync<GraphNode[]>(() => graphService.nodes(), []);
+  const { datasetVersion } = useDataset();
+  return useAsync<GraphNode[]>(() => graphService.nodes(), [datasetVersion]);
 }
 
 export function useGraphEdges() {
-  return useAsync<GraphEdge[]>(() => graphService.edges(), []);
+  const { datasetVersion } = useDataset();
+  return useAsync<GraphEdge[]>(() => graphService.edges(), [datasetVersion]);
 }
 
 export function useGraphStats() {
-  return useAsync<GraphStats>(() => graphService.stats(), []);
+  const { datasetVersion } = useDataset();
+  return useAsync<GraphStats>(() => graphService.stats(), [datasetVersion]);
 }
 
 export function useChains() {
-  return useAsync<AttackChainSummary[]>(() => chainService.list(), []);
+  const { datasetVersion } = useDataset();
+  return useAsync<AttackChainSummary[]>(() => chainService.list(), [datasetVersion]);
 }
 
 export function useChain(chainId: string | null) {
-  return useAsync(() => (chainId ? chainService.get(chainId) : Promise.resolve(null)), [chainId]);
+  const { datasetVersion } = useDataset();
+  return useAsync(() => (chainId ? chainService.get(chainId) : Promise.resolve(null)), [chainId, datasetVersion]);
 }
 
 export function useChainSubgraph(chainId: string | null) {
-  return useAsync<ChainSubgraph | null>(() => (chainId ? chainService.subgraph(chainId) : Promise.resolve(null)), [chainId]);
+  const { datasetVersion } = useDataset();
+  return useAsync<ChainSubgraph | null>(() => (chainId ? chainService.subgraph(chainId) : Promise.resolve(null)), [chainId, datasetVersion]);
 }
 
 export function useChainsByStrategy(strategy: ChainStrategy | null) {
-  return useAsync(() => (strategy ? chainService.listByStrategy(strategy) : Promise.resolve([])), [strategy]);
+  const { datasetVersion } = useDataset();
+  return useAsync(() => (strategy ? chainService.listByStrategy(strategy) : Promise.resolve([])), [strategy, datasetVersion]);
 }
 
 export function useJobs() {
@@ -148,8 +163,12 @@ export function useJob(id: string | null) {
   return useAsync(() => (id ? processingService.job(id) : Promise.resolve(null)), [id]);
 }
 
-export function useArtifacts(jobId: string | null) {
-  return useAsync<ArtifactMeta[]>(() => (jobId ? artifactService.listForJob(jobId) : Promise.resolve([])), [jobId]);
+export function useArtifacts(jobId?: string | null) {
+  const { datasetVersion, activeDatasetId } = useDataset();
+  return useAsync<ArtifactMeta[]>(
+    () => artifactService.listForJob(jobId || `job-${activeDatasetId}`),
+    [jobId, activeDatasetId, datasetVersion]
+  );
 }
 
 export function useModels() {
@@ -192,17 +211,30 @@ export function usePredictions(split: 'train' | 'val' | 'test', modelId?: string
 }
 
 export function useEventsAnalytics() {
-  return useAsync(() => analyticsService.eventsAnalytics(), []);
+  const { datasetVersion } = useDataset();
+  return useAsync(() => analyticsService.eventsAnalytics(), [datasetVersion]);
 }
 
 export function useGraphAnalytics() {
-  return useAsync(() => analyticsService.graphAnalytics(), []);
+  const { datasetVersion } = useDataset();
+  return useAsync(() => analyticsService.graphAnalytics(), [datasetVersion]);
 }
 
 export function useAttacksAnalytics() {
-  return useAsync(() => analyticsService.attacksAnalytics(), []);
+  const { datasetVersion } = useDataset();
+  return useAsync(() => analyticsService.attacksAnalytics(), [datasetVersion]);
 }
 
 export function useDatasetsAnalytics() {
-  return useAsync(() => analyticsService.datasetsAnalytics(), []);
+  const { datasetVersion } = useDataset();
+  return useAsync(() => analyticsService.datasetsAnalytics(), [datasetVersion]);
+}
+
+export function useOverview(datasetId?: string) {
+  const { datasetVersion, activeDatasetId } = useDataset();
+  const targetId = datasetId || activeDatasetId;
+  return useAsync<OverviewTelemetry>(
+    () => datasetService.overview(targetId),
+    [targetId, datasetVersion]
+  );
 }

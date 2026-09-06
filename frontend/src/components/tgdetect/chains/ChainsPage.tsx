@@ -10,6 +10,7 @@ import {
   Search,
   ShieldAlert,
 } from 'lucide-react';
+import { useDataset } from '@/lib/dataset-context';
 import {
   useChain,
   useChainEvents,
@@ -49,6 +50,7 @@ export interface ChainsPageProps {
 type DetailTab = 'timeline' | 'graph' | 'events' | 'evidence';
 
 export function ChainsPage({ initialChainId, onNavigate }: ChainsPageProps) {
+  const { activeDataset, activeDatasetId } = useDataset();
   const [selectedChainId, setSelectedChainId] = useState<string | null>(initialChainId ?? null);
   const [strategyFilter, setStrategyFilter] = useState<Set<ChainStrategy>>(new Set(CHAIN_STRATEGIES));
   const [search, setSearch] = useState('');
@@ -71,7 +73,15 @@ export function ChainsPage({ initialChainId, onNavigate }: ChainsPageProps) {
       {/* Left: chain list */}
       <div className="space-y-3">
         <div className="tg-card p-3 space-y-2">
-          <SectionTitle right={<GitBranch className="size-3 text-[hsl(var(--muted-foreground))]" />}>Attack Chains</SectionTitle>
+          <SectionTitle right={<GitBranch className="size-3 text-[hsl(var(--muted-foreground))]" />}>
+            <div className="flex items-center gap-2">
+              <span className={`size-2 rounded-full ${activeDataset?.provenance === 'benchmark' ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
+              <span>Attack Chains</span>
+            </div>
+          </SectionTitle>
+          <div className="text-[10px] text-[hsl(var(--muted-foreground))] font-mono">
+            PARTITION: <strong className="text-[hsl(var(--primary))]">{activeDataset?.name ?? activeDatasetId ?? 'ACTIVE'}</strong>
+          </div>
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-[hsl(var(--muted-foreground))]" />
             <input
@@ -106,8 +116,13 @@ export function ChainsPage({ initialChainId, onNavigate }: ChainsPageProps) {
             <LoadingState label="Loading chains…" />
           ) : chainsRes.state === 'failed' ? (
             <ErrorState message={`Failed: ${chainsRes.error}`} />
+          ) : (chainsRes.data?.length ?? 0) === 0 ? (
+            <EmptyState
+              title="Attack chains absent"
+              description={`No multi-hop attack chains were reconstructed for active telemetry partition "${activeDataset?.name ?? activeDatasetId}".`}
+            />
           ) : filtered.length === 0 ? (
-            <EmptyState title="No chains" description="No chains match the current filters" />
+            <EmptyState title="No chains match filters" description="Adjust strategy selection or search filter." />
           ) : (
             <div className="divide-y divide-[hsl(var(--border)/0.5)]">
               {filtered.map((c) => {

@@ -21,6 +21,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useDatasets, useJobs } from '@/lib/tgdetect/services/hooks';
+import { useDataset } from '@/lib/dataset-context';
 import { datasetService } from '@/lib/tgdetect/services';
 import {
   DATASET_KIND_META,
@@ -46,6 +47,7 @@ import {
 import type { Dataset, DatasetKind, ProcessingConfig, ProcessingJob, ValidationReport } from '@/lib/tgdetect/types';
 
 export function DatasetsPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Record<string, unknown>) => void }) {
+  const { activeDatasetId, activateDataset, isSwitching, switchingMessage } = useDataset();
   const datasetsRes = useDatasets();
   const jobsRes = useJobs();
   const [selectedDatasetId, setSelectedDatasetId] = useState<string | null>(() => {
@@ -53,7 +55,7 @@ export function DatasetsPage({ onNavigate }: { onNavigate?: (page: string, ctx?:
       const p = new URLSearchParams(window.location.search).get('dataset');
       if (p) return p;
     }
-    return 'ctu13_c47';
+    return activeDatasetId || 'ctu13_c47';
   });
   const [showUploadWizard, setShowUploadWizard] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -117,40 +119,74 @@ export function DatasetsPage({ onNavigate }: { onNavigate?: (page: string, ctx?:
             ) : allDatasets.length === 0 ? (
               <EmptyState title="No datasets" description="Click 'Upload & Validate Dataset' to add real cybersecurity telemetry" />
             ) : (
-              allDatasets.map((d) => (
-                <button
-                  key={d.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedDatasetId(d.id);
-                    datasetService.activate(d.id).catch(() => {});
-                  }}
-                  className={`w-full text-left p-3 rounded border bg-[hsl(var(--card))] transition-colors hover:border-[hsl(var(--primary)/0.35)] ${
-                    selectedDatasetId === d.id ? 'border-[hsl(var(--primary)/0.6)] ring-1 ring-[hsl(var(--primary)/0.2)]' : 'border-[hsl(var(--border))]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="text-xs font-semibold text-[hsl(var(--foreground))]">{d.name}</span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]">
-                      {DATASET_KIND_META[d.kind]?.label ?? d.kind}
-                    </span>
-                  </div>
-                  <div className="mono text-[10px] text-[hsl(var(--muted-foreground))] break-all mb-1">{d.source}</div>
-                  <div className="flex items-center gap-3 text-[10px] text-[hsl(var(--muted-foreground))] font-mono">
-                    <span>{formatBytes(d.size_bytes)}</span>
-                    {d.estimated_events !== null && <span>~{formatInt(d.estimated_events)} events</span>}
-                    <span>·</span>
-                    <span>added {formatEpoch(d.created_at).split(' ')[0]}</span>
-                  </div>
-                  {d.last_job_id && (
-                    <div className="mt-1.5 flex items-center gap-1 text-[10px] text-[hsl(var(--muted-foreground))]">
-                      <CheckCircle2 className="size-2.5 text-[hsl(var(--success))]" />
-                      <span>processed</span>
-                      <span className="ml-auto mono">{d.last_job_id}</span>
+              allDatasets.map((d) => {
+                const isActive = d.id === activeDatasetId;
+                const isSelected = selectedDatasetId === d.id;
+                return (
+                    <div
+                      key={d.id}
+                      onClick={() => setSelectedDatasetId(d.id)}
+                      className={`w-full text-left p-3.5 rounded-lg border transition-all cursor-pointer ${
+                        isActive
+                          ? 'border-emerald-500/50 bg-[hsl(var(--card))] ring-1 ring-emerald-500/30 shadow-xs'
+                          : isSelected
+                          ? 'border-[hsl(var(--primary)/0.6)] bg-[hsl(var(--card))] ring-1 ring-[hsl(var(--primary)/0.2)]'
+                          : 'border-[hsl(var(--border))] bg-[hsl(var(--card))] hover:border-[hsl(var(--primary)/0.35)]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className={`size-2 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-[hsl(var(--muted-foreground)/0.4)]'}`} />
+                          <span className="text-xs font-semibold text-[hsl(var(--foreground))]">{d.name}</span>
+                        </div>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))]">
+                          {DATASET_KIND_META[d.kind]?.label ?? d.kind}
+                        </span>
+                      </div>
+
+                      <div className="mono text-[10px] text-[hsl(var(--muted-foreground))] break-all mb-2">{d.source}</div>
+
+                      {isActive ? (
+                        <div className="mb-2 flex items-center justify-between">
+                          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold tracking-wider">
+                            <span>● ACTIVE TELEMETRY PARTITION</span>
+                          </div>
+                          <span className="text-[9px] font-mono text-[hsl(var(--muted-foreground))]">GLOBAL SOURCE</span>
+                        </div>
+                      ) : (
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="text-[10px] font-mono text-[hsl(var(--muted-foreground))]">ID: {d.id}</span>
+                          <button
+                            type="button"
+                            disabled={isSwitching}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              setSelectedDatasetId(d.id);
+                              await activateDataset(d.id);
+                            }}
+                            className="px-2 py-0.5 text-[10px] font-mono rounded border border-[hsl(var(--primary)/0.4)] bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.2)] font-semibold transition-colors disabled:opacity-50"
+                          >
+                            Activate Telemetry →
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-3 text-[10px] text-[hsl(var(--muted-foreground))] font-mono border-t border-[hsl(var(--border)/0.5)] pt-1.5">
+                        <span>{formatBytes(d.size_bytes)}</span>
+                        {d.estimated_events !== null && <span>~{formatInt(d.estimated_events)} events</span>}
+                        <span>·</span>
+                        <span>added {formatEpoch(d.created_at).split(' ')[0]}</span>
+                      </div>
+                      {d.last_job_id && (
+                        <div className="mt-1.5 flex items-center gap-1 text-[10px] text-[hsl(var(--muted-foreground))]">
+                          <CheckCircle2 className="size-2.5 text-[hsl(var(--success))]" />
+                          <span>processed</span>
+                          <span className="ml-auto mono">{d.last_job_id}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </button>
-              ))
+                  );
+              })
             )}
           </div>
         </div>
@@ -196,6 +232,7 @@ function JobInspector({
   jobsLoading: boolean;
   onNavigate?: (page: string, ctx?: Record<string, unknown>) => void;
 }) {
+  const { activeDatasetId, activateDataset, isSwitching } = useDataset();
   if (!datasetId) {
     return (
       <div className="tg-card p-4 h-full">
@@ -259,15 +296,38 @@ function JobInspector({
 
   return (
     <div className="space-y-3">
-      {/* Header */}
+      {/* Header with Active Partition Status */}
       <div className="tg-card p-4">
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <SectionTitle>Processing Pipeline Execution</SectionTitle>
-          <StatePill state={job.state} />
+        <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <SectionTitle>Processing Pipeline Execution</SectionTitle>
+            {datasetId === activeDatasetId ? (
+              <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold">
+                ● ACTIVE TELEMETRY
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] text-[10px] font-mono">
+                INACTIVE PARTITION
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {datasetId && datasetId !== activeDatasetId && (
+              <button
+                type="button"
+                disabled={isSwitching}
+                onClick={() => activateDataset(datasetId)}
+                className="px-2.5 py-1 text-xs font-mono font-semibold rounded bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50 transition-opacity"
+              >
+                Set as Active Telemetry →
+              </button>
+            )}
+            <StatePill state={job.state} />
+          </div>
         </div>
         <div className="mono text-xs text-[hsl(var(--foreground))] font-semibold">{job.id}</div>
-        <div className="text-[10px] text-[hsl(var(--muted-foreground))] mt-0.5">
-          dataset: <span className="mono font-medium">{job.dataset_name}</span> · output: <span className="mono">{job.output_dir}</span>
+        <div className="text-[10px] text-[hsl(var(--muted-foreground))] mt-0.5 font-mono">
+          dataset: <span className="font-medium text-[hsl(var(--foreground))]">{job.dataset_name}</span> · output: <span>{job.output_dir}</span>
         </div>
       </div>
 
@@ -385,6 +445,7 @@ function UploadAndValidateWizard({
   onDatasetProcessed?: (id: string) => void;
   onNavigate?: (page: string, ctx?: Record<string, unknown>) => void;
 }) {
+  const { activateDataset } = useDataset();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [format, setFormat] = useState<string>('auto');
@@ -444,6 +505,7 @@ function UploadAndValidateWizard({
       });
       setProcessedJob(job);
       setProcessStage('Pipeline completed! Temporal graph and attack chains constructed.');
+      await activateDataset(datasetId);
       if (onDatasetProcessed) {
         onDatasetProcessed(datasetId);
       }
@@ -542,6 +604,48 @@ function UploadAndValidateWizard({
                 />
               </div>
             </div>
+
+            {isUploading && (
+              <div className="p-4 rounded-lg border border-cyan-500/40 bg-cyan-500/5 space-y-3 font-mono">
+                <div className="flex items-center justify-between text-xs text-cyan-400 font-bold">
+                  <span className="flex items-center gap-2">
+                    <span className="size-2 rounded-full bg-cyan-400 animate-ping" />
+                    SYS://TELEMETRY_INGESTION_SEQUENCE
+                  </span>
+                  <span className="text-[10px] text-[hsl(var(--muted-foreground))]">VALIDATING STREAM</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 text-[10px]">
+                  <div className="p-2 rounded border border-cyan-500/30 bg-cyan-500/10">
+                    <div className="text-[8px] text-cyan-400">STAGE 01</div>
+                    <div className="font-bold text-[hsl(var(--foreground))]">PACKAGE DETECTED</div>
+                    <div className="text-[9px] text-[hsl(var(--muted-foreground))] mt-0.5">{selectedFile ? formatBytes(selectedFile.size) : 'Parsing bytes'}</div>
+                  </div>
+                  <div className="p-2 rounded border border-cyan-500/30 bg-cyan-500/10">
+                    <div className="text-[8px] text-cyan-400">STAGE 02</div>
+                    <div className="font-bold text-[hsl(var(--foreground))]">INSPECTING FLOW</div>
+                    <div className="text-[9px] text-[hsl(var(--muted-foreground))] mt-0.5">Argus / Sysmon</div>
+                  </div>
+                  <div className="p-2 rounded border border-cyan-500/30 bg-cyan-500/10">
+                    <div className="text-[8px] text-cyan-400">STAGE 03</div>
+                    <div className="font-bold text-[hsl(var(--foreground))]">TEMPORAL FIELDS</div>
+                    <div className="text-[9px] text-[hsl(var(--muted-foreground))] mt-0.5">Epoch alignment</div>
+                  </div>
+                  <div className="p-2 rounded border border-cyan-500/30 bg-cyan-500/10">
+                    <div className="text-[8px] text-cyan-400">STAGE 04</div>
+                    <div className="font-bold text-[hsl(var(--foreground))]">GRAPH CANDIDATES</div>
+                    <div className="text-[9px] text-[hsl(var(--muted-foreground))] mt-0.5">Node/Edge pairs</div>
+                  </div>
+                  <div className="p-2 rounded border border-cyan-500/30 bg-cyan-500/10">
+                    <div className="text-[8px] text-cyan-400">STAGE 05</div>
+                    <div className="font-bold text-[hsl(var(--foreground))]">READY TO INGEST</div>
+                    <div className="text-[9px] text-[hsl(var(--muted-foreground))] mt-0.5">Streaming schema</div>
+                  </div>
+                </div>
+                <div className="h-1 w-full bg-[hsl(var(--card))] rounded overflow-hidden relative">
+                  <div className="absolute inset-y-0 bg-cyan-400 w-1/3 rounded animate-pulse" />
+                </div>
+              </div>
+            )}
 
             {uploadError && (
               <div className="p-3 rounded bg-[hsl(var(--danger)/0.1)] border border-[hsl(var(--danger)/0.3)] text-xs text-[hsl(var(--danger))] flex items-start gap-2">
@@ -779,10 +883,40 @@ function UploadAndValidateWizard({
                   </button>
                 </div>
 
-                {isProcessing && processStage && (
-                  <div className="p-3 rounded border border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary)/0.05)] flex items-center gap-2 text-xs font-mono text-[hsl(var(--primary))]">
-                    <CircleDashed className="size-3.5 animate-spin" />
-                    <span>{processStage}</span>
+                {isProcessing && (
+                  <div className="p-4 rounded-lg border border-cyan-500/40 bg-cyan-500/5 space-y-3 font-mono">
+                    <div className="flex items-center justify-between text-xs text-cyan-400 font-bold">
+                      <span className="flex items-center gap-2">
+                        <span className="size-2 rounded-full bg-cyan-400 animate-ping" />
+                        SYS://GNN_PROCESSING_PIPELINE
+                      </span>
+                      <span className="text-[10px] text-[hsl(var(--muted-foreground))]">STREAMING GRAPH CONSTRUCTOR</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-[10px]">
+                      {[
+                        { id: 'raw', name: 'RAW DATA', desc: 'Flow reader' },
+                        { id: 'parser', name: 'PARSER', desc: 'Normalization' },
+                        { id: 'labeling', name: 'LABELING', desc: 'ATT&CK heuristics' },
+                        { id: 'graph', name: 'GRAPH BUILD', desc: 'Nodes & edges' },
+                        { id: 'chains', name: 'CHAINS', desc: 'Path reconstruction' },
+                        { id: 'parquet', name: 'PARQUET', desc: 'Storage export' },
+                      ].map((stg, i) => (
+                        <div key={stg.id} className="p-2 rounded border border-cyan-500/30 bg-cyan-500/10 text-center space-y-0.5">
+                          <div className="text-[8px] text-cyan-400 uppercase">Stage 0{i + 1}</div>
+                          <div className="font-bold text-[hsl(var(--foreground))]">{stg.name}</div>
+                          <div className="text-[8px] text-[hsl(var(--muted-foreground))]">{stg.desc}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-cyan-300 pt-1">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="size-3.5 animate-spin text-cyan-400" />
+                        <span>{processStage || 'Processing telemetry...'}</span>
+                      </div>
+                      <span className="text-[10px] text-[hsl(var(--muted-foreground))]">Parquet Serialization Active</span>
+                    </div>
                   </div>
                 )}
 
@@ -803,16 +937,16 @@ function UploadAndValidateWizard({
               <CheckCircle2 className="size-6" />
             </div>
             <div>
-              <div className="text-sm font-bold text-[hsl(var(--foreground))]">Dataset Successfully Processed into Temporal Graph!</div>
+              <div className="text-sm font-bold text-emerald-400">Dataset Successfully Processed &amp; Activated!</div>
               <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1 font-mono">
-                Job ID: {processedJob.id} · Dataset: {processedJob.dataset_id}
+                Active Telemetry Source: <strong className="text-[hsl(var(--foreground))]">{processedJob.dataset_id}</strong> · Job: {processedJob.id}
               </div>
             </div>
 
-            <div className="p-3 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-left text-xs font-mono space-y-1 max-w-lg mx-auto">
+            <div className="p-3.5 rounded border border-emerald-500/30 bg-[hsl(var(--background))] text-left text-xs font-mono space-y-1.5 max-w-lg mx-auto">
               <div>Output Parquet: <span className="text-[hsl(var(--primary))]">{processedJob.output_dir}</span></div>
               <div>Elapsed Time: <span className="text-[hsl(var(--foreground))]">{processedJob.elapsed_s}s</span></div>
-              <div>Status: <span className="text-[hsl(var(--success))] font-bold">completed</span></div>
+              <div>Global State: <span className="text-emerald-400 font-bold">ACTIVE ACROSS COMMAND CENTER</span></div>
             </div>
 
             <div className="flex justify-center gap-2 pt-2">

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Download, FileText, FolderOpen, Table2 } from 'lucide-react';
 import { useArtifacts, useJobs } from '@/lib/tgdetect/services/hooks';
+import { useDataset } from '@/lib/dataset-context';
 import {
   EmptyState,
   ErrorState,
@@ -45,14 +46,17 @@ export function ArtifactsPage({ initialJobId }: { initialJobId?: string | null }
 }
 
 function ArtifactsPageInner({ initialJobId }: { initialJobId?: string | null }) {
+  const { activeDataset, activeDatasetId } = useDataset();
   const jobsRes = useJobs();
   const [selectedJobId, setSelectedJobId] = useState<string | null>(initialJobId ?? null);
   const [selectedKind, setSelectedKind] = useState<ArtifactKind | null>(null);
 
-  // Auto-select first job if none is provided AND we don't have an initial job.
-  // We do this without useEffect by deriving: if user hasn't picked anything
-  // and no initial was provided, use the first job from data on render.
-  const effectiveJobId = selectedJobId ?? jobsRes.data?.[0]?.id ?? null;
+  // Auto-select job matching active dataset if none was explicitly picked
+  const activeDatasetJob = useMemo(() => {
+    return (jobsRes.data ?? []).find((j) => j.dataset_id === activeDatasetId);
+  }, [jobsRes.data, activeDatasetId]);
+
+  const effectiveJobId = selectedJobId ?? activeDatasetJob?.id ?? jobsRes.data?.[0]?.id ?? null;
 
   const artifactsRes = useArtifacts(effectiveJobId);
 
@@ -66,21 +70,47 @@ function ArtifactsPageInner({ initialJobId }: { initialJobId?: string | null }) 
     <div className="space-y-4">
       {/* Job picker */}
       <div className="tg-card p-3">
-        <SectionTitle right={<FolderOpen className="size-3 text-[hsl(var(--muted-foreground))]" />}>Inspect Graph Artifacts</SectionTitle>
+        <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+          <SectionTitle right={<FolderOpen className="size-3 text-[hsl(var(--muted-foreground))]" />}>
+            <div className="flex items-center gap-2">
+              <span className={`size-2 rounded-full ${activeDataset?.provenance === 'benchmark' ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
+              <span>Inspect Graph Artifacts</span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--primary))] font-semibold">
+                {activeDataset?.name ?? activeDatasetId ?? 'ACTIVE DATASET'}
+              </span>
+            </div>
+          </SectionTitle>
+          <span className="text-[10px] font-mono text-[hsl(var(--muted-foreground))]">
+            PARQUET / JSON STORAGE DECK
+          </span>
+        </div>
         <div className="flex flex-wrap gap-2 mt-2">
-          {(jobsRes.data ?? []).map((job) => (
-            <button
-              key={job.id}
-              type="button"
-              onClick={() => { setSelectedJobId(job.id); setSelectedKind(null); }}
-              className={`px-2 py-1 text-[10px] font-mono border rounded ${
-                effectiveJobId === job.id ? 'border-[hsl(var(--primary)/0.6)] bg-[hsl(var(--info-bg))]' : 'border-[hsl(var(--border))] bg-[hsl(var(--card))]'
-              }`}
-              title={job.dataset_name}
-            >
-              {job.id} · {job.dataset_name}
-            </button>
-          ))}
+          {(jobsRes.data ?? []).map((job) => {
+            const isActiveJob = job.dataset_id === activeDatasetId;
+            return (
+              <button
+                key={job.id}
+                type="button"
+                onClick={() => { setSelectedJobId(job.id); setSelectedKind(null); }}
+                className={`px-2.5 py-1 text-[10px] font-mono border rounded flex items-center gap-1.5 transition-colors ${
+                  effectiveJobId === job.id
+                    ? 'border-[hsl(var(--primary)/0.6)] bg-[hsl(var(--info-bg))] font-semibold'
+                    : 'border-[hsl(var(--border))] bg-[hsl(var(--card))] hover:border-[hsl(var(--primary)/0.4)]'
+                }`}
+                title={job.dataset_name}
+              >
+                {isActiveJob && <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+                <span>{job.id}</span>
+                <span className="text-[hsl(var(--muted-foreground))]">·</span>
+                <span>{job.dataset_name}</span>
+                {isActiveJob && (
+                  <span className="text-[8px] uppercase tracking-wider px-1 py-0.2 rounded bg-emerald-500/15 text-emerald-400 font-bold ml-1">
+                    ACTIVE
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 

@@ -8,6 +8,7 @@
 import { api } from '../../api/client';
 import type {
   ArtifactMeta,
+  OverviewTelemetry,
   AttackChainSummary,
   ChainFilter,
   ChainStrategy,
@@ -137,8 +138,22 @@ export class ApiDatasetService implements DatasetService {
     };
   }
 
-  async activate(datasetId: string): Promise<{ status: string; active_dataset: string }> {
-    return api.post<{ status: string; active_dataset: string }>(`/api/datasets/${encodeURIComponent(datasetId)}/activate`);
+  async getActive(): Promise<Dataset | null> {
+    try {
+      return await api.get<Dataset>('/api/datasets/active');
+    } catch {
+      return null;
+    }
+  }
+
+  async overview(datasetId?: string): Promise<OverviewTelemetry> {
+    return api.get<OverviewTelemetry>('/api/overview', {
+      params: datasetId ? { dataset_id: datasetId } : undefined,
+    });
+  }
+
+  async activate(datasetId: string): Promise<{ status: string; active_dataset: string; dataset?: Dataset }> {
+    return api.post<{ status: string; active_dataset: string; dataset?: Dataset }>(`/api/datasets/${encodeURIComponent(datasetId)}/activate`);
   }
 }
 

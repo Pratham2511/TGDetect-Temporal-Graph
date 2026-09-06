@@ -38,6 +38,7 @@ import type {
   TGNNModelSummary,
   TrainingRun,
   ValidationReport,
+  OverviewTelemetry,
 } from '../types';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -47,10 +48,12 @@ import type {
 export interface DatasetService {
   list(): Promise<Dataset[]>;
   get(id: string): Promise<Dataset | null>;
+  getActive(): Promise<Dataset | null>;
+  overview(datasetId?: string): Promise<OverviewTelemetry>;
   upload(file: File, format?: string): Promise<ValidationReport>;
   validate(filePath: string, format?: string): Promise<ValidationReport>;
   process(datasetId: string, format: string, sourcePath: string, config?: any): Promise<ProcessingJob>;
-  activate(datasetId: string): Promise<{ status: string; active_dataset: string }>;
+  activate(datasetId: string): Promise<{ status: string; active_dataset: string; dataset?: Dataset }>;
 }
 
 export interface EventService {

@@ -101,15 +101,15 @@
   --purple-bg: 237 35% 92%;
   --teal: 175 59% 40%;
 
-  /* Sidebar — Solarized Base03 deep slate foundation */
-  --sidebar-bg: 192 100% 11%;     /* #002b36 — Solarized base03 */
-  --sidebar-border: 192 60% 16%;  /* #083844 */
-  --sidebar-item-hover: 192 50% 16%;
-  --sidebar-item-active: 175 59% 22%;
-  --sidebar-text: 180 7% 70%;     /* #93a1a1 */
-  --sidebar-text-active: 175 59% 60%; /* #2aa198 */
-  --sidebar-logo-sub: 180 7% 55%;
-  --sidebar-logo-text: 44 87% 94%;
+  /* Sidebar — Solarized Light warm ivory/sandstone foundation (Ethan Schoonover base2) */
+  --sidebar-bg: 44 37% 89%;       /* #eee8d5 — Solarized base2 */
+  --sidebar-border: 44 26% 82%;   /* #dfd7c2 — Solarized sandstone border */
+  --sidebar-item-hover: 44 28% 82%; /* #e4ddbe */
+  --sidebar-item-active: 44 35% 78%; /* #ded4b2 */
+  --sidebar-text: 192 81% 14%;    /* #073642 — Solarized base02 deep slate */
+  --sidebar-text-active: 175 60% 30%; /* #1e7b74 — high-contrast solarized teal */
+  --sidebar-logo-sub: 192 14% 40%; /* #586e75 — Solarized base01 */
+  --sidebar-logo-text: 192 81% 14%; /* #073642 */
 
   /* Chart palette — Tuned for Solarized Light contrast */
   --chart-1: 205 69% 45%;         /* Blue */

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Eye, EyeOff, Filter, Maximize2, Search } from 'lucide-react';
 import { useGraphEdges, useGraphNodes } from '@/lib/tgdetect/services/hooks';
+import { useDataset } from '@/lib/dataset-context';
 import { formatInt, shortNodeId } from '@/lib/tgdetect/formatters';
 import type { NodeType, RelationType } from '@/lib/tgdetect/types';
 import { NODE_TYPES, RELATION_TYPES } from '@/lib/tgdetect/constants';
@@ -22,6 +23,7 @@ import { useNodeEvents } from '@/lib/tgdetect/services/hooks';
 import { formatEpochTime } from '@/lib/tgdetect/formatters';
 
 export function GraphPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Record<string, unknown>) => void }) {
+  const { activeDataset, activeDatasetId } = useDataset();
   const nodesRes = useGraphNodes();
   const edgesRes = useGraphEdges();
   const [activeNodeTypes, setActiveNodeTypes] = useState<Set<NodeType>>(new Set(NODE_TYPES));
@@ -68,9 +70,20 @@ export function GraphPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Re
     <div className="space-y-3">
       {/* Top controls */}
       <div className="tg-card p-3 flex flex-wrap items-center gap-3">
-        <SectionTitle className="flex-1">Temporal Heterogeneous Graph</SectionTitle>
+        <div className="flex-1 min-w-[260px]">
+          <div className="flex items-center gap-2">
+            <span className={`size-2 rounded-full ${activeDataset?.provenance === "benchmark" ? "bg-amber-400" : "bg-emerald-400 animate-pulse"}`} />
+            <SectionTitle className="inline">Temporal Heterogeneous Graph</SectionTitle>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--primary))] font-semibold">
+              {activeDataset?.name ?? activeDatasetId ?? 'ACTIVE DATASET'}
+            </span>
+          </div>
+          <div className="text-[10px] text-[hsl(var(--muted-foreground))] font-mono mt-0.5">
+            PROVENANCE: {activeDataset?.provenance === 'benchmark' ? 'REFERENCE EVALUATION BENCHMARK' : 'LIVE UPLOADED TELEMETRY'} · PARTITION: {activeDatasetId ?? 'default'}
+          </div>
+        </div>
         <div className="flex items-center gap-2 text-[10px]">
-          <span className="text-[hsl(var(--muted-foreground))]">
+          <span className="text-[hsl(var(--muted-foreground))] font-mono">
             {formatInt(filteredNodes.length)} / {formatInt(nodesRes.data?.length ?? 0)} nodes · {formatInt(filteredEdges.length)} / {formatInt(edgesRes.data?.length ?? 0)} edges
           </span>
         </div>
@@ -143,8 +156,10 @@ export function GraphPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Re
             {/* Tactical HUD Header Bar */}
             <div className="absolute top-0 inset-x-0 z-10 px-3.5 py-2 bg-[hsl(var(--card)/0.92)] backdrop-blur-md border-b border-[hsl(var(--border))] flex items-center justify-between gap-2 text-[10px] font-mono pointer-events-none">
               <div className="flex items-center gap-2 pointer-events-auto">
-                <span className="size-1.5 rounded-full bg-[hsl(var(--primary))] animate-pulse" />
-                <span className="font-bold tracking-wider text-[hsl(var(--primary))]">SYS://TEMPORAL_GRAPH // CTU-13 TOPOLOGY</span>
+                <span className={`size-1.5 rounded-full ${activeDataset?.provenance === "benchmark" ? "bg-amber-400" : "bg-[hsl(var(--primary))] animate-pulse"}`} />
+                <span className="font-bold tracking-wider text-[hsl(var(--primary))]">
+                  SYS://TEMPORAL_GRAPH // {(activeDataset?.name ?? activeDatasetId ?? 'TOPOLOGY').toUpperCase()}
+                </span>
               </div>
               <div className="flex items-center gap-3 text-[10px] text-[hsl(var(--muted-foreground))]">
                 <span>NODES: <strong className="text-[hsl(var(--foreground))]">{filteredNodes.length}</strong></span>
@@ -155,12 +170,44 @@ export function GraphPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Re
               </div>
             </div>
 
-            {filteredNodes.length === 0 || filteredEdges.length === 0 ? (
-              <EmptyState
-                title="No graph data"
-                description="Adjust filters to see graph elements."
-                icon={Maximize2}
-              />
+            {(nodesRes.data?.length ?? 0) === 0 || (edgesRes.data?.length ?? 0) === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-[hsl(var(--background)/0.5)]">
+                <div className="size-12 rounded-lg border border-cyan-500/30 bg-cyan-500/10 flex items-center justify-center text-cyan-400 mb-3">
+                  <Maximize2 className="size-6" />
+                </div>
+                <div className="text-sm font-bold font-mono tracking-wider text-[hsl(var(--foreground))]">NO GRAPH TOPOLOGY AVAILABLE</div>
+                <p className="text-xs text-[hsl(var(--muted-foreground))] max-w-md mt-1 mb-4 font-mono leading-relaxed">
+                  The active dataset &quot;{activeDataset?.name ?? activeDatasetId}&quot; has zero graph relationships produced or has not been processed into temporal graph artifacts.
+                </p>
+                {onNavigate && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('datasets')}
+                    className="px-3 py-1.5 text-xs font-mono font-semibold bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded hover:opacity-90 transition-opacity shadow-sm"
+                  >
+                    Open Datasets &amp; Ingestion Pipeline →
+                  </button>
+                )}
+              </div>
+            ) : filteredNodes.length === 0 || filteredEdges.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-[hsl(var(--background)/0.5)]">
+                <Filter className="size-8 text-[hsl(var(--muted-foreground))] mb-2 opacity-60" />
+                <div className="text-sm font-bold font-mono tracking-wider text-[hsl(var(--foreground))]">FILTER RESTRICTION ACTIVE</div>
+                <p className="text-xs text-[hsl(var(--muted-foreground))] max-w-md mt-1 mb-3 font-mono">
+                  0 of {nodesRes.data?.length ?? 0} nodes match current filter criteria.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveNodeTypes(new Set(NODE_TYPES));
+                    setActiveRelations(new Set(RELATION_TYPES));
+                    setMaliciousOnly(false);
+                  }}
+                  className="px-3 py-1 text-xs font-mono border border-[hsl(var(--border))] rounded bg-[hsl(var(--card))] hover:bg-[hsl(var(--card-hover))]"
+                >
+                  Reset All Filters
+                </button>
+              </div>
             ) : (
               <TemporalGraphViz
                 nodes={filteredNodes}

@@ -24,6 +24,27 @@ def list_datasets():
     return DatasetsService.list_datasets()
 
 
+@router.get("/datasets/active")
+def get_active_dataset():
+    active_id = DataCache.get_active_dataset_id()
+    d = DatasetsService.get_dataset(active_id)
+    if not d:
+        return {
+            "id": active_id,
+            "name": active_id.replace("_", " ").title(),
+            "kind": "user_uploaded",
+            "source": str(DataCache.get_dataset_dir(active_id)),
+            "provenance": f"Processed dataset {active_id}",
+            "raw_bytes": 0,
+            "num_raw_events": 0,
+            "time_span_s": 0.0,
+            "created_at": None,
+            "is_sample": False,
+            "description": f"Active dataset {active_id}",
+        }
+    return d
+
+
 @router.get("/datasets/{dataset_id}")
 def get_dataset(dataset_id: str):
     d = DatasetsService.get_dataset(dataset_id)
@@ -80,7 +101,7 @@ def activate_dataset(dataset_id: str):
     if not d:
         raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found")
     DataCache.set_active_dataset(dataset_id)
-    return {"status": "ok", "active_dataset": dataset_id}
+    return {"status": "ok", "active_dataset": dataset_id, "active_dataset_id": dataset_id, "dataset": d}
 
 
 @router.get("/jobs")

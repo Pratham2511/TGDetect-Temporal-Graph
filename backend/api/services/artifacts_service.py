@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import pyarrow.parquet as pq
-from api.dependencies import BASE_DIR, DATA_PROCESSED_DIR, DATA_GRAPHS_DIR, sanitize_json
+from api.dependencies import BASE_DIR, DataCache, DATA_GRAPHS_DIR, sanitize_json
 
 ALLOWED_ARTIFACTS = {
     "events.parquet": ("events", "Parquet stream of canonical TGEvents with MITRE ATT&CK labels and causal parent links"),
@@ -25,8 +25,11 @@ class ArtifactsService:
     @staticmethod
     def list_artifacts(job_id: Optional[str] = None) -> List[Dict[str, Any]]:
         artifacts = []
+        target_dir = DataCache.get_dataset_dir()
+        active_id = DataCache.get_active_dataset_id()
+
         for fname, (kind, desc) in ALLOWED_ARTIFACTS.items():
-            path = DATA_PROCESSED_DIR / fname
+            path = target_dir / fname
             if path.exists():
                 stat = path.stat()
                 row_count = 0
@@ -74,7 +77,7 @@ class ArtifactsService:
 
                 artifacts.append({
                     "id": fname,
-                    "job_id": job_id or "job-ctu13-c47-01",
+                    "job_id": job_id or f"job-{active_id}",
                     "kind": kind,
                     "path": str(path),
                     "size_bytes": stat.st_size,
@@ -109,8 +112,9 @@ class ArtifactsService:
     def get_preview(artifact_id: str, limit: int = 10) -> Optional[List[Dict[str, Any]]]:
         if not ArtifactsService._is_safe_artifact_id(artifact_id):
             return None
-        path = (DATA_PROCESSED_DIR / artifact_id).resolve()
-        if not path.is_relative_to(DATA_PROCESSED_DIR.resolve()) or not path.is_file():
+        target_dir = DataCache.get_dataset_dir()
+        path = (target_dir / artifact_id).resolve()
+        if not path.is_relative_to(target_dir.resolve()) or not path.is_file():
             return None
 
         if artifact_id.endswith(".parquet"):

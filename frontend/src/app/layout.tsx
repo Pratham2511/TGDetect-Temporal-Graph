@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/lib/theme-context";
 import { ModelProvider } from "@/lib/model-context";
+import { DatasetProvider } from "@/lib/dataset-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,7 +45,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <ThemeProvider><ModelProvider>{children}</ModelProvider></ThemeProvider>
+        <ThemeProvider><ModelProvider><DatasetProvider>{children}</DatasetProvider></ModelProvider></ThemeProvider>
         <Toaster />
       </body>
     </html>

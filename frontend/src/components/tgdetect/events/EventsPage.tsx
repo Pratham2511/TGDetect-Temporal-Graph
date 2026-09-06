@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { ChevronRight, Filter, Search, X } from 'lucide-react';
 import { useEvents } from '@/lib/tgdetect/services/hooks';
+import { useDataset } from '@/lib/dataset-context';
 import {
   epochToIso,
   eventAttrsString,
@@ -261,13 +262,14 @@ function EventsTable({
   filter: EventFilter;
   setFilter: (f: EventFilter) => void;
 }) {
+  const { activeDataset, activeDatasetId } = useDataset();
   const pageSize = filter.limit ?? 100;
   const offset = filter.offset ?? 0;
   return (
     <div className="tg-card p-3">
       <SectionTitle
         right={
-          <div className="flex items-center gap-2 text-[10px] text-[hsl(var(--muted-foreground))]">
+          <div className="flex items-center gap-2 text-[10px] text-[hsl(var(--muted-foreground))] font-mono">
             <span>{formatInt(total)} events</span>
             <span>·</span>
             <span>showing {offset + 1}–{Math.min(offset + pageSize, total)}</span>
@@ -286,14 +288,25 @@ function EventsTable({
           </div>
         }
       >
-        Events
+        <div className="flex items-center gap-2">
+          <span className={`size-2 rounded-full ${activeDataset?.provenance === 'benchmark' ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
+          <span>Events</span>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--primary))] font-semibold">
+            {activeDataset?.name ?? activeDatasetId ?? 'LIVE TELEMETRY'}
+          </span>
+        </div>
       </SectionTitle>
       {loading ? (
         <LoadingState label="Loading events…" />
       ) : error ? (
         <ErrorState message={`Failed: ${error}`} />
+      ) : total === 0 ? (
+        <EmptyState
+          title="No events in active telemetry"
+          description={`The active dataset "${activeDataset?.name ?? activeDatasetId}" has 0 recorded events or has not yet been processed.`}
+        />
       ) : events.length === 0 ? (
-        <EmptyState title="No events" description="No events match the current filters" />
+        <EmptyState title="No events match filters" description="Adjust label, relation, or search parameters to view events" />
       ) : (
         <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
           <table className="w-full text-xs">

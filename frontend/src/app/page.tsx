@@ -29,6 +29,7 @@ import { ModelPage } from '@/components/tgdetect/model/ModelPage';
 import { AnalyticsPage } from '@/components/tgdetect/analytics/AnalyticsPage';
 import { useTheme } from '@/lib/theme-context';
 import { useModel } from '@/lib/model-context';
+import { useDataset } from '@/lib/dataset-context';
 import { useGraphStats } from '@/lib/tgdetect/services/hooks';
 import { formatInt } from '@/lib/tgdetect/formatters';
 import { API_BASE_URL } from '@/lib/tgdetect/api/client';
@@ -69,6 +70,13 @@ export default function Home() {
   const [pageCtx, setPageCtx] = useState<PageCtx>({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const theme = useTheme();
+  const {
+    activeDatasetId,
+    activeDataset,
+    isSwitching,
+    switchingMessage,
+    targetDatasetName,
+  } = useDataset();
   const {
     models,
     activeModelId,
@@ -157,8 +165,8 @@ export default function Home() {
                   onClick={() => navigate(item.id)}
                   className={`w-full text-left px-2.5 py-2 rounded-md flex items-center gap-2.5 transition-all text-xs ${
                     isActive
-                      ? 'bg-[hsl(var(--sidebar-item-active))] text-white font-medium shadow-sm border-l-2 border-[hsl(var(--sidebar-text-active))] pl-2'
-                      : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-item-hover))] hover:text-white'
+                      ? 'bg-[hsl(var(--sidebar-item-active))] text-[hsl(var(--sidebar-text-active))] font-semibold shadow-xs border-l-2 border-[hsl(var(--sidebar-text-active))] pl-2'
+                      : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-item-hover))] hover:text-[hsl(var(--sidebar-text-active))]'
                   }`}
                 >
                   <Icon
@@ -251,25 +259,56 @@ export default function Home() {
                 </span>
               )}
 
-              {/* Authoritative Single Production Model Badge */}
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md border border-cyan-500/30 bg-cyan-500/10 shadow-[0_0_12px_rgba(0,242,254,0.08)]">
-                <Cpu className="size-3.5 text-cyan-400 flex-shrink-0 animate-pulse" />
-                <span className="text-[11px] font-mono font-bold tracking-wide text-cyan-300">
-                  {activeModel?.name ?? 'CTU-13 Held-Out (Scenario 47)'}
-                </span>
-                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-semibold uppercase">
-                  {activeModel?.target?.toUpperCase() ?? 'EDGE'} TARGET
-                </span>
-                <span className="text-[10px] font-mono text-cyan-400/70 border-l border-cyan-500/20 pl-2">
-                  38,787 params
-                </span>
-              </div>
+              {/* Persistent Dataset Provenance Indicator (Live vs Benchmark) */}
+              {activeDatasetId === 'ctu13_c47' ? (
+                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md border border-amber-500/30 bg-amber-500/10" title="Authoritative Benchmark Reference Partition">
+                  <span className="text-amber-500 text-xs">◈</span>
+                  <div className="flex flex-col text-left leading-tight">
+                    <span className="text-[9px] uppercase tracking-wider text-amber-500 font-bold font-mono">BENCHMARK DATASET</span>
+                    <span className="text-[11px] font-mono font-semibold text-[hsl(var(--foreground))] truncate max-w-[200px]">
+                      {activeDataset?.name || 'CTU-13 Scenario 47'}
+                    </span>
+                  </div>
+                  {statsRes.data && (
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 font-semibold">
+                      {formatInt(statsRes.data.graph.total_events)} EVENTS
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.12)]" title="Live User Ingested Telemetry Partition">
+                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <div className="flex flex-col text-left leading-tight">
+                    <span className="text-[9px] uppercase tracking-wider text-emerald-500 font-bold font-mono">LIVE DATASET</span>
+                    <span className="text-[11px] font-mono font-semibold text-[hsl(var(--foreground))] truncate max-w-[200px]">
+                      {activeDataset?.name || activeDatasetId}
+                    </span>
+                  </div>
+                  {statsRes.data && (
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold">
+                      {formatInt(statsRes.data.graph.total_events)} EVT • {formatInt(statsRes.data.graph.total_nodes)} NODES
+                    </span>
+                  )}
+                </div>
+              )}
 
-              {/* Active Benchmark Dataset Badge */}
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))]">
-                <span className="text-[hsl(var(--muted-foreground))]">Dataset:</span>
-                <span className="font-semibold text-[hsl(var(--primary))]">{activeModel?.dataset_name || 'CTU-13 Scenario 47 (NetFlow)'}</span>
-              </span>
+              {/* Authoritative Single Production Model Badge (Clearly distinct from live dataset) */}
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md border border-cyan-500/30 bg-cyan-500/10 shadow-[0_0_12px_rgba(0,242,254,0.08)]" title="Authoritative Single Production Model">
+                <Cpu className="size-3.5 text-cyan-400 flex-shrink-0 animate-pulse" />
+                <div className="flex flex-col text-left leading-tight">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-mono font-bold tracking-wide text-cyan-400 dark:text-cyan-300">
+                      {activeModel?.name ?? 'CTU-13 Held-Out'}
+                    </span>
+                    <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-400 dark:text-indigo-300 border border-indigo-500/40 font-semibold uppercase">
+                      {activeModel?.target?.toUpperCase() ?? 'EDGE'}
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-mono text-[hsl(var(--muted-foreground))]">
+                    MODEL BENCHMARK · 38,787 params
+                  </span>
+                </div>
+              </div>
 
               <button
                 type="button"
@@ -303,8 +342,8 @@ export default function Home() {
                       }}
                       className={`w-full text-left px-3 py-2 rounded-md flex items-center gap-2.5 transition-all text-xs ${
                         isActive
-                          ? 'bg-[hsl(var(--sidebar-item-active))] text-white font-medium border-l-2 border-[hsl(var(--sidebar-text-active))]'
-                          : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-item-hover))] hover:text-white'
+                          ? 'bg-[hsl(var(--sidebar-item-active))] text-[hsl(var(--sidebar-text-active))] font-semibold border-l-2 border-[hsl(var(--sidebar-text-active))]'
+                          : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-item-hover))] hover:text-[hsl(var(--sidebar-text-active))]'
                       }`}
                     >
                       <Icon className={`size-4 flex-shrink-0 ${isActive ? 'text-[hsl(var(--sidebar-text-active))]' : 'opacity-70'}`} />
@@ -375,6 +414,31 @@ export default function Home() {
           </div>
         </main>
       </div>
+
+      {/* Tactical Dataset Change Transition Overlay */}
+      {isSwitching && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center animate-in fade-in duration-150">
+          <div className="tg-panel p-6 max-w-md w-full mx-4 border border-[hsl(var(--primary)/0.4)] shadow-2xl text-center space-y-4">
+            <div className="size-12 rounded-full bg-[hsl(var(--primary)/0.15)] border border-[hsl(var(--primary)/0.4)] flex items-center justify-center mx-auto text-[hsl(var(--primary))] animate-spin">
+              <RefreshCw className="size-6" />
+            </div>
+            <div className="space-y-1">
+              <div className="text-[10px] uppercase tracking-widest font-mono text-[hsl(var(--primary))] font-bold">
+                ACTIVE DATASET CHANGED
+              </div>
+              <h3 className="text-sm font-bold text-[hsl(var(--foreground))] font-mono">
+                {targetDatasetName}
+              </h3>
+              <p className="text-xs font-mono text-[hsl(var(--muted-foreground))] mt-2">
+                {switchingMessage || 'Synchronizing telemetry views, graph topology, and event stream...'}
+              </p>
+            </div>
+            <div className="h-1.5 w-full bg-[hsl(var(--muted)/0.3)] rounded-full overflow-hidden">
+              <div className="h-full bg-[hsl(var(--primary))] animate-pulse w-4/5 rounded-full" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

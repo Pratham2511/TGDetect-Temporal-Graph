@@ -25,6 +25,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { useDataset } from '@/lib/dataset-context';
 import {
   useChainsByStrategy,
   useGraphStats,
@@ -48,6 +49,7 @@ import type { ChainStrategy } from '@/lib/tgdetect/types';
 type AnalyticsTab = 'events' | 'graph' | 'attacks' | 'datasets';
 
 export function AnalyticsPage() {
+  const { activeDataset, activeDatasetId } = useDataset();
   const [tab, setTab] = useState<AnalyticsTab>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -60,6 +62,20 @@ export function AnalyticsPage() {
   });
   return (
     <div className="space-y-3">
+      {/* Active Dataset Provenance Header */}
+      <div className="tg-card p-3 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className={`size-2 rounded-full ${activeDataset?.provenance === 'benchmark' ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
+          <SectionTitle className="inline">Security Analytics Engine</SectionTitle>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--primary))] font-semibold">
+            {activeDataset?.name ?? activeDatasetId ?? 'ACTIVE DATASET'}
+          </span>
+        </div>
+        <div className="text-[10px] font-mono text-[hsl(var(--muted-foreground))]">
+          PROVENANCE: {activeDataset?.provenance === 'benchmark' ? 'CANONICAL EVALUATION BENCHMARK' : 'LIVE UPLOADED TELEMETRY'} · PARTITION: {activeDatasetId ?? 'default'}
+        </div>
+      </div>
+
       <div className="bg-[hsl(var(--card))] p-1.5 rounded-lg border border-[hsl(var(--border))] flex flex-wrap gap-1 shadow-xs">
         {([
           { id: 'events', label: 'Event Analytics', icon: LineChartIcon },

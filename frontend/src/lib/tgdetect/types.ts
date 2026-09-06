@@ -269,15 +269,41 @@ export interface Dataset {
   /** Path or URL to the raw input (file or directory). */
   source: string;
   /** Optional `--metadata-dir` for Mordor scenario YAMLs. */
-  metadata_dir: string | null;
+  metadata_dir?: string | null;
   /** Bytes (raw size of source). */
   size_bytes: number;
   /** Pre-build estimated event count (post-parse). May be `null` until scanned. */
-  estimated_events: number | null;
+  estimated_events?: number | null;
   created_at: number | null;
   /** Most recent processing job id, if any. */
-  last_job_id: string | null;
-  tags: string[];
+  last_job_id?: string | null;
+  tags?: string[];
+  provenance?: string;
+  num_raw_events?: number;
+  time_span_s?: number | null;
+  is_sample?: boolean;
+  description?: string;
+}
+
+export interface OverviewTelemetry {
+  dataset: string;
+  dataset_id: string;
+  dataset_kind: string;
+  provenance: string;
+  total_events: number;
+  total_nodes: number;
+  total_edges: number;
+  benign_events: number;
+  malicious_events: number;
+  malicious_ratio: number;
+  chain_count: number;
+  node_types: Record<string, number>;
+  relation_types: Record<string, number>;
+  source_tags: Record<string, number>;
+  tactics: Record<string, number>;
+  time_span_s: number | null;
+  input: string;
+  pipeline_status: string;
 }
 
 /**
