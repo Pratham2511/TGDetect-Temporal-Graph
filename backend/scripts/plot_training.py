@@ -41,11 +41,21 @@ def main() -> None:
 
     # Normalize history to dict-of-lists format.
     if isinstance(history, list):
+        # train_tgnn.py stores each epoch's *validation* metrics under the bare
+        # keys ("loss"/"auc_pr"/"f1") plus "train_loss"; older runs may use
+        # explicit "val_*" keys. Prefer val_* and fall back to the bare key.
+        def series(*keys: str) -> list:
+            for k in keys:
+                vals = [r.get(k) for r in history]
+                if any(v is not None for v in vals):
+                    return vals
+            return []
+
         hist = {
-            "train_loss": [r.get("train_loss") for r in history],
-            "val_loss": [r.get("val_loss") for r in history],
-            "val_auc_pr": [r.get("val_auc_pr") for r in history],
-            "val_f1": [r.get("val_f1") for r in history],
+            "train_loss": series("train_loss"),
+            "val_loss": series("val_loss", "loss"),
+            "val_auc_pr": series("val_auc_pr", "auc_pr"),
+            "val_f1": series("val_f1", "f1"),
             "best_val_metric": history[-1].get("best_val_metric") if history else None,
             "early_stopped": history[-1].get("early_stopped") if history else False,
         }

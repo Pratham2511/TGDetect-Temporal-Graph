@@ -29,20 +29,32 @@ class DatasetsService:
                     elif p.exists():
                         created_at = p.stat().st_mtime
 
+                    if p.name.startswith("ctu13"):
+                        ds_name = f"CTU-13 {p.name.replace('ctu13_', '').upper()} (NetFlow)"
+                        ds_kind = "ctu13"
+                        ds_provenance = "CTU-13 Botnet NetFlow dataset (Garcia et al., 2011)"
+                        ds_desc = f"CTU-13 network telemetry scenario {p.name}"
+                    else:
+                        ds_name = f"{p.name.replace('_', ' ').title()} (Synthetic Demo)"
+                        ds_kind = "synthetic_demo"
+                        ds_provenance = "Synthetic Demonstration Dataset generated via StreamingGraphBuilder & AttackTracker (Empire + Causal + Recon scenarios)"
+                        ds_desc = f"Synthetic demonstration dataset for temporal heterogeneous graph cybersecurity analysis ({p.name})"
+
                     datasets.append({
                         "id": p.name,
-                        "name": f"{p.name.replace('_', ' ').title()} (Synthetic Demo)",
-                        "kind": "synthetic_demo",
+                        "name": ds_name,
+                        "kind": ds_kind,
                         "source": str(p),
-                        "provenance": "Synthetic Demonstration Dataset generated via StreamingGraphBuilder & AttackTracker (Empire + Causal + Recon scenarios)",
+                        "provenance": ds_provenance,
                         "raw_bytes": sum(f.stat().st_size for f in p.glob("**/*") if f.is_file()),
                         "num_raw_events": num_events,
                         "time_span_s": time_span_s,
                         "created_at": created_at,
                         "is_sample": True,
-                        "description": f"Synthetic demonstration dataset for temporal heterogeneous graph cybersecurity analysis ({p.name})"
+                        "description": ds_desc
                     })
         return datasets
+
 
     @staticmethod
     def get_dataset(dataset_id: str) -> Optional[Dict[str, Any]]:

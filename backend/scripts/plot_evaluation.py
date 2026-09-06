@@ -51,18 +51,46 @@ def main() -> None:
     with open(args.metrics, "r", encoding="utf-8") as fh:
         metrics = json.load(fh)
 
+    # New edge-eval metrics nest the numbers under "overall"; older Mordor
+    # metrics keep them at top level. Support both.
+    M = metrics.get("overall", metrics)
+
     y_true = df["ground_truth"].to_numpy()
     y_prob = df["probability"].to_numpy()
     y_pred = df["prediction"].to_numpy()
 
+    # Operating point for the confusion matrix. Priority:
+    #  1) the best-F1 threshold the evaluator reported (headline f1/precision/
+    #     recall/accuracy are measured there) -> matrix matches the headline;
+    #  2) a 1%-FPR point if the saved checkpoint threshold is degenerate on this
+    #     (shifted) distribution (predicts ~nothing positive);
+    #  3) otherwise the saved threshold (in-distribution runs, e.g. Mordor).
+    thr_saved = float(M.get("saved_threshold", M.get("threshold", 0.5)))
+    op_thr, op_label = thr_saved, f"saved threshold = {thr_saved:.3f}"
+    both_classes = len(np.unique(y_true)) > 1
+    thr_best = M.get("threshold_best")
+    if thr_best is not None:
+        op_thr = float(thr_best)
+        op_label = f"best-F1 threshold = {op_thr:.4f}"
+    elif both_classes:
+        fpr_c, tpr_c, roc_thr = roc_curve(y_true, y_prob)
+        j = max(0, min(int(np.searchsorted(fpr_c, 0.01, side="right")) - 1, len(roc_thr) - 1))
+        thr_1pct = float(roc_thr[j])
+        degenerate = int((y_prob >= thr_saved).sum()) < max(1, int(0.001 * len(y_true)))
+        if degenerate:
+            op_thr = thr_1pct
+            op_label = f"@1% FPR = {thr_1pct:.3f} (saved {thr_saved:.3f} mis-calibrated)"
+    y_pred_op = (y_prob >= op_thr).astype(int)
+
+
     fig, axes = plt.subplots(2, 2, figsize=(14, 12))
 
-    # 1. Confusion matrix
+    # 1. Confusion matrix (at the operating point chosen above)
     ax = axes[0, 0]
-    tp = int(((y_true == 1) & (y_pred == 1)).sum())
-    fp = int(((y_true == 0) & (y_pred == 1)).sum())
-    tn = int(((y_true == 0) & (y_pred == 0)).sum())
-    fn = int(((y_true == 1) & (y_pred == 0)).sum())
+    tp = int(((y_true == 1) & (y_pred_op == 1)).sum())
+    fp = int(((y_true == 0) & (y_pred_op == 1)).sum())
+    tn = int(((y_true == 0) & (y_pred_op == 0)).sum())
+    fn = int(((y_true == 1) & (y_pred_op == 0)).sum())
     cm = np.array([[tn, fp], [fn, tp]])
     im = ax.imshow(cm, cmap="Blues")
     ax.set_xticks([0, 1])
@@ -71,7 +99,7 @@ def main() -> None:
     ax.set_yticklabels(["Actual 0", "Actual 1"])
     ax.set_xlabel("Predicted label")
     ax.set_ylabel("True label")
-    ax.set_title("Confusion Matrix")
+    ax.set_title(f"Confusion Matrix\n{op_label}")
     for i in range(2):
         for j in range(2):
             ax.text(j, i, str(cm[i, j]), ha="center", va="center",
@@ -85,8 +113,11 @@ def main() -> None:
             label="benign", density=True)
     ax.hist(y_prob[y_true == 1], bins=50, color="#D64545", alpha=0.7,
             label="malicious", density=True)
-    ax.axvline(metrics.get("threshold", 0.5), color="#FF8B00", linestyle="--",
-               label=f"threshold={metrics.get('threshold', 0.5):.3f}")
+    ax.axvline(op_thr, color="#FF8B00", linestyle="--",
+               label=f"op point={op_thr:.3f}")
+    if abs(op_thr - thr_saved) > 1e-9:
+        ax.axvline(thr_saved, color="#97A0AF", linestyle=":",
+                   label=f"saved thr={thr_saved:.3f}")
     ax.set_xlabel("predicted probability")
     ax.set_ylabel("density")
     ax.set_title("Prediction Distribution")
@@ -126,14 +157,25 @@ def main() -> None:
     else:
         ax.set_title("Precision-Recall Curve (only one class present)")
 
-    fig.suptitle(
-        f"TG-Detect Evaluation\n"
-        f"F1={metrics.get('f1', 0):.3f}  "
-        f"Precision={metrics.get('precision', 0):.3f}  "
-        f"Recall={metrics.get('recall', 0):.3f}  "
-        f"AUC-PR={metrics.get('auc_pr', 0):.3f}",
-        fontsize=14,
-    )
+    bits = []
+    if "f1" in M:
+        bits.append(f"F1={M.get('f1', 0):.3f}")
+    if "precision" in M:
+        bits.append(f"Precision={M.get('precision', 0):.3f}")
+    if "recall" in M:
+        bits.append(f"Recall={M.get('recall', 0):.3f}")
+    if "accuracy" in M:
+        bits.append(f"Accuracy={M.get('accuracy', 0):.3f}")
+    if "recall_at_1pct_fpr" in M:
+        bits.append(f"Recall@1%FPR={M.get('recall_at_1pct_fpr', 0):.3f}")
+    if "auc_pr" in M:
+        bits.append(f"AUC-PR={M.get('auc_pr', 0):.3f}")
+    if "auc_roc" in M:
+        bits.append(f"AUC-ROC={M.get('auc_roc', 0):.3f}")
+    sub = "  ".join(bits)
+    if "threshold_best" in M:  # be explicit that F1/P/R/Acc are at the best-F1 point
+        sub += f"\n(F1/Precision/Recall/Accuracy @ best-F1 threshold={float(M['threshold_best']):.4f})"
+    fig.suptitle("TG-Detect Evaluation\n" + sub, fontsize=13)
     fig.tight_layout()
     fig.savefig(args.out, dpi=200)
     plt.close(fig)

@@ -20,9 +20,9 @@ class ModelService:
     _cached_checkpoint_info: Optional[Dict[str, Any]] = None
 
     @classmethod
-    def _inspect_checkpoint(cls) -> Dict[str, Any]:
+    def _inspect_checkpoint(cls, ckpt_file: Optional[Path] = None) -> Dict[str, Any]:
         """
-        Programmatically inspect models/checkpoints/mordor_mixed/best_model.pt.
+        Programmatically inspect checkpoint (.pt).
         Calculates parameter counts directly from the actual checkpoint state_dict.
         Distinguishes correctly between:
         - trainable parameters (weights, biases)
@@ -30,7 +30,8 @@ class ModelService:
         BatchNorm running statistics (.running_mean, .running_var, .num_batches_tracked)
         are excluded from model parameters.
         """
-        ckpt_file = MODELS_CHECKPOINTS_DIR / "best_model.pt"
+        if ckpt_file is None:
+            ckpt_file = MODELS_CHECKPOINTS_DIR / "best_model.pt"
         if not ckpt_file.exists():
             return {
                 "exists": False,
@@ -44,6 +45,9 @@ class ModelService:
                 "args": {},
                 "epoch": None,
                 "best_val_f1": None,
+                "has_edge_classifier": False,
+                "target": "node",
+                "split_manifest": {},
             }
 
         trainable_count = 0
@@ -54,6 +58,9 @@ class ModelService:
         args: Dict[str, Any] = {}
         epoch = None
         best_val_f1 = None
+        has_edge_classifier = False
+        target = "node"
+        split_manifest: Dict[str, Any] = {}
 
         # 1. Attempt PyTorch if available
         loaded = False
@@ -65,6 +72,9 @@ class ModelService:
             epoch = state.get("epoch")
             best_val_f1 = state.get("best_val_f1")
             state_dict = state.get("model_state_dict", state.get("state_dict", state))
+            has_edge_classifier = any("edge_classifier" in k for k in state_dict.keys())
+            target = state.get("target", "edge" if has_edge_classifier else "node")
+            split_manifest = state.get("split_manifest", {})
             for name, tensor in state_dict.items():
                 numel = int(math.prod(tensor.shape))
                 total_elements += numel
@@ -112,6 +122,9 @@ class ModelService:
                 epoch = obj.get("epoch")
                 best_val_f1 = obj.get("best_val_f1")
                 state_dict = obj.get("model_state_dict", {})
+                has_edge_classifier = any("edge_classifier" in k for k in state_dict.keys())
+                target = obj.get("target", "edge" if has_edge_classifier else "node")
+                split_manifest = obj.get("split_manifest", {})
 
                 for name, tensor in state_dict.items():
                     shape = getattr(tensor, "shape", ())
@@ -138,14 +151,18 @@ class ModelService:
             "args": args,
             "epoch": epoch,
             "best_val_f1": best_val_f1,
+            "has_edge_classifier": has_edge_classifier,
+            "target": target,
+            "split_manifest": split_manifest,
         }
 
     @classmethod
-    def get_config(cls) -> Dict[str, Any]:
+    def get_config(cls, ckpt_file: Optional[Path] = None) -> Dict[str, Any]:
         """Derives architecture and hyperparameters dynamically from the checkpoint metadata/args."""
-        info = cls._inspect_checkpoint()
+        info = cls._inspect_checkpoint(ckpt_file)
         args = info.get("args", {})
         meta = info.get("meta", {})
+        has_edge = info.get("has_edge_classifier", False)
 
         return {
             "in_channels": meta.get("node_feature_dim", 10),
@@ -162,14 +179,35 @@ class ModelService:
             "gnn_type": "SAGEConv",
             "rnn_type": "GRU",
             "has_node_classifier": True,
-            "has_snapshot_classifier": True
+            "has_snapshot_classifier": True,
+            "has_edge_classifier": has_edge,
+            "target": info.get("target", "node"),
         }
 
     @classmethod
-    def get_summary(cls) -> Dict[str, Any]:
+    def get_summary(cls, ckpt_file: Optional[Path] = None) -> Dict[str, Any]:
         """Accurate TGNN parameter counts and architecture description dynamically inspected from checkpoint."""
-        info = cls._inspect_checkpoint()
-        cfg = cls.get_config()
+        info = cls._inspect_checkpoint(ckpt_file)
+        cfg = cls.get_config(ckpt_file)
+        has_edge = info.get("has_edge_classifier", False)
+
+        heads = ["node_classifier", "snapshot_classifier"]
+        if has_edge:
+            heads.append("edge_classifier")
+
+        layers = [
+            {"name": "conv1", "type": "SAGEConv", "input_dim": cfg["in_channels"], "output_dim": cfg["hidden_channels"]},
+            {"name": "edge_enc1", "type": "Linear", "input_dim": cfg["edge_dim"], "output_dim": cfg["hidden_channels"]},
+            {"name": "bn1", "type": "BatchNorm1d", "num_features": cfg["hidden_channels"]},
+            {"name": "conv2", "type": "SAGEConv", "input_dim": cfg["hidden_channels"], "output_dim": cfg["out_channels"]},
+            {"name": "edge_enc2", "type": "Linear", "input_dim": cfg["edge_dim"], "output_dim": cfg["out_channels"]},
+            {"name": "bn2", "type": "BatchNorm1d", "num_features": cfg["out_channels"]},
+            {"name": "gru", "type": "GRU", "input_size": cfg["out_channels"], "hidden_size": cfg["out_channels"], "num_layers": cfg["num_rnn_layers"]},
+            {"name": "node_classifier", "type": "Linear", "in_features": cfg["out_channels"], "out_features": 1},
+            {"name": "snapshot_classifier", "type": "Linear", "in_features": cfg["out_channels"], "out_features": 1},
+        ]
+        if has_edge:
+            layers.append({"name": "edge_classifier", "type": "Linear", "in_features": 2 * cfg["out_channels"], "out_features": 1})
 
         return {
             "architecture": "TemporalGNN",
@@ -177,7 +215,7 @@ class ModelService:
             "architecture_type": "GraphSAGE + GRU",
             "gnn_operator": "GraphSAGE (SAGEConv)",
             "temporal_aggregator": "GRU",
-            "output_heads": ["node_classifier", "snapshot_classifier"],
+            "output_heads": heads,
             "loss": "BCEWithLogitsLoss",
             "has_attention": False,
             "has_transformer": False,
@@ -190,18 +228,9 @@ class ModelService:
             "checkpoint_inspected": info["exists"],
             "checkpoint_path": info["checkpoint_path"],
             "config": cfg,
-            "layers": [
-                {"name": "conv1", "type": "SAGEConv", "input_dim": cfg["in_channels"], "output_dim": cfg["hidden_channels"]},
-                {"name": "edge_enc1", "type": "Linear", "input_dim": cfg["edge_dim"], "output_dim": cfg["hidden_channels"]},
-                {"name": "bn1", "type": "BatchNorm1d", "num_features": cfg["hidden_channels"]},
-                {"name": "conv2", "type": "SAGEConv", "input_dim": cfg["hidden_channels"], "output_dim": cfg["out_channels"]},
-                {"name": "edge_enc2", "type": "Linear", "input_dim": cfg["edge_dim"], "output_dim": cfg["out_channels"]},
-                {"name": "bn2", "type": "BatchNorm1d", "num_features": cfg["out_channels"]},
-                {"name": "gru", "type": "GRU", "input_size": cfg["out_channels"], "hidden_size": cfg["out_channels"], "num_layers": cfg["num_rnn_layers"]},
-                {"name": "node_classifier", "type": "Linear", "in_features": cfg["out_channels"], "out_features": 1},
-                {"name": "snapshot_classifier", "type": "Linear", "in_features": cfg["out_channels"], "out_features": 1}
-            ]
+            "layers": layers,
         }
+
 
     @staticmethod
     def get_snapshot_meta() -> Dict[str, Any]:
@@ -274,8 +303,17 @@ class ModelService:
         return snaps
 
     @classmethod
-    def get_training_run(cls) -> Dict[str, Any]:
-        history_path = MODELS_CHECKPOINTS_DIR / "history.json"
+    def get_training_run(cls, run_id: Optional[str] = None) -> Dict[str, Any]:
+        if run_id and "ctu13" in run_id:
+            ckpt_dir = BASE_DIR / "models" / "checkpoints" / "ctu13_ho_c47"
+            dataset_name = "ctu13_ho_c47"
+            run_identifier = "ctu13-ho-c47-run-01"
+        else:
+            ckpt_dir = MODELS_CHECKPOINTS_DIR
+            dataset_name = "mordor_mixed"
+            run_identifier = "mordor-mixed-run-01"
+
+        history_path = ckpt_dir / "history.json"
         history = []
         if history_path.exists():
             with open(history_path, "r", encoding="utf-8") as f:
@@ -283,7 +321,8 @@ class ModelService:
                 if isinstance(raw_hist, list):
                     history = sanitize_json(raw_hist)
 
-        info = cls._inspect_checkpoint()
+        checkpoint_file = ckpt_dir / "best_model.pt"
+        info = cls._inspect_checkpoint(checkpoint_file)
         best_epoch = info.get("epoch")
         best_metric = "best_val_f1" if info.get("best_val_f1") is not None else None
         best_metric_value = info.get("best_val_f1")
@@ -291,14 +330,13 @@ class ModelService:
         if best_epoch is None and history:
             best_val_auc = None
             for h in history:
-                auc = h.get("auc_roc")
+                auc = h.get("auc_roc") or h.get("auc_pr")
                 if auc is not None and (best_val_auc is None or auc > best_val_auc):
                     best_val_auc = auc
                     best_epoch = h.get("epoch")
             best_metric = "auc_roc"
             best_metric_value = best_val_auc
 
-        checkpoint_file = MODELS_CHECKPOINTS_DIR / "best_model.pt"
         ckpt_path = str(checkpoint_file) if checkpoint_file.exists() else None
 
         raw_args = info.get("args", {})
@@ -313,10 +351,10 @@ class ModelService:
                     cleaned_config[k] = str(v)
 
         return {
-            "id": "mordor-mixed-run-01",
-            "run_id": "mordor-mixed-run-01",
+            "id": run_identifier,
+            "run_id": run_identifier,
             "model_type": "TemporalGNN (GraphSAGE + GRU)",
-            "dataset": "mordor_mixed",
+            "dataset": dataset_name,
             "status": "completed" if history else "empty",
             "epochs_total": len(history) if history else None,
             "best_epoch": best_epoch,
@@ -328,28 +366,32 @@ class ModelService:
             "history": history
         }
 
-    @staticmethod
-    def get_evaluation_runs() -> List[Dict[str, Any]]:
-        eval_path = MODELS_CHECKPOINTS_DIR / "eval" / "metrics_test.json"
-        if not eval_path.exists():
-            eval_path = RESULTS_DIR / "checkpoints" / "mordor_mixed" / "eval_test" / "metrics_test.json"
-
-        if not eval_path.exists():
-            return []
-
+    @classmethod
+    def _build_eval_run(
+        cls,
+        run_id: str,
+        training_run_id: str,
+        split: str,
+        eval_dir: Path,
+        ckpt_file: Path
+    ) -> Optional[Dict[str, Any]]:
+        metrics_file = eval_dir / f"metrics_{split}.json"
+        if not metrics_file.exists():
+            return None
         try:
-            with open(eval_path, "r", encoding="utf-8") as f:
-                metrics = json.load(f)
+            with open(metrics_file, "r", encoding="utf-8") as f:
+                raw_metrics = json.load(f)
         except Exception:
-            return []
+            return None
 
-        preds_file = MODELS_CHECKPOINTS_DIR / "eval" / "predictions_test.parquet"
+        # Nested metrics support ("overall" for CTU-13 edge-eval, flat for Mordor)
+        M = raw_metrics.get("overall", raw_metrics)
+        preds_file = eval_dir / f"predictions_{split}.parquet"
         preds_path = str(preds_file) if preds_file.exists() else None
-        ckpt_file = MODELS_CHECKPOINTS_DIR / "best_model.pt"
         ckpt_path = str(ckpt_file) if ckpt_file.exists() else None
-        mtime = eval_path.stat().st_mtime
+        mtime = metrics_file.stat().st_mtime
 
-        raw_cm = metrics.get("confusion_matrix")
+        raw_cm = M.get("confusion_matrix")
         if isinstance(raw_cm, list) and len(raw_cm) == 2 and len(raw_cm[0]) == 2 and len(raw_cm[1]) == 2:
             cm_dict = {
                 "tn": int(raw_cm[0][0]),
@@ -365,32 +407,57 @@ class ModelService:
                 "tp": int(raw_cm.get("tp", 0))
             }
         else:
-            cm_dict = None
+            # Derive CM if possible from num_positive, recall, precision, num_samples
+            num_samples_val = M.get("num_samples")
+            num_pos = M.get("num_positive")
+            rec = M.get("recall")
+            prec = M.get("precision")
+            if num_samples_val is not None and num_pos is not None and rec is not None and prec is not None:
+                tp = int(round(rec * num_pos))
+                fn = int(num_pos - tp)
+                fp = int(round(tp / prec - tp)) if prec > 0 else 0
+                tn = int((num_samples_val - num_pos) - fp)
+                cm_dict = {"tn": tn, "fp": fp, "fn": fn, "tp": tp}
+            else:
+                cm_dict = None
+
+        num_samples = M.get("num_samples")
+        num_positive = M.get("num_positive")
+        num_negative = M.get("num_negative")
+        if num_negative is None and num_samples is not None and num_positive is not None:
+            num_negative = num_samples - num_positive
 
         metrics_block = {
-            "threshold": metrics.get("threshold", 0.5),
-            "num_samples": metrics.get("num_samples"),
-            "num_positive": metrics.get("num_positive"),
-            "num_negative": metrics.get("num_negative"),
-            "accuracy": metrics.get("accuracy"),
-            "precision": metrics.get("precision"),
-            "recall": metrics.get("recall"),
-            "f1": metrics.get("f1"),
-            "auc_roc": metrics.get("auc_roc"),
-            "auc_pr": metrics.get("auc_pr"),
-            "confusion_matrix": cm_dict
+            "threshold": M.get("threshold", 0.5),
+            "num_samples": num_samples,
+            "num_positive": num_positive,
+            "num_negative": num_negative,
+            "accuracy": M.get("accuracy"),
+            "precision": M.get("precision"),
+            "recall": M.get("recall"),
+            "f1": M.get("f1"),
+            "auc_roc": M.get("auc_roc"),
+            "auc_pr": M.get("auc_pr"),
+            "confusion_matrix": cm_dict,
+            "recall_at_1pct_fpr": M.get("recall_at_1pct_fpr"),
+            "threshold_best": M.get("threshold_best"),
+            "threshold_at_1pct_fpr": M.get("threshold_at_1pct_fpr"),
+            "saved_threshold": M.get("saved_threshold"),
+            "f1_at_saved_threshold": M.get("f1_at_saved_threshold"),
+            "accuracy_at_saved_threshold": M.get("accuracy_at_saved_threshold"),
         }
 
-        eval_run = {
-            "id": "eval_test_mordor_mixed",
-            "training_run_id": "mordor-mixed-run-01",
+        return {
+            "id": run_id,
+            "training_run_id": training_run_id,
             "checkpoint_path": ckpt_path,
-            "split": "test",
+            "split": split,
+            "target": raw_metrics.get("target", "node"),
             "metrics": metrics_block,
             "predictions_path": preds_path,
             "started_at": None,
             "ended_at": None,
-            "checkpoint": "best_model.pt",
+            "checkpoint": ckpt_file.name,
             "num_samples": metrics_block["num_samples"],
             "num_positive": metrics_block["num_positive"],
             "num_negative": metrics_block["num_negative"],
@@ -401,30 +468,85 @@ class ModelService:
             "auc_roc": metrics_block["auc_roc"],
             "auc_pr": metrics_block["auc_pr"],
             "confusion_matrix": cm_dict,
-            "evaluated_at": mtime
+            "evaluated_at": mtime,
         }
 
-        return [sanitize_json(eval_run)]
+    @classmethod
+    def get_evaluation_runs(cls) -> List[Dict[str, Any]]:
+        runs: List[Dict[str, Any]] = []
 
-    @staticmethod
-    def get_evaluation_run(split: str = "test") -> Optional[Dict[str, Any]]:
-        runs = ModelService.get_evaluation_runs()
+        # 1. Mordor Mixed (default baseline)
+        mordor_eval_dir = MODELS_CHECKPOINTS_DIR / "eval"
+        if not (mordor_eval_dir / "metrics_test.json").exists():
+            mordor_eval_dir = RESULTS_DIR / "checkpoints" / "mordor_mixed" / "eval_test"
+        mordor_run = cls._build_eval_run(
+            run_id="eval_test_mordor_mixed",
+            training_run_id="mordor-mixed-run-01",
+            split="test",
+            eval_dir=mordor_eval_dir,
+            ckpt_file=MODELS_CHECKPOINTS_DIR / "best_model.pt",
+        )
+        if mordor_run:
+            runs.append(mordor_run)
+
+        # 2. CTU-13 Held-out (ctu13_ho_c47)
+        ctu13_eval_dir = BASE_DIR / "models" / "checkpoints" / "ctu13_ho_c47" / "eval_test"
+        ctu13_run = cls._build_eval_run(
+            run_id="eval_test_ctu13_ho_c47",
+            training_run_id="ctu13-ho-c47-run-01",
+            split="test",
+            eval_dir=ctu13_eval_dir,
+            ckpt_file=BASE_DIR / "models" / "checkpoints" / "ctu13_ho_c47" / "best_model.pt",
+        )
+        if ctu13_run:
+            runs.append(ctu13_run)
+
+        return [sanitize_json(r) for r in runs]
+
+    @classmethod
+    def get_evaluation_run(cls, split: str = "test", run_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        runs = cls.get_evaluation_runs()
         for r in runs:
-            if r.get("split") == split:
+            if run_id and r.get("id") == run_id:
+                return r
+            if not run_id and r.get("split") == split:
                 return r
         return None
 
     @staticmethod
-    def get_predictions(split: str = "test", limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
-        preds_path = MODELS_CHECKPOINTS_DIR / "eval" / f"predictions_{split}.parquet"
-        if not preds_path.exists():
-            preds_path = RESULTS_DIR / "checkpoints" / "mordor_mixed" / "eval_test" / f"predictions_{split}.parquet"
+    def get_predictions(
+        split: str = "test",
+        limit: int = 100,
+        offset: int = 0,
+        run_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        preds_path = None
+        if run_id and "ctu13" in run_id:
+            ctu_preds = BASE_DIR / "models" / "checkpoints" / "ctu13_ho_c47" / "eval_test" / f"predictions_{split}.parquet"
+            if ctu_preds.exists():
+                preds_path = ctu_preds
+
+        if preds_path is None:
+            preds_path = MODELS_CHECKPOINTS_DIR / "eval" / f"predictions_{split}.parquet"
+            if not preds_path.exists():
+                preds_path = RESULTS_DIR / "checkpoints" / "mordor_mixed" / "eval_test" / f"predictions_{split}.parquet"
+
         if not preds_path.exists():
             return []
 
         try:
             df = pd.read_parquet(preds_path)
             paged = df.iloc[offset : offset + limit]
-            return [sanitize_json(row.to_dict()) for _, row in paged.iterrows()]
+            results = []
+            for i, (_, row) in enumerate(paged.iterrows()):
+                d = row.to_dict()
+                if "node_id" not in d:
+                    d["node_id"] = str(d.get("scenario", f"flow_{offset + i}"))
+                if "sequence" not in d:
+                    d["sequence"] = offset + i
+                if "snapshot_label" not in d:
+                    d["snapshot_label"] = int(d.get("ground_truth", 0))
+                results.append(sanitize_json(d))
+            return results
         except Exception:
             return []

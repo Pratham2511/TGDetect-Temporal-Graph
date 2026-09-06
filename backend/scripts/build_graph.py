@@ -42,7 +42,7 @@ except ImportError:  # pragma: no cover
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="TG-Detect graph builder")
-    ap.add_argument("--dataset", required=True, help="parser key: synthetic | mordor")
+    ap.add_argument("--dataset", required=True, help="parser key: synthetic | mordor | ctu13")
     ap.add_argument("--input", required=True, help="input log file (.jsonl/.json/.gz/.zip)")
     ap.add_argument("--out", default="data/processed", help="processed output directory")
     ap.add_argument("--graphs-out", default="data/graphs", help="attack subgraph directory")
@@ -73,6 +73,11 @@ def main() -> int:
                          "events sharing a host/user/process")
     ap.add_argument("--no-label-propagation", action="store_true",
                     help="heuristic mode: label only the exact indicator hits")
+    ap.add_argument("--ctu13-background", default="benign",
+                    choices=["benign", "drop"],
+                    help="ctu13 only: 'benign' keeps Background/Normal flows as "
+                         "label 0 (realistic imbalance); 'drop' discards Background "
+                         "flows (clean Normal-vs-Botnet)")
     args = ap.parse_args()
 
     if args.label_mode == "force" and args.label is None:
@@ -97,6 +102,16 @@ def main() -> int:
             parser_kwargs["label"] = 0  # start benign, indicators promote to 1
         elif args.label is not None:
             parser_kwargs["label"] = args.label
+    elif args.dataset == "ctu13":
+        # CTU-13 carries its own per-flow labels in the Label column, so only
+        # --label-mode parser is meaningful (heuristic matches ~0 NetFlow rows).
+        if args.label_mode != "parser":
+            print("ERROR: --dataset ctu13 only supports --label-mode parser "
+                  "(labels come from the Label column).", file=sys.stderr)
+            return 1
+        if args.source_tag:
+            parser_kwargs["source_tag"] = args.source_tag
+        parser_kwargs["background"] = args.ctu13_background
 
     print(f"[1/5] parsing   : {args.input}  (dataset={args.dataset}, "
           f"label_mode={args.label_mode})")

@@ -33,10 +33,14 @@ def get_training_history():
     return run.get("history", [])
 
 @router.get("/model/evaluation")
-def get_evaluation(split: Optional[str] = Query("test", description="train | val | test")):
-    eval_run = ModelService.get_evaluation_run(split=split)
+def get_evaluation(
+    split: Optional[str] = Query("test", description="train | val | test"),
+    run_id: Optional[str] = Query(None, description="Optional run ID (e.g. eval_test_ctu13_ho_c47)"),
+):
+    eval_run = ModelService.get_evaluation_run(split=split, run_id=run_id)
     if not eval_run:
-        raise HTTPException(status_code=404, detail=f"Evaluation for split '{split}' not found")
+        detail = f"Evaluation for run '{run_id}' not found" if run_id else f"Evaluation for split '{split}' not found"
+        raise HTTPException(status_code=404, detail=detail)
     return eval_run
 
 @router.get("/model/evaluation/runs")
@@ -47,6 +51,7 @@ def get_evaluation_runs():
 def get_predictions(
     split: str = Query("test", description="train | val | test"),
     limit: int = Query(100, ge=1, le=500),
-    offset: int = Query(0, ge=0)
+    offset: int = Query(0, ge=0),
+    run_id: Optional[str] = Query(None, description="Optional run ID (e.g. eval_test_ctu13_ho_c47)"),
 ):
-    return ModelService.get_predictions(split=split, limit=limit, offset=offset)
+    return ModelService.get_predictions(split=split, limit=limit, offset=offset, run_id=run_id)

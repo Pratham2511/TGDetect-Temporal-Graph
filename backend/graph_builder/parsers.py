@@ -4,14 +4,16 @@ Parsers stream line-by-line and never materialize an entire file in memory.
 Adding a new dataset = one generator function + one registry entry.
 """
 
-from __future__ import annotations
-
+import bz2
+import csv
 import gzip
 import io
+import lzma
 import os
 import tarfile
 import zipfile
-from typing import Any, Callable, Dict, Iterator, Optional
+from datetime import datetime, timezone
+from typing import Any, Callable, Dict, Iterator, List, Optional
 
 from .schema import NodeType, RelationType, TGEvent
 
@@ -70,6 +72,15 @@ def iter_lines(path: str, member: Optional[str] = None) -> Iterator[bytes]:
                 yield from _iter_text_lines(inner)
     elif lower.endswith(".gz"):
         with gzip.open(path, "rb") as fh:
+            for line in fh:
+                yield line
+    elif lower.endswith(".xz"):
+        # CTU-13 Argus captures ship as `*.binetflow.xz` (single-stream LZMA).
+        with lzma.open(path, "rb") as fh:
+            for line in fh:
+                yield line
+    elif lower.endswith(".bz2"):
+        with bz2.open(path, "rb") as fh:
             for line in fh:
                 yield line
     else:
@@ -369,9 +380,166 @@ def mordor_record_to_events(
         yield emit(0, f"user:{actor}", NodeType.USER.value, f"host:{host}",
                    NodeType.HOST.value, RelationType.GENERIC.value)
 
+
+# ──────────────────────────────────────────────────────────────────────
+# PATH C — CTU-13 botnet NetFlow (Argus bidirectional *.binetflow[.xz])
+# ──────────────────────────────────────────────────────────────────────
+# Canonical 15-column header of the labeled binetflow files. Used as a
+# fallback when a file has no header row (some mirrors strip it).
+CTU13_FIELDS: List[str] = [
+    "StartTime", "Dur", "Proto", "SrcAddr", "Sport", "Dir", "DstAddr",
+    "Dport", "State", "sTos", "dTos", "TotPkts", "TotBytes", "SrcBytes", "Label",
+]
+
+
+def _ctu13_int(raw: str) -> Optional[int]:
+    """Parse an int that may be empty or hex (`0x1234`, ~12% of CTU-13 ports)."""
+    raw = (raw or "").strip()
+    if not raw:
+        return None
+    try:
+        return int(raw, 0)  # base 0 -> honours a 0x prefix, else decimal
+    except ValueError:
+        try:
+            return int(float(raw))
+        except ValueError:
+            return None
+
+
+def _ctu13_float(raw: str) -> Optional[float]:
+    raw = (raw or "").strip()
+    if not raw:
+        return None
+    try:
+        return float(raw)
+    except ValueError:
+        return None
+
+
+def _ctu13_ts(raw: str) -> Optional[float]:
+    """CTU-13 stamps are `2011/08/18 15:40:53.826372` (slash date, not ISO).
+
+    `normalizer.coerce_ts` rejects that format, so the parser must emit epoch
+    seconds itself. Treated as UTC for deterministic ordering across machines
+    (only relative order within a scenario matters for windowing).
+    """
+    raw = (raw or "").strip()
+    if not raw:
+        return None
+    try:  # some mirrors already store epoch floats
+        return float(raw)
+    except ValueError:
+        pass
+    for fmt in ("%Y/%m/%d %H:%M:%S.%f", "%Y/%m/%d %H:%M:%S"):
+        try:
+            return datetime.strptime(raw, fmt).replace(tzinfo=timezone.utc).timestamp()
+        except ValueError:
+            continue
+    return None
+
+
+def parse_ctu13_binetflow(
+    path: str,
+    limit: Optional[int] = None,
+    source_tag: Optional[str] = None,
+    background: str = "benign",
+) -> Iterator[TGEvent]:
+    """Stream a CTU-13 labeled Argus NetFlow file into per-flow TGEvents.
+
+    One edge per flow: `ip:SrcAddr --NETWORK_FLOW--> ip:DstAddr`. Every flow
+    attribute (bytes/pkts/dur/proto/state/dir/ports) rides on `attrs` so the
+    snapshot builder can turn it into numeric edge features — all CTU-13 nodes
+    are IPs, so the node-type one-hot is constant and the signal must live on
+    the edges (E-GraphSAGE convention).
+
+    Labeling: `malicious = 1 iff "botnet" in Label.lower()` (the CTU-13 Label
+    column has 50+ distinct strings; only a substring match is robust).
+    `background`: "benign" keeps Background/Normal flows as label 0 (realistic
+    imbalance); "drop" discards Background flows entirely (clean Normal-vs-Bot).
+    """
+    tag = source_tag or "ctu13"
+    count = 0
+
+    lines = (raw.decode("utf-8", errors="replace") for raw in iter_lines(path))
+    reader = csv.reader(lines)
+    try:
+        header = next(reader)
+    except StopIteration:
+        return
+
+    stripped = [h.strip() for h in header]
+    if any(h == "StartTime" for h in stripped):
+        field_index = {name: i for i, name in enumerate(stripped)}
+        pending_first_row = None
+    else:  # no header row: the line we just read is data
+        field_index = {name: i for i, name in enumerate(CTU13_FIELDS)}
+        pending_first_row = header
+
+    def rows() -> Iterator[List[str]]:
+        if pending_first_row is not None:
+            yield pending_first_row
+        yield from reader
+
+    def col(row: List[str], name: str) -> str:
+        i = field_index.get(name)
+        if i is None or i >= len(row):
+            return ""
+        return row[i].strip()
+
+    for row in rows():
+        if len(row) < len(CTU13_FIELDS):
+            continue  # malformed / truncated line
+
+        ts = _ctu13_ts(col(row, "StartTime"))
+        if ts is None:
+            continue
+
+        label_str = col(row, "Label")
+        low = label_str.lower()
+        if background == "drop" and "background" in low:
+            continue
+        label = 1 if "botnet" in low else 0
+
+        src = col(row, "SrcAddr")
+        dst = col(row, "DstAddr")
+        if not src or not dst:
+            continue
+
+        attrs: Dict[str, Any] = {
+            "dur": _ctu13_float(col(row, "Dur")),
+            "proto": col(row, "Proto").lower(),
+            "sport": _ctu13_int(col(row, "Sport")),
+            "dport": _ctu13_int(col(row, "Dport")),
+            "dir": col(row, "Dir"),
+            "state": col(row, "State"),
+            "stos": _ctu13_int(col(row, "sTos")),
+            "dtos": _ctu13_int(col(row, "dTos")),
+            "tot_pkts": _ctu13_int(col(row, "TotPkts")),
+            "tot_bytes": _ctu13_int(col(row, "TotBytes")),
+            "src_bytes": _ctu13_int(col(row, "SrcBytes")),
+            "label_str": label_str,
+        }
+
+        yield TGEvent(
+            event_id=f"{tag}_{count}",
+            ts=ts,
+            src_id=f"ip:{src}",
+            src_type=NodeType.IP.value,
+            dst_id=f"ip:{dst}",
+            dst_type=NodeType.IP.value,
+            relation=RelationType.NETWORK_FLOW.value,
+            label=label,
+            source_tag=tag,
+            attrs=attrs,
+        )
+        count += 1
+        if limit and count >= limit:
+            return
+
+
 DATA_FILE_EXT = (
-    ".json", ".jsonl", ".ndjson", ".log", ".txt",
-    ".gz", ".zip", ".tgz", ".tar", ".tar.gz", ".tar.bz2",
+    ".json", ".jsonl", ".ndjson", ".log", ".txt", ".csv", ".binetflow",
+    ".gz", ".zip", ".tgz", ".tar", ".tar.gz", ".tar.bz2", ".xz", ".bz2",
 )
 
 
@@ -489,6 +657,7 @@ ParserFn = Callable[..., Iterator[TGEvent]]
 PARSERS: Dict[str, ParserFn] = {
     "synthetic": parse_synthetic_jsonl,
     "mordor": parse_mordor_jsonl,
+    "ctu13": parse_ctu13_binetflow,
 }
 
 

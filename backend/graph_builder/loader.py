@@ -16,7 +16,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from .schema import EDGE_SCHEMA, EVENT_SCHEMA, NODE_SCHEMA
+from .schema import EDGE_OPTIONAL_COLUMNS, EDGE_SCHEMA, EVENT_SCHEMA, NODE_SCHEMA
 
 
 class TemporalGraphDataset:
@@ -125,9 +125,20 @@ class TemporalGraphDataset:
         print("=" * 70)
 
 
-def _validate_schema(table: pa.Table, expected: pa.Schema, name: str) -> None:
-    """Warn about missing fields but do not crash on extra fields."""
+def _validate_schema(
+    table: pa.Table,
+    expected: pa.Schema,
+    name: str,
+    optional: Optional[frozenset] = None,
+) -> None:
+    """Warn about missing fields but do not crash on extra fields.
+
+    `optional` columns are tolerated when absent — used for edge columns added
+    after the initial release so graphs built earlier still load.
+    """
     expected_names = set(expected.names)
+    if optional:
+        expected_names -= set(optional)
     actual_names = set(table.schema.names)
     missing = expected_names - actual_names
     if missing:
@@ -166,7 +177,7 @@ def load_graph(
     if validate:
         _validate_schema(events_table, EVENT_SCHEMA, "events")
         _validate_schema(nodes_table, NODE_SCHEMA, "nodes")
-        _validate_schema(edges_table, EDGE_SCHEMA, "edges")
+        _validate_schema(edges_table, EDGE_SCHEMA, "edges", optional=EDGE_OPTIONAL_COLUMNS)
 
     events = events_table.to_pandas()
     nodes = nodes_table.to_pandas()

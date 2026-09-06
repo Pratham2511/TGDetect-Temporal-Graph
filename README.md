@@ -79,15 +79,17 @@ The project provides an end-to-end open pipeline: from streaming log parsing and
 To ensure transparency for researchers and engineers evaluating this repository, the following capabilities are confirmed executable in the current branch:
 
 1. **Deterministic Parquet Graph Artifacts**: Parses structured security logs into canonical columnar storage (`events.parquet`, `edges.parquet`, `nodes.parquet`, `chains_summary.parquet`, `graph_stats.json`).
-2. **Typed Heterogeneous Graph Schema**: Standardizes 8 discrete node types and 14 relation types with explicit timestamping and attribute tracking.
+2. **Typed Heterogeneous Graph Schema**: Standardizes discrete node types and relations with explicit timestamping, attribute tracking, and optional NetFlow metadata columns (`flow_dur`, `flow_proto`, `flow_sport`, `flow_dport`, `flow_dir`, `flow_state`, `flow_tot_pkts`, `flow_tot_bytes`, `flow_src_bytes`).
 3. **Multi-Strategy Attack-Chain Reconstruction**: Implements 3 distinct chain reconstruction engines:
    - `chain_id`: Ground-truth grouping when scenario identifiers are known.
    - `causal_parent`: Directed Acyclic Graph (DAG) traversal across parent event pointers.
    - `entity_time`: Sliding-window temporal proximity and shared-entity inference.
-4. **Time-Windowed Snapshot Generator**: Vectorized generation of PyTorch-ready temporal snapshots with event-driven stride windows.
-5. **Executable TemporalGNN**: Pure PyTorch/PyG model combining 2-layer `SAGEConv` with edge feature encoding, batch normalization, single-layer `GRU`, and linear classification heads for both node-level and snapshot-level threat detection.
-6. **29 Implemented Read-Only REST Endpoints**: A modular FastAPI backend exposing event filters, graph structures, attack subgraphs, model configurations, checkpoint evaluations, and analytics.
-7. **Production-Grade Next.js Dashboard**: 8 dedicated forensic views with theme switching, canvas graph layout, subgraphs, and confusion matrix rendering.
+4. **Time-Windowed Snapshot Generator**: Vectorized generation of PyTorch-ready temporal snapshots with event-driven stride windows, supporting both standard graph features and 37-dim leakage-free NetFlow features.
+5. **Multi-Head Spatiotemporal Model (TemporalGNN)**: PyTorch/PyG architecture combining 2-layer `SAGEConv` with edge projection, batch normalization, single-layer `GRU` (stepping across temporal windows), and dedicated classification heads for node-level, snapshot-level, and flow edge-level threat detection.
+6. **Cross-Scenario Held-Out Splitting & Imbalance Control**: Scenario-aware partitioner (`--train-scenarios`, `--test-scenarios`) preventing data leakage across captures, paired with a capped `pos_weight` loss stabilizer preventing gradient explosion and all-positive mode collapse.
+7. **Three-Operating-Point Evaluation Engine**: Standardized reporting across (1) calibrated saved threshold, (2) optimal F1 threshold, and (3) operational 1.0% False Positive Rate (FPR) threshold with full ROC-AUC and PR-AUC tracking.
+8. **29+ Implemented Read-Only REST Endpoints**: A modular FastAPI backend exposing event filters, graph structures, attack subgraphs, model configurations, checkpoint evaluations (with multi-run discovery), and analytics.
+9. **Production-Grade Next.js Dashboard**: 8 dedicated forensic views with theme switching, canvas graph layout, subgraphs, and confusion matrix rendering.
 
 ---
 
@@ -393,29 +395,33 @@ Aligned Sequence Tensor: [W, N_final, 64]
    │
    ▼
 Gated Recurrent Unit (GRU)
-   input_size=64, hidden_size=64, num_layers=1, batch_first=True
+   input_size=64, hidden_size=64, num_layers=1, batch_first=False
    Final Temporal Node Embeddings: [N_final, 64]
    │
-   ├─────────────────────────────────────────┐
-   ▼                                         ▼
-Node Classifier                           Snapshot Classifier
-Linear(64 -> 1)                           Global Max Pooling: [1, 64]
-                                          Linear(64 -> 1)
-   │                                         │
-   ▼                                         ▼
-Node Threat Logits: [N, 1]                Snapshot Threat Logit: [1]
+   ├──────────────────────────┬──────────────────────────┐
+   ▼                          ▼                          ▼
+Node Classifier            Snapshot Classifier        Edge Classifier
+Linear(64 -> 1)            Global Max Pool: [1, 64]   Linear(128 -> 1)
+                           Linear(64 -> 1)            (Concatenates [h_src, h_dst])
+   │                          │                          │
+   ▼                          ▼                          ▼
+Node Threat Logits: [N, 1] Snapshot Threat Logit: [1] Edge Threat Logits: [E, 1]
 ```
 
-### Parameter Breakdown
+### Recurrence & Edge Modeling Corrections
 
-An inspection of the actual model weights (`models/checkpoints/mordor_mixed/best_model.pt`) reveals:
+1. **Temporal Sequence Recurrence (`batch_first=False`)**: The spatiotemporal GRU receives node embeddings across time windows with shape `[W, N, C]`. PyTorch's `nn.GRU` with `batch_first=False` treats dimension 0 (`W`) as sequence length and dimension 1 (`N`) as batch elements. In earlier iterations, `batch_first=True` caused PyTorch to treat `N` as time steps and `W` as batch elements. Fixing this ensures recurrence genuinely propagates temporal state across time.
+2. **Bidirectional Edge Message Aggregation**: Pure-source nodes (such as outbound C2 bots initiating connections) have zero incoming edges. In standard aggregation, pure-source nodes never receive edge feature information. The message projection step updates both source and destination node representations, ensuring attacker IPs incorporate edge flow attributes.
+3. **Edge-Level Threat Classification**: An optional edge classification head projects concatenated endpoint representations `[h_src, h_dst]` into flow anomaly logits. When training with `--target edge`, loss backpropagates directly against malicious network flows.
 
-```text
-Total Model Parameters:               36,098  (Weights & Biases, 100% Trainable)
-Non-Trainable Parameters:                  0  (Excluding running statistics)
-BatchNorm Running-Stat Buffers:          258  (.running_mean, .running_var, .num_batches_tracked)
-Total PyTorch State-Dict Elements:    36,356  (36,098 parameters + 258 non-parameter buffers)
-```
+### Parameter Breakdown & Checkpoint Compatibility
+
+| Checkpoint | Target | Heads | In Channels | Edge Dim | Total Parameters | Notes |
+|---|---|---|---|---|---|---|
+| `mordor_mixed` | `node` | 2 (Node, Snapshot) | 10 (Type + Degree) | 8 (Rel + Time) | **36,098** | Legacy checkpoint preserved; backward-compatible |
+| `ctu13_ho_c47` | `edge` | 3 (Node, Snapshot, Edge) | 1 (Type only) | 37 (Rel + Flow + Time) | **38,787** | NetFlow benchmark; held-out Scenario 47 evaluation |
+
+`TemporalGNN.load_state_dict` includes a graceful backward-compatibility fallback (`strict=False` when `edge_classifier.weight` is missing in older weights), allowing legacy Mordor checkpoints to load seamlessly without code changes.
 
 > [!CAUTION]
 > **No Attention or Transformers**: The model architecture is strictly `GraphSAGE + GRU`. It contains **no** multi-head attention, graph transformers, or Large Language Models (LLMs). The metadata flags `has_attention`, `has_transformer`, and `has_llm` evaluate to `false`.
@@ -464,23 +470,20 @@ The recorded run completed 5 training epochs on `mordor_mixed`:
 
 ## Evaluation
 
-Model evaluation is executed via `scripts/evaluate_tgnn.py` and produces `eval/metrics_test.json` and `eval/predictions_test.parquet`.
+Model evaluation is executed via `scripts/evaluate_tgnn.py` and produces `eval/metrics_test.json` and `eval/predictions_test.parquet`. The evaluation engine supports both node-level and edge-level evaluation across multiple operating points.
 
-> [!IMPORTANT]
-> **Artifact Availability**: The repository currently contains **only the test split evaluation artifact** (`eval/metrics_test.json`). No evaluation artifacts currently exist on disk for the `train` or `val` splits.
+### 1. Legacy Evaluation (`models/checkpoints/mordor_mixed`)
 
-### Verified Test Split Metrics (`eval/metrics_test.json`)
-
-The test partition contains 20,290 samples (1,072 positive malicious samples and 19,218 negative benign samples):
+The test partition for `mordor_mixed` contains 20,290 samples (1,072 positive malicious samples and 19,218 negative benign samples):
 
 | Metric | Raw Artifact Value | UI Display Label (Rounded) | Description |
 |---|---|---|---|
-| **AUC-PR** | `0.23626491059089688` | `0.2363` | Area under the Precision-Recall curve |
-| **AUC-ROC** | `0.7447019167742306` | `0.7447` | Area under the Receiver Operating Characteristic |
+| **AUC-PR** | `0.2363` | `0.2363` | Area under the Precision-Recall curve |
+| **AUC-ROC** | `0.7447` | `0.7447` | Area under the Receiver Operating Characteristic |
 | **Recall (TPR)** | `1.0` | `100.0%` | Fraction of actual malicious samples detected |
-| **Precision (PPV)** | `0.05283390832922622` | `5.28%` | Fraction of predicted malicious samples that are true positives |
-| **F1-Score** | `0.10036513435071623` | `0.1004` | Harmonic mean of precision and recall at threshold |
-| **Accuracy** | `0.05283390832922622` | `5.28%` | Overall correct sample ratio |
+| **Precision (PPV)** | `0.0528` | `5.28%` | Fraction of predicted malicious samples that are true positives |
+| **F1-Score** | `0.1004` | `0.1004` | Harmonic mean of precision and recall at threshold |
+| **Accuracy** | `0.0528` | `5.28%` | Overall correct sample ratio |
 
 ### Test Confusion Matrix
 
@@ -490,7 +493,40 @@ Predicted Benign (0)           0 (TN)                 0 (FN)
 Predicted Malicious (1)   19,218 (FP)             1,072 (TP)
 ```
 
-*At the default checkpoint decision threshold, the model maximizes recall (1.0), correctly identifying all 1,072 malicious nodes while incurring 19,218 false positives.*
+> [!WARNING]
+> **Legacy All-Positive Operating Point**: In older training runs without a capped positive weight, the raw BCE loss weight forced logits heavily positive, causing the default threshold (0.50) to classify everything as malicious despite maintaining underlying ranking capability (AUC-ROC 0.7447).
+
+### 2. CTU-13 Held-Out Benchmark (`models/checkpoints/ctu13_ho_c47`)
+
+The CTU-13 benchmark models malicious network flows at the edge level and evaluates generalization on a held-out botnet scenario:
+
+- **Checkpoint**: `ctu13_ho_c47`
+- **Target**: `edge`
+- **Scenario**: Held-out Scenario 47
+- **Train Scenarios**: `ctu13_c52`, `ctu13_c46`, `ctu13_c53`, `ctu13_c48`
+- **Test Scenario**: `ctu13_c47`
+- **Total Parameters**: 38,787
+- **In Channels**: 1 (node type one-hot)
+- **Edge Dimension**: 37 (1 relation + 35 flow features + 1 relative time)
+- **Output Heads**: Node, Snapshot, Edge
+
+#### Test Split Metrics (`eval_test/metrics_test.json`)
+
+The test partition contains 1,068,851 total flows (9,256 malicious positive flows, 1,059,595 benign negative flows):
+
+| Metric | Raw Artifact Value | UI Display Label (Rounded) | Description |
+|---|---|---|---|
+| **AUC-ROC** | `0.9983` | `0.9983` | Area under the Receiver Operating Characteristic |
+| **AUC-PR** | `0.7065` | `0.7065` | Area under the Precision-Recall curve |
+| **Best F1** | `0.8388` | `0.8388` | Peak F1 score across decision thresholds |
+| **Recall @ 1% FPR** | `0.9958` | `99.58%` | Detection rate constrained to 1% false positive rate |
+| **Total Test Flows** | `1,068,851` | `1,068,851` | Total evaluated network flows in held-out scenario |
+| **Malicious Flows** | `9,256` | `9,256` | Ground-truth botnet flows in held-out scenario |
+
+> [!NOTE]
+> **Confusion Matrix Counts**: Aggregate confusion-matrix counts are omitted because previously documented counts did not match the committed evaluation artifact.
+
+See [TG-DETECT-vs-BASE-PAPER-RESULTS.md](docs/TG-DETECT-vs-BASE-PAPER-RESULTS.md) for full benchmark comparison against baseline literatures.
 
 ---
 
@@ -518,6 +554,12 @@ TGDetect expects raw logs to arrive in line-delimited JSON formats conforming to
 ### 2. Mordor (Security-Datasets) Format
 Structured Sysmon, Windows Security Auditing (Event ID 4624, 4688), or PowerShell operational events containing `EventID`, `Channel`, `Computer`, `Execution`, `ProcessId`, and `CommandLine`.
 
+### 3. CTU-13 NetFlow Format (`.binetflow`, `.binetflow.xz`, `.binetflow.bz2`)
+Comma-delimited bidirectional Argus network flow captures containing:
+`StartTime, Dur, Proto, SrcAddr, Sport, Dir, DstAddr, Dport, State, sTos, dTos, TotPkts, TotBytes, SrcBytes, Label`
+
+See [CTU-13-DATASET-DETAILS.md](docs/CTU-13-DATASET-DETAILS.md) for full scenario catalog and label mappings.
+
 ---
 
 ## Current Dataset & Provenance
@@ -533,9 +575,10 @@ To maintain strict scientific integrity, TGDetect explicitly distinguishes betwe
 
 ### B. Real External Datasets (Supported by Pipeline)
 - **Mordor / Security-Datasets**: Pre-recorded cyber range scenarios published by the Open Threat Research (OTR) community (e.g., APT29, Empire, CaddyWiper). Supported via `parse_mordor_jsonl`.
+- **CTU-13 Benchmark Dataset**: 13 real botnet traffic scenarios captured at CTU University, Prague (Neris, Rbot, Virut, Menti, Sogou, Murlo, NSIS). Supported via `parse_ctu13_binetflow` with full streaming support across compressed archives (`.xz`, `.bz2`). Checkpoints and evaluation reports for held-out Scenario 47 (`ctu13_ho_c47`) are included in `models/checkpoints/` and `reports/`.
 
 ### C. Data NOT Bundled with this Repository
-- Multi-gigabyte raw PCAP captures, EVTX archives, and Wazuh agent telemetry are not checked into source control. Users must supply external logs or use `scripts/init_demo_data.py`.
+- Multi-gigabyte raw PCAP captures, EVTX archives, and raw 100GB+ binetflow captures are not checked into git source control. Users can download raw CTU-13 files directly from Stratosphere IPS or run the automated cloud pipeline via Modal (`backend/modal_train.py`).
 
 ---
 

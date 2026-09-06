@@ -109,7 +109,15 @@ class TGEvent:
         }
 
     def edge_row(self) -> Dict[str, Any]:
-        """Thinner projection used for the edge table."""
+        """Thinner projection used for the edge table.
+
+        Numeric/categorical NetFlow attributes (CTU-13) are lifted out of
+        `attrs` onto dedicated columns so the snapshot builder can turn them
+        into edge features. They are `None` for datasets that don't set them
+        (Mordor/synthetic) — the arrow fields are nullable, and the loader
+        treats them as optional so pre-existing graphs still load.
+        """
+        a = self.attrs or {}
         return {
             "event_id": self.event_id,
             "src_id": self.src_id,
@@ -120,7 +128,30 @@ class TGEvent:
             "chain_id": self.chain_id,
             "causal_parent": self.causal_parent,
             "source_tag": self.source_tag or "",
+            "flow_dur": _as_float(a.get("dur")),
+            "flow_proto": _as_str(a.get("proto")),
+            "flow_sport": _as_int(a.get("sport")),
+            "flow_dport": _as_int(a.get("dport")),
+            "flow_dir": _as_str(a.get("dir")),
+            "flow_state": _as_str(a.get("state")),
+            "flow_stos": _as_int(a.get("stos")),
+            "flow_dtos": _as_int(a.get("dtos")),
+            "flow_tot_pkts": _as_int(a.get("tot_pkts")),
+            "flow_tot_bytes": _as_int(a.get("tot_bytes")),
+            "flow_src_bytes": _as_int(a.get("src_bytes")),
         }
+
+
+def _as_float(v: Any) -> Optional[float]:
+    return None if v is None else float(v)
+
+
+def _as_int(v: Any) -> Optional[int]:
+    return None if v is None else int(v)
+
+
+def _as_str(v: Any) -> Optional[str]:
+    return None if v is None else str(v)
 
 
 EVENT_SCHEMA = pa.schema(
@@ -153,7 +184,29 @@ EDGE_SCHEMA = pa.schema(
         pa.field("chain_id", pa.string()),
         pa.field("causal_parent", pa.string()),
         pa.field("source_tag", pa.string()),
+        # Optional NetFlow (CTU-13) edge attributes — null for other datasets.
+        pa.field("flow_dur", pa.float64()),
+        pa.field("flow_proto", pa.string()),
+        pa.field("flow_sport", pa.int32()),
+        pa.field("flow_dport", pa.int32()),
+        pa.field("flow_dir", pa.string()),
+        pa.field("flow_state", pa.string()),
+        pa.field("flow_stos", pa.int32()),
+        pa.field("flow_dtos", pa.int32()),
+        pa.field("flow_tot_pkts", pa.int64()),
+        pa.field("flow_tot_bytes", pa.int64()),
+        pa.field("flow_src_bytes", pa.int64()),
     ]
+)
+
+# Columns added after the initial release. The loader subtracts these from the
+# required set so graphs built before they existed still validate/load.
+EDGE_OPTIONAL_COLUMNS = frozenset(
+    {
+        "flow_dur", "flow_proto", "flow_sport", "flow_dport", "flow_dir",
+        "flow_state", "flow_stos", "flow_dtos", "flow_tot_pkts",
+        "flow_tot_bytes", "flow_src_bytes",
+    }
 )
 
 NODE_SCHEMA = pa.schema(

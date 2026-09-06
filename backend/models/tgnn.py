@@ -79,17 +79,25 @@ class TemporalGNN(nn.Module):
             self.batch_norms.append(nn.BatchNorm1d(hidden_channels))
 
         # RNN layers aggregate node embeddings across snapshots.
+        # NOTE: `sequence` is shaped [T, N, H] = [time, nodes, features]. With
+        # batch_first=False the GRU treats dim 0 as the SEQUENCE (time) axis and
+        # dim 1 as the batch (nodes) — i.e. recurrence runs over time, per node,
+        # which is the whole point of a temporal GNN. (batch_first=True made it
+        # recur over nodes with time as the batch — a silent correctness bug.)
         self.gru = nn.GRU(
             input_size=hidden_channels,
             hidden_size=out_channels,
             num_layers=num_rnn_layers,
-            batch_first=True,
+            batch_first=False,
             dropout=dropout if num_rnn_layers > 1 else 0.0,
         )
 
         # Final classifiers.
         self.node_classifier = nn.Linear(out_channels, 1)
         self.snapshot_classifier = nn.Linear(out_channels, 1)
+        # Edge (per-flow) head: concat of the two endpoint embeddings. This is
+        # the headline target for CTU-13 (thousands of positive flows).
+        self.edge_classifier = nn.Linear(2 * out_channels, 1)
 
         self.dropout_layer = nn.Dropout(dropout)
 
@@ -111,16 +119,17 @@ class TemporalGNN(nn.Module):
                 and edge_enc is not None
                 and edge_index.numel() > 0
             ):
-                # Encode each edge, then mean-aggregate messages onto their
-                # destination node so the term matches h's shape [N, hidden].
+                # Encode each edge, then mean-aggregate messages onto BOTH
+                # endpoints. Aggregating onto the destination only starves
+                # pure-source actors (scanners / DDoS bots / C2 initiators) of
+                # any edge signal — exactly the CTU-13 attacker profile.
                 edge_msg = torch.relu(edge_enc(edge_attr))  # [E, hidden]
-                dst = edge_index[1]
                 agg = torch.zeros_like(h)
-                agg.index_add_(0, dst, edge_msg)
                 counts = torch.zeros(num_nodes, 1, device=h.device)
-                counts.index_add_(
-                    0, dst, torch.ones(dst.size(0), 1, device=h.device)
-                )
+                ones = torch.ones(edge_index.size(1), 1, device=h.device)
+                for endpoint in (edge_index[0], edge_index[1]):
+                    agg.index_add_(0, endpoint, edge_msg)
+                    counts.index_add_(0, endpoint, ones)
                 h = h + agg / counts.clamp(min=1.0)
 
             h = torch.relu(h)
@@ -134,7 +143,7 @@ class TemporalGNN(nn.Module):
     def forward(
         self,
         snapshots: list[dict],
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Forward pass over a sequence of snapshots.
 
         Args:
@@ -144,6 +153,7 @@ class TemporalGNN(nn.Module):
         Returns:
             node_logits: [N, 1] logits for nodes in the last snapshot
             snapshot_logit: [1] logit for the last snapshot
+            edge_logits: [E, 1] logits for edges (flows) in the last snapshot
         """
         if not snapshots:
             raise ValueError("Empty snapshot sequence")
@@ -200,5 +210,27 @@ class TemporalGNN(nn.Module):
         snapshot_emb = final_node_emb.max(dim=0, keepdim=True).values
         snapshot_logit = self.snapshot_classifier(snapshot_emb)  # [1, 1]
 
-        return node_logits, snapshot_logit.squeeze(-1)
+        # Edge (per-flow) logits for the last snapshot. Its edge_index is in
+        # local node indices aligned with last_node_ids, so it indexes
+        # final_node_emb directly.
+        last_edge_index = torch.from_numpy(last_snap["edge_index"]).long().to(device)
+        if last_edge_index.numel() > 0:
+            src_emb = final_node_emb.index_select(0, last_edge_index[0])
+            dst_emb = final_node_emb.index_select(0, last_edge_index[1])
+            edge_logits = self.edge_classifier(torch.cat([src_emb, dst_emb], dim=1))
+        else:
+            edge_logits = torch.zeros((0, 1), device=device)
+
+        return node_logits, snapshot_logit.squeeze(-1), edge_logits
+
+    def load_state_dict(self, state_dict, strict: bool = True, assign: bool = False):
+        """Load state dict with backward compatibility for legacy checkpoints.
+
+        Legacy checkpoints (e.g. Mordor) lack edge_classifier weights; if strict=True
+        and edge_classifier is not present in state_dict, fall back to non-strict
+        loading to allow legacy models to load seamlessly.
+        """
+        if strict and "edge_classifier.weight" not in state_dict:
+            return super().load_state_dict(state_dict, strict=False, assign=assign)
+        return super().load_state_dict(state_dict, strict=strict, assign=assign)
 

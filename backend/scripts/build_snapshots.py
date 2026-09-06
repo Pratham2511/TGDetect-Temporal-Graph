@@ -61,8 +61,17 @@ def parse_args() -> argparse.Namespace:
         "--edge-feature-mode",
         type=str,
         default="relation_time",
-        choices=["relation_time", "relation_only"],
-        help="Edge feature composition",
+        choices=["relation_time", "relation_only", "flow"],
+        help="Edge feature composition. 'flow' adds CTU-13 NetFlow features "
+             "(bytes/pkts/dur/proto/state/dir/port buckets) and requires a "
+             "graph built with the ctu13 parser.",
+    )
+    parser.add_argument(
+        "--scenario-id",
+        type=str,
+        default=None,
+        help="Provenance tag stamped on every snapshot (used for scenario-held-out "
+             "splits). Defaults to the graph's single source_tag when uniform.",
     )
     parser.add_argument(
         "--max-snapshots",
@@ -87,6 +96,14 @@ def main() -> None:
     ds = load_graph(args.data)
     ds.print_summary()
 
+    # Provenance tag for scenario-held-out splits: prefer the explicit flag,
+    # else the graph's single source_tag when it is uniform (per-scenario build).
+    scenario_id = args.scenario_id
+    if scenario_id is None:
+        tags = ds.edges["source_tag"].dropna().unique() if "source_tag" in ds.edges.columns else []
+        scenario_id = str(tags[0]) if len(tags) == 1 else ""
+    print(f"  scenario_id = {scenario_id!r}")
+
     print(f"\n[2/3] building + writing snapshots (window={args.window_size}s, stride={args.stride or args.window_size/2}s)")
     builder = SnapshotBuilder(
         ds,
@@ -96,6 +113,7 @@ def main() -> None:
         edge_feature_mode=args.edge_feature_mode,
         max_snapshots=args.max_snapshots,
         max_edges_per_snapshot=args.max_edges_per_snapshot,
+        scenario_id=scenario_id,
     )
 
     # Stream snapshots straight to disk: never hold them all in RAM.
@@ -115,6 +133,7 @@ def main() -> None:
     print(f"\n[3/3] writing metadata to {args.out}")
     meta = {
         "source": str(args.data),
+        "scenario_id": scenario_id,
         "num_snapshots": count,
         "window_size_s": args.window_size,
         "stride_s": args.stride or args.window_size / 2,

@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Evaluate a trained TGNN checkpoint and save predictions.
+"""Evaluate a trained TGNN checkpoint on the SAME partition it was trained with.
+
+Instead of re-deriving a split (which silently disagreed with training), this
+loads the split manifest saved in the checkpoint and reconstructs the exact
+train/val/test partition. Reports imbalance-aware, per-scenario metrics
+(PR-AUC + recall@fixed-FPR) which are the meaningful numbers for CTU-13.
 
 Example:
     python scripts/evaluate_tgnn.py \
-        --checkpoint models/checkpoints/mordor_test/best_model.pt \
-        --snapshots data/snapshots/mordor_test \
-        --out results/mordor_test
+        --checkpoint models/checkpoints/ctu13_c52/best_model.pt \
+        --snapshots data/snapshots/ctu13_c52 \
+        --out results/ctu13_c52
 """
 
 from __future__ import annotations
@@ -13,7 +18,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import pickle
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
@@ -22,19 +26,10 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 try:
     import torch
-    import torch.nn as nn
-    from sklearn.metrics import (
-        accuracy_score,
-        average_precision_score,
-        confusion_matrix,
-        f1_score,
-        precision_score,
-        recall_score,
-        roc_auc_score,
-    )
 except ImportError as exc:  # pragma: no cover
     raise ImportError(
         "Evaluation requires the ML dependencies. "
@@ -43,204 +38,135 @@ except ImportError as exc:  # pragma: no cover
 
 from models.tgnn import TemporalGNN
 
+# Reuse the exact sequence/metric machinery training used, so the two agree.
+import train_tgnn  # noqa: E402
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate a trained TGNN")
-    parser.add_argument(
-        "--checkpoint",
-        type=Path,
-        required=True,
-        help="Path to best_model.pt or final_model.pt",
-    )
-    parser.add_argument(
-        "--snapshots",
-        type=Path,
-        required=True,
-        help="Directory containing snapshots used during training",
-    )
-    parser.add_argument(
-        "--out",
-        "--out-dir",
-        dest="out",
-        type=Path,
-        required=True,
-        help="Output directory for predictions and metrics",
-    )
-    parser.add_argument(
-        "--split",
-        type=str,
-        default="test",
-        choices=["train", "val", "test"],
-        help="Which time-split partition to evaluate",
-    )
-    parser.add_argument(
-        "--window-size",
-        type=int,
-        default=None,
-        help="Override window size (defaults to checkpoint value)",
-    )
-    parser.add_argument(
-        "--threshold",
-        type=float,
-        default=None,
-        help="Decision threshold (defaults to the tuned value in the checkpoint, else 0.5)",
-    )
+    parser.add_argument("--checkpoint", type=Path, required=True,
+                        help="Path to best_model.pt")
+    parser.add_argument("--snapshots", type=Path, default=None,
+                        help="Single snapshot dir (single-dir checkpoints). "
+                             "Defaults to the path saved in the manifest.")
+    parser.add_argument("--snapshots-root", type=Path, default=None,
+                        help="Parent dir of per-scenario snapshot subdirs "
+                             "(scenario-held-out checkpoints).")
+    parser.add_argument("--out", "--out-dir", dest="out", type=Path, required=True,
+                        help="Output directory for predictions and metrics")
+    parser.add_argument("--split", type=str, default="test",
+                        choices=["train", "val", "test"],
+                        help="Which partition to evaluate (single-dir only; "
+                             "scenario checkpoints always score the held-out "
+                             "test scenarios)")
+    parser.add_argument("--threshold", type=float, default=None,
+                        help="Decision threshold (defaults to the checkpoint's)")
     return parser.parse_args()
 
 
-def load_snapshots(snapshots_dir: Path) -> tuple[List[Dict[str, Any]], Dict[str, Any]]:
-    files = sorted(snapshots_dir.glob("snapshot_*.pkl"))
-    snapshots = []
-    for f in files:
-        with open(f, "rb") as fh:
-            snapshots.append(pickle.load(fh))
-    with open(snapshots_dir / "meta.json", "r", encoding="utf-8") as fh:
-        meta = json.load(fh)
-    return snapshots, meta
-
-
-def build_sequences(
-    snapshots: List[Dict[str, Any]], window_size: int
-) -> List[List[Dict[str, Any]]]:
-    return [snapshots[i : i + window_size] for i in range(len(snapshots) - window_size + 1)]
-
-
-def split_by_time(
-    sequences: List[List[Dict[str, Any]]],
-    val_ratio: float,
-    test_ratio: float,
-) -> tuple[List[List[Dict[str, Any]]], List[List[Dict[str, Any]]], List[List[Dict[str, Any]]]]:
-    n = len(sequences)
-    test_end = int(n * (1 - test_ratio))
-    val_end = int(test_end * (1 - val_ratio))
-    return sequences[:val_end], sequences[val_end:test_end], sequences[test_end:]
-
-
-def load_model(
-    checkpoint_path: Path, meta: Dict[str, Any], args: argparse.Namespace
-) -> tuple[TemporalGNN, int, Dict[str, Any]]:
-    # PyTorch 2.6 defaults to weights_only=True, but existing checkpoints may
-    # contain pathlib objects saved from vars(args). Use weights_only=False for
-    # checkpoints produced by this project.
-    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
-    saved_args = checkpoint.get("args", {})
-
-    window_size = args.window_size or saved_args.get("window_size", 10)
+def load_model(checkpoint: Dict[str, Any], meta: Dict[str, Any]) -> TemporalGNN:
+    a = checkpoint.get("args", {})
     model = TemporalGNN(
         in_channels=meta["node_feature_dim"],
         edge_dim=meta["edge_feature_dim"],
-        hidden_channels=saved_args.get("hidden_channels", 64),
-        out_channels=saved_args.get("out_channels", 64),
-        num_gnn_layers=saved_args.get("gnn_layers", 2),
-        num_rnn_layers=saved_args.get("rnn_layers", 1),
-        dropout=saved_args.get("dropout", 0.3),
+        hidden_channels=int(a.get("hidden_channels", 64)),
+        out_channels=int(a.get("out_channels", 64)),
+        num_gnn_layers=int(a.get("gnn_layers", 2)),
+        num_rnn_layers=int(a.get("rnn_layers", 1)),
+        dropout=float(a.get("dropout", 0.3)),
         node_types=meta["num_node_types"],
         num_relations=meta["num_relations"],
     )
     model.load_state_dict(checkpoint["model_state_dict"])
-    return model, window_size, checkpoint
-
-
-def evaluate(
-    model: TemporalGNN,
-    sequences: List[List[Dict[str, Any]]],
-    threshold: float = 0.5,
-) -> Dict[str, Any]:
     model.eval()
-    all_probs = []
-    all_labels = []
-    records = []
+    return model
 
-    with torch.no_grad():
-        for seq_idx, seq in enumerate(sequences):
-            node_logits, snapshot_logit = model(seq)
-            probs = torch.sigmoid(node_logits).cpu().numpy().ravel()
-            labels = seq[-1]["node_labels"]
-            node_ids = seq[-1]["node_ids"]
-            snapshot_label = seq[-1]["snapshot_label"]
 
-            all_probs.extend(probs.tolist())
-            all_labels.extend(labels.tolist())
+def reconstruct_eval_sequences(
+    manifest: Dict[str, Any], args: argparse.Namespace
+) -> List[List[Dict[str, Any]]]:
+    """Rebuild the requested partition exactly as training defined it."""
+    window = int(manifest.get("window_size", 10))
+    stride = int(manifest.get("seq_stride", 1))
+    kind = manifest.get("kind", "single")
 
-            for nid, prob, label in zip(node_ids, probs, labels):
-                records.append(
-                    {
-                        "sequence": seq_idx,
-                        "node_id": nid,
-                        "probability": float(prob),
-                        "prediction": int(prob >= threshold),
-                        "ground_truth": int(label),
-                        "snapshot_label": int(snapshot_label),
-                    }
-                )
+    if kind == "scenario":
+        root = args.snapshots_root
+        if root is None:
+            raise SystemExit(
+                "This checkpoint used a scenario-held-out split; pass "
+                "--snapshots-root <parent dir of scenario subdirs>."
+            )
+        names = (manifest["test_scenarios"] if args.split == "test"
+                 else manifest["train_scenarios"])
+        seqs: List[List[Dict[str, Any]]] = []
+        for name in names:
+            s, _m, _sid = train_tgnn.load_scenario_sequences(root / name, window, stride)
+            seqs.extend(s)
+        print(f"  scenario split={args.split} scenarios={names} sequences={len(seqs)}")
+        return seqs
 
-    y_true = np.array(all_labels, dtype=np.int64)
-    y_prob = np.array(all_probs, dtype=np.float32)
-    y_pred = (y_prob >= threshold).astype(np.int64)
-
-    metrics: Dict[str, Any] = {
-        "threshold": float(threshold),
-        "num_samples": int(len(y_true)),
-        "num_positive": int(y_true.sum()),
-        "num_negative": int((y_true == 0).sum()),
-        "accuracy": float(accuracy_score(y_true, y_pred)),
-        "precision": float(precision_score(y_true, y_pred, zero_division=0)),
-        "recall": float(recall_score(y_true, y_pred, zero_division=0)),
-        "f1": float(f1_score(y_true, y_pred, zero_division=0)),
-    }
-
-    if len(np.unique(y_true)) > 1:
-        metrics["auc_roc"] = float(roc_auc_score(y_true, y_prob))
-        metrics["auc_pr"] = float(average_precision_score(y_true, y_prob))
+    # single-dir: rebuild + apply the saved split, then pick the partition.
+    snaps_dir = args.snapshots or Path(manifest.get("snapshots", ""))
+    snapshots, _meta = train_tgnn.load_snapshots(snaps_dir)
+    sequences = train_tgnn.build_sequences(snapshots, window, stride)
+    if manifest.get("split_mode", "block") == "block":
+        tr, va, te = train_tgnn.split_by_block(
+            sequences, manifest.get("val_ratio", 0.15),
+            manifest.get("test_ratio", 0.15), manifest.get("block_size", 10))
     else:
-        metrics["auc_roc"] = None
-        metrics["auc_pr"] = None
-
-    metrics["confusion_matrix"] = confusion_matrix(y_true, y_pred).tolist()
-
-    return metrics, pd.DataFrame(records)
-
-
-def chain_level_metrics(predictions: pd.DataFrame, dataset: pd.DataFrame) -> Dict[str, Any]:
-    """Placeholder for chain-level metrics once chain_id is joined back.
-
-    The snapshot pickle currently stores node_ids but not chain_id. A future
-    enhancement is to propagate chain_id into snapshots and compute per-chain
-    detection rate here.
-    """
-    return {"note": "chain-level metrics require chain_id in snapshot metadata"}
+        tr, va, te = train_tgnn.split_by_time(
+            sequences, manifest.get("val_ratio", 0.15), manifest.get("test_ratio", 0.15))
+    part = {"train": tr, "val": va, "test": te}[args.split]
+    print(f"  single-dir split={args.split} sequences={len(part)} (of {len(sequences)})")
+    return part
 
 
 def main() -> None:
     args = parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
+    device = torch.device("cpu")
 
     print(f"[1/3] loading checkpoint from {args.checkpoint}")
-    snapshots, meta = load_snapshots(args.snapshots)
-    model, window_size, checkpoint = load_model(args.checkpoint, meta, args)
-    print(f"  -> window_size={window_size}")
+    checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
+    meta = checkpoint["meta"]
+    target = checkpoint.get("target", "node")
+    manifest = checkpoint.get("split_manifest", {"kind": "single",
+                                                 "window_size": int(checkpoint.get("args", {}).get("window_size", 10)),
+                                                 "seq_stride": 1})
+    model = load_model(checkpoint, meta).to(device)
+    print(f"  target={target}  split_kind={manifest.get('kind')}")
 
-    print("[2/3] building sequences")
-    sequences = build_sequences(snapshots, window_size)
-    train_seq, val_seq, test_seq = split_by_time(
-        sequences,
-        val_ratio=0.15,
-        test_ratio=0.15,
-    )
-    split_map = {"train": train_seq, "val": val_seq, "test": test_seq}
-    eval_seq = split_map[args.split]
-    print(f"  evaluating {args.split} set ({len(eval_seq)} sequences)")
+    print("[2/3] reconstructing evaluation partition")
+    eval_seq = reconstruct_eval_sequences(manifest, args)
+    if not eval_seq:
+        raise SystemExit("empty evaluation partition")
 
-    print("[3/3] evaluating")
-    thr = args.threshold
-    if thr is None:
-        thr = float(checkpoint.get("threshold", 0.5))
-    print(f"Decision threshold: {thr:.3f}")
-    metrics, predictions = evaluate(model, eval_seq, threshold=thr)
+    thr = args.threshold if args.threshold is not None else float(checkpoint.get("threshold", 0.5))
+    print(f"[3/3] evaluating ({target}) @ threshold {thr:.3f}")
+    y_true, y_prob, scen = train_tgnn.predict(model, eval_seq, target, device)
 
+    overall = train_tgnn.scored_metrics(y_true, y_prob, thr)
+    overall["threshold"] = thr  # saved (checkpoint) threshold, kept for the plot's degeneracy check
+    per_scenario: Dict[str, Any] = {}
+    for sid in sorted(set(scen.tolist())):
+        m = scen == sid
+        per_scenario[sid] = train_tgnn.scored_metrics(y_true[m], y_prob[m], thr)
+
+    metrics = {"target": target, "split": args.split,
+               "overall": overall, "per_scenario": per_scenario}
     print("\nMetrics:")
     print(json.dumps(metrics, indent=2))
 
+    # Headline f1/precision/recall/accuracy are reported at the best-F1 operating
+    # point; label the saved parquet predictions there too so they agree.
+    op_thr = float(overall.get("threshold_best", thr))
+    predictions = pd.DataFrame({
+        "scenario": scen.astype(str),
+        "probability": y_prob,
+        "prediction": (y_prob >= op_thr).astype(int),
+        "ground_truth": y_true,
+    })
     predictions.to_parquet(args.out / f"predictions_{args.split}.parquet", index=False)
     with open(args.out / f"metrics_{args.split}.json", "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=2)
