@@ -10,10 +10,12 @@ import {
   GitBranch,
   LayoutDashboard,
   ListTree,
+  Menu,
   Moon,
   Network,
   RefreshCw,
   Sun,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import { OverviewPage } from '@/components/tgdetect/overview/OverviewPage';
@@ -64,6 +66,7 @@ interface PageCtx {
 export default function Home() {
   const [activePage, setActivePage] = useState<string>('overview');
   const [pageCtx, setPageCtx] = useState<PageCtx>({});
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const theme = useTheme();
   const {
     models,
@@ -119,7 +122,7 @@ export default function Home() {
         {/* Sidebar */}
         <aside
           id="tour-sidebar"
-          className="sidebar-shell w-60 flex-shrink-0 flex flex-col"
+          className="sidebar-shell w-60 flex-shrink-0 hidden md:flex flex-col"
         >
           {/* Logo / Title */}
           <div className="p-3.5 border-b border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar-bg))]">
@@ -212,6 +215,14 @@ export default function Home() {
           {/* Header */}
           <header className="header-shell sticky top-0 z-10 px-5 py-2.5 flex items-center justify-between gap-3 shadow-xs">
             <div className="flex items-center gap-2.5 min-w-0">
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen((prev) => !prev)}
+                className="md:hidden size-7 rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex items-center justify-center text-[hsl(var(--foreground))] hover:bg-[hsl(var(--card-hover))] transition-colors flex-shrink-0"
+                aria-label="Toggle mobile menu"
+              >
+                {mobileMenuOpen ? <X className="size-3.5" /> : <Menu className="size-3.5" />}
+              </button>
               <activeItem.icon className="size-4 text-[hsl(var(--primary))] flex-shrink-0" />
               <div className="flex items-center gap-2 min-w-0">
                 <h1 className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--foreground))]">{activeItem.label}</h1>
@@ -238,43 +249,24 @@ export default function Home() {
                 </span>
               )}
 
-              {/* Model Selector Dropdown */}
-              <div className="relative inline-flex items-center">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2 text-[hsl(var(--primary))]">
-                  <Cpu className="size-3" />
-                </div>
-                <select
-                  id="model-selector"
-                  aria-label="Active Model Checkpoint"
-                  value={activeModelId}
-                  onChange={(e) => setActiveModelId(e.target.value)}
-                  className="text-[11px] font-mono font-medium pl-6 pr-7 py-1 rounded border border-[hsl(var(--primary)/0.4)] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] hover:border-[hsl(var(--primary))] transition-colors cursor-pointer appearance-none shadow-xs focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary))]"
-                >
-                  {models.map((m) => (
-                    <option key={m.id} value={m.id} className="bg-[hsl(var(--card))] text-[hsl(var(--foreground))]">
-                      {m.name} ({m.target.toUpperCase()})
-                    </option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-[hsl(var(--muted-foreground))]">
-                  <ChevronDown className="size-3" />
-                </div>
+              {/* Authoritative Single Production Model Badge */}
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md border border-cyan-500/30 bg-cyan-500/10 shadow-[0_0_12px_rgba(0,242,254,0.08)]">
+                <Cpu className="size-3.5 text-cyan-400 flex-shrink-0 animate-pulse" />
+                <span className="text-[11px] font-mono font-bold tracking-wide text-cyan-300">
+                  {activeModel?.name ?? 'CTU-13 Held-Out (Scenario 47)'}
+                </span>
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-semibold uppercase">
+                  {activeModel?.target?.toUpperCase() ?? 'EDGE'} TARGET
+                </span>
+                <span className="text-[10px] font-mono text-cyan-400/70 border-l border-cyan-500/20 pl-2">
+                  38,787 params
+                </span>
               </div>
 
-              {/* Target badge */}
-              <span className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded border ${
-                activeModel?.target === 'edge'
-                  ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-400 font-semibold'
-                  : 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400 font-semibold'
-              }`}>
-                <span>TARGET:</span>
-                <span className="uppercase">{activeModel?.target ?? 'NODE'}</span>
-              </span>
-
-              {/* Active Dataset Badge */}
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))]">
+              {/* Active Benchmark Dataset Badge */}
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))]">
                 <span className="text-[hsl(var(--muted-foreground))]">Dataset:</span>
-                <span className="font-semibold text-[hsl(var(--primary))]">{activeModel?.dataset_name || activeModel?.dataset_id || 'mordor_empire'}</span>
+                <span className="font-semibold text-[hsl(var(--primary))]">{activeModel?.dataset_name || 'CTU-13 Scenario 47 (NetFlow)'}</span>
               </span>
 
               <button
@@ -292,6 +284,37 @@ export default function Home() {
               </button>
             </div>
           </header>
+
+            {/* Mobile Navigation Drawer */}
+            {mobileMenuOpen && (
+              <div className="md:hidden border-b border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar-bg))] p-3 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                {NAV_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activePage === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        navigate(item.id);
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-md flex items-center gap-2.5 transition-all text-xs ${
+                        isActive
+                          ? 'bg-[hsl(var(--sidebar-item-active))] text-white font-medium border-l-2 border-[hsl(var(--sidebar-text-active))]'
+                          : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-item-hover))] hover:text-white'
+                      }`}
+                    >
+                      <Icon className={`size-4 flex-shrink-0 ${isActive ? 'text-[hsl(var(--sidebar-text-active))]' : 'opacity-70'}`} />
+                      <div className="flex flex-col min-w-0">
+                        <span className="truncate leading-none font-medium">{item.label}</span>
+                        <span className="text-[9px] text-[hsl(var(--sidebar-logo-sub))] truncate mt-0.5">{item.description}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
           {/* Page content */}
           <div className="flex-1 p-4 overflow-x-hidden">

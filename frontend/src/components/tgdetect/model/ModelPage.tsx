@@ -72,45 +72,41 @@ export function ModelPage() {
 
   return (
     <div className="space-y-3">
-      {/* Model Selection Banner */}
-      <div className="tg-card p-3 flex items-center justify-between gap-3 flex-wrap bg-gradient-to-r from-[hsl(var(--card))] via-[hsl(var(--card))] to-[hsl(var(--primary)/0.05)] border border-[hsl(var(--border))]">
-        <div className="flex items-center gap-2.5">
-          <div className="size-8 rounded bg-[hsl(var(--primary)/0.15)] border border-[hsl(var(--primary)/0.3)] flex items-center justify-center text-[hsl(var(--primary))] font-mono font-bold text-xs">
-            {activeModel?.target === 'edge' ? 'E' : 'N'}
+      {/* Authoritative Single Production Model Banner */}
+      <div className="tg-card p-3.5 flex items-center justify-between gap-3 flex-wrap bg-gradient-to-r from-[hsl(var(--card))] via-[hsl(var(--card))] to-cyan-500/5 border border-cyan-500/30 shadow-[0_0_15px_rgba(0,242,254,0.06)]">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-md bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-mono font-bold text-sm shadow-[0_0_10px_rgba(0,242,254,0.15)]">
+            E
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-[hsl(var(--foreground))]">{activeModel?.name}</span>
-              <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded border font-semibold uppercase ${
-                activeModel?.target === 'edge'
-                  ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-400'
-                  : 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400'
-              }`}>
-                {activeModel?.target ?? 'node'} target
+              <span className="text-sm font-bold text-[hsl(var(--foreground))] tracking-wide">
+                {activeModel?.name ?? 'CTU-13 Held-Out Model (Scenario 47)'}
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-indigo-500/40 bg-indigo-500/15 text-indigo-300 font-semibold uppercase">
+                EDGE TARGET (FLOW CLASSIFICATION)
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/15 text-emerald-400 font-semibold">
+                <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                PRODUCTION BENCHMARK
               </span>
             </div>
-            <div className="text-[10px] text-[hsl(var(--muted-foreground))] font-mono">
-              checkpoint: <span className="text-[hsl(var(--foreground))]">{activeModel?.checkpoint}</span> · params: <span className="text-[hsl(var(--primary))]">{formatInt(activeModel?.trainable_parameters ?? 38787)}</span> · dataset: <span className="text-[hsl(var(--foreground))]">{activeModel?.dataset_name}</span>
+            <div className="text-[11px] text-[hsl(var(--muted-foreground))] font-mono mt-0.5 flex items-center gap-2 flex-wrap">
+              <span>model_id: <strong className="text-cyan-400 font-semibold">ctu13_ho_c47</strong></span>
+              <span>•</span>
+              <span>checkpoint: <span className="text-[hsl(var(--foreground))]">best_model.pt</span></span>
+              <span>•</span>
+              <span>trainable_parameters: <strong className="text-cyan-400 font-semibold">38,787</strong></span>
+              <span>•</span>
+              <span>benchmark: <span className="text-[hsl(var(--foreground))]">CTU-13 Scenario 47 (NetFlow)</span></span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] text-[hsl(var(--muted-foreground))] uppercase font-mono mr-1">Switch Model:</span>
-          {models.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => setActiveModelId(m.id)}
-              className={`px-2.5 py-1 text-[11px] font-mono rounded border transition-all ${
-                activeModelId === m.id
-                  ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.15)] text-[hsl(var(--primary))] font-semibold shadow-xs'
-                  : 'border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
-              }`}
-            >
-              {m.id}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="text-[10px] font-mono px-3 py-1 rounded bg-[hsl(var(--background))] border border-[hsl(var(--border))] text-cyan-400/90 font-medium">
+            Single Authoritative Production Architecture
+          </div>
         </div>
       </div>
 

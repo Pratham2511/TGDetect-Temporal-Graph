@@ -279,7 +279,7 @@ export const DATASET_KIND_META: Record<DatasetKind, DatasetKindMeta> = {
   },
   mordor: {
     kind: 'mordor',
-    label: 'Mordor (OTRF)',
+    label: 'Host Telemetry (Sysmon JSONL)',
     description: 'OTRF Security-Datasets Sysmon+Security event logs',
     supports_metadata_dir: true,
     raw_format: 'JSON / JSONL / .gz / .zip / .tar.gz',

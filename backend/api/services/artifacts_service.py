@@ -74,7 +74,7 @@ class ArtifactsService:
 
                 artifacts.append({
                     "id": fname,
-                    "job_id": job_id or "job-mordor-empire-01",
+                    "job_id": job_id or "job-ctu13-c47-01",
                     "kind": kind,
                     "path": str(path),
                     "size_bytes": stat.st_size,

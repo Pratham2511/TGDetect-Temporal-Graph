@@ -6,11 +6,11 @@ import pandas as pd
 import pyarrow.parquet as pq
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_PROCESSED_DIR = BASE_DIR / "data" / "processed" / "mordor_empire"
+DATA_PROCESSED_DIR = BASE_DIR / "data" / "processed" / "ctu13_c47"
 DATA_GRAPHS_DIR = BASE_DIR / "data" / "graphs"
-DATA_SNAPSHOTS_DIR = BASE_DIR / "data" / "snapshots" / "mordor_empire"
-MODELS_CHECKPOINTS_DIR = BASE_DIR / "models" / "checkpoints" / "mordor_mixed"
-RESULTS_DIR = BASE_DIR / "results" / "mordor_mixed"
+DATA_SNAPSHOTS_DIR = BASE_DIR / "data" / "snapshots" / "ctu13_c47"
+MODELS_CHECKPOINTS_DIR = BASE_DIR / "models" / "checkpoints" / "ctu13_ho_c47"
+RESULTS_DIR = BASE_DIR / "results" / "ctu13_ho_c47"
 
 def sanitize_json(val: Any) -> Any:
     """Recursively convert NumPy/NaN/float values to JSON-safe Python primitives."""
@@ -22,16 +22,21 @@ def sanitize_json(val: Any) -> Any:
         if val != val or val == float("inf") or val == float("-inf"):
             return None
         return val
-    if hasattr(val, "item"):
-        return sanitize_json(val.item())
     if isinstance(val, dict):
         return {k: sanitize_json(v) for k, v in val.items()}
     if isinstance(val, (list, tuple, set)):
         return [sanitize_json(v) for v in val]
+    if hasattr(val, "tolist") and callable(val.tolist):
+        return [sanitize_json(v) for v in val.tolist()]
+    if hasattr(val, "item") and callable(val.item):
+        try:
+            return sanitize_json(val.item())
+        except (ValueError, AttributeError):
+            pass
     return str(val)
 
 class DataCache:
-    _active_dataset_id: str = "mordor_empire"
+    _active_dataset_id: str = "ctu13_c47"
     _events_df: Optional[pd.DataFrame] = None
     _nodes_df: Optional[pd.DataFrame] = None
     _edges_df: Optional[pd.DataFrame] = None

@@ -137,9 +137,24 @@ export function GraphPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Re
           <NodeInspectorPanel nodeId={selectedNodeId} onNavigate={onNavigate} />
         </div>
 
-        {/* Canvas */}
-        <div className="lg:col-span-3">
-          <div className="tg-card p-0 overflow-hidden h-[70vh] relative">
+        {/* Canvas - Star of Platform */}
+        <div className="lg:col-span-3 space-y-2">
+          <div className="tg-card hud-bracket p-0 overflow-hidden h-[72vh] relative border-cyan-500/30 bg-[#030712] shadow-[0_0_20px_rgba(0,242,254,0.06)]">
+            {/* Tactical HUD Header Bar */}
+            <div className="absolute top-0 inset-x-0 z-10 px-3 py-1.5 bg-[#070d1a]/90 backdrop-blur-md border-b border-cyan-500/20 flex items-center justify-between gap-2 text-[10px] font-mono pointer-events-none">
+              <div className="flex items-center gap-2 pointer-events-auto">
+                <span className="size-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                <span className="font-bold tracking-wider text-cyan-300">SYS://TEMPORAL_GRAPH // CTU-13 TOPOLOGY</span>
+              </div>
+              <div className="flex items-center gap-3 text-[10px] text-cyan-400/80">
+                <span>NODES: <strong className="text-white">{filteredNodes.length}</strong></span>
+                <span>•</span>
+                <span>EDGES: <strong className="text-white">{filteredEdges.length}</strong></span>
+                <span>•</span>
+                <span>MALICIOUS: <strong className={filteredEdges.filter(e => e.label === 1).length > 0 ? "text-rose-400 font-bold" : "text-emerald-400"}>{filteredEdges.filter(e => e.label === 1).length}</strong></span>
+              </div>
+            </div>
+
             {filteredNodes.length === 0 || filteredEdges.length === 0 ? (
               <EmptyState
                 title="No graph data"
@@ -157,9 +172,17 @@ export function GraphPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Re
                 maxNodes={300}
               />
             )}
+
+            {/* Tactical HUD Footer Overlay */}
+            <div className="absolute bottom-2 left-3 z-10 pointer-events-none">
+              <div className="text-[9px] font-mono text-cyan-400/60 bg-[#070d1a]/80 backdrop-blur-xs px-2 py-0.5 rounded border border-cyan-500/20">
+                PAN: DRAG · ZOOM: SCROLL · SELECT: CLICK NODE
+              </div>
+            </div>
           </div>
-          <div className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1 px-1">
-            Drag to pan · scroll to zoom · click node to inspect · node fill blends base color with red by malicious ratio · directed edges shown with arrowheads
+          <div className="text-[10px] font-mono text-[hsl(var(--muted-foreground))] flex items-center justify-between px-1">
+            <span>Force-directed physics simulation · Flow attributes mapped to node radius & edge weights</span>
+            <span className="text-cyan-400/80">Directed Graph Architecture</span>
           </div>
         </div>
       </div>

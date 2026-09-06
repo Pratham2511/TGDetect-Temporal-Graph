@@ -19,14 +19,14 @@ def get_model(model_id: str):
 
 @router.get("/model/config")
 def get_model_config(
-    model_id: Optional[str] = Query(None, description="Optional model identifier (mordor_mixed | ctu13_ho_c47)"),
+    model_id: Optional[str] = Query(None, description="Optional model identifier (ctu13_ho_c47)"),
     ckpt_file: Optional[str] = Query(None, description="Optional checkpoint path"),
 ):
     return ModelService.get_config(ckpt_file=ckpt_file, model_id=model_id)
 
 @router.get("/model/summary")
 def get_model_summary(
-    model_id: Optional[str] = Query(None, description="Optional model identifier (mordor_mixed | ctu13_ho_c47)"),
+    model_id: Optional[str] = Query(None, description="Optional model identifier (ctu13_ho_c47)"),
     ckpt_file: Optional[str] = Query(None, description="Optional checkpoint path"),
 ):
     return ModelService.get_summary(ckpt_file=ckpt_file, model_id=model_id)
@@ -61,7 +61,7 @@ def get_training_history(
 def get_evaluation(
     split: Optional[str] = Query("test", description="train | val | test"),
     run_id: Optional[str] = Query(None, description="Optional run ID (e.g. eval_test_ctu13_ho_c47)"),
-    model_id: Optional[str] = Query(None, description="Optional model ID (e.g. ctu13_ho_c47 | mordor_mixed)"),
+    model_id: Optional[str] = Query(None, description="Optional model ID (e.g. ctu13_ho_c47)"),
 ):
     eval_run = ModelService.get_evaluation_run(split=split, run_id=run_id, model_id=model_id)
     if not eval_run:
@@ -79,6 +79,6 @@ def get_predictions(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     run_id: Optional[str] = Query(None, description="Optional run ID (e.g. eval_test_ctu13_ho_c47)"),
-    model_id: Optional[str] = Query(None, description="Optional model ID (e.g. ctu13_ho_c47 | mordor_mixed)"),
+    model_id: Optional[str] = Query(None, description="Optional model ID (e.g. ctu13_ho_c47)"),
 ):
     return ModelService.get_predictions(split=split, limit=limit, offset=offset, run_id=run_id, model_id=model_id)

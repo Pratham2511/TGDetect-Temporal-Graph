@@ -22,63 +22,42 @@ class TestApiIntegration(unittest.TestCase):
         resp = client.get("/api/overview")
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertEqual(data["dataset_kind"], "synthetic_demo")
-        self.assertEqual(data["total_events"], 1219)
-        self.assertEqual(data["total_nodes"], 45)
-        self.assertEqual(data["total_edges"], 1219)
-        self.assertEqual(data["malicious_events"], 19)
-        self.assertEqual(data["benign_events"], 1200)
-        self.assertEqual(data["chain_count"], 3)
-        self.assertAlmostEqual(data["time_span_s"], 12074.5652282238, places=4)
+        self.assertEqual(data["dataset_kind"], "ctu13")
+        self.assertEqual(data["dataset_id"], "ctu13_c47")
+        self.assertEqual(data["total_events"], 1068851)
+        self.assertEqual(data["malicious_events"], 9256)
+        self.assertEqual(data["benign_events"], 1059595)
+        self.assertEqual(data["pipeline_status"], "ready")
 
     def test_events_filtering(self):
         # Total
         r_all = client.get("/api/events")
         self.assertEqual(r_all.status_code, 200)
-        self.assertEqual(r_all.json()["total"], 1219)
+        self.assertEqual(r_all.json()["total"], 3)
 
         # Malicious only
         r_mal = client.get("/api/events?label=1")
         self.assertEqual(r_mal.status_code, 200)
-        self.assertEqual(r_mal.json()["total"], 19)
+        self.assertEqual(r_mal.json()["total"], 2)
 
         # Relation filter
-        r_exec = client.get("/api/events?relations=EXECUTES")
-        self.assertEqual(r_exec.status_code, 200)
-        self.assertEqual(r_exec.json()["total"], 178)
+        r_flow = client.get("/api/events?relations=NETWORK_FLOW")
+        self.assertEqual(r_flow.status_code, 200)
+        self.assertEqual(r_flow.json()["total"], 3)
 
     def test_attack_chains_three_strategies(self):
         r_chains = client.get("/api/chains")
         self.assertEqual(r_chains.status_code, 200)
         chains = r_chains.json()
-        self.assertEqual(len(chains), 3)
+        self.assertGreaterEqual(len(chains), 1)
 
-        strategies = {c["strategy"]: c["chain_id"] for c in chains}
-        self.assertIn("chain_id", strategies)
-        self.assertIn("causal_parent", strategies)
-        self.assertIn("entity_time", strategies)
+        c0 = chains[0]
+        self.assertEqual(c0["chain_id"], "inferred_ctu13_0")
+        self.assertEqual(c0["strategy"], "entity_time")
 
-        # 1. Strategy: chain_id
-        c_id = strategies["chain_id"]
-        r_evts = client.get(f"/api/chains/{c_id}/events")
+        r_evts = client.get(f"/api/chains/{c0["chain_id"]}/events")
         self.assertEqual(r_evts.status_code, 200)
-        self.assertEqual(len(r_evts.json()), 8)
-
-        # 2. Strategy: causal_parent
-        cp_id = strategies["causal_parent"]
-        r_cp_evts = client.get(f"/api/chains/{cp_id}/events")
-        self.assertEqual(r_cp_evts.status_code, 200)
-        self.assertEqual(len(r_cp_evts.json()), 6)
-
-        # 3. Strategy: entity_time
-        et_id = strategies["entity_time"]
-        r_et_evts = client.get(f"/api/chains/{et_id}/events")
-        self.assertEqual(r_et_evts.status_code, 200)
-        self.assertEqual(len(r_et_evts.json()), 5)
-
-        # Total malicious across all 3 chains: 8 + 6 + 5 = 19
-        total_chain_evts = len(r_evts.json()) + len(r_cp_evts.json()) + len(r_et_evts.json())
-        self.assertEqual(total_chain_evts, 19)
+        self.assertEqual(len(r_evts.json()), 2)
 
     def test_model_summary_dynamic_parameters(self):
         resp = client.get("/api/model/summary")
@@ -86,28 +65,28 @@ class TestApiIntegration(unittest.TestCase):
         data = resp.json()
         self.assertEqual(data["architecture"], "TemporalGNN")
         self.assertTrue(data["checkpoint_inspected"])
-        # Parameters calculated programmatically from best_model.pt state_dict
-        self.assertEqual(data["trainable_parameters"], 36098)
+        # Parameters calculated programmatically from ctu13_ho_c47 best_model.pt state_dict
+        self.assertEqual(data["trainable_parameters"], 38787)
         self.assertEqual(data["non_trainable_parameters"], 0)
-        self.assertEqual(data["total_parameters"], 36098)
+        self.assertEqual(data["total_parameters"], 38787)
         self.assertEqual(data["bn_running_stats"], 258)
-        self.assertEqual(data["total_state_dict_elements"], 36356)
+        self.assertEqual(data["total_state_dict_elements"], 39045)
 
     def test_evaluation_test_split_exact_artifact_metrics(self):
         resp = client.get("/api/model/evaluation?split=test")
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         metrics = data["metrics"]
-        self.assertEqual(metrics["num_samples"], 20290)
-        self.assertEqual(metrics["num_positive"], 1072)
-        self.assertEqual(metrics["num_negative"], 19218)
-        self.assertAlmostEqual(metrics["accuracy"], 0.05283390832922622, places=6)
-        self.assertAlmostEqual(metrics["precision"], 0.05283390832922622, places=6)
-        self.assertEqual(metrics["recall"], 1.0)
-        self.assertAlmostEqual(metrics["f1"], 0.10036513435071623, places=6)
-        self.assertAlmostEqual(metrics["auc_roc"], 0.7447019167742306, places=6)
-        self.assertAlmostEqual(metrics["auc_pr"], 0.23626491059089688, places=6)
-        self.assertEqual(metrics["confusion_matrix"], {"tn": 0, "fp": 19218, "fn": 0, "tp": 1072})
+        self.assertEqual(metrics["num_samples"], 1068851)
+        self.assertEqual(metrics["num_positive"], 9256)
+        self.assertEqual(metrics["num_negative"], 1059595)
+        self.assertAlmostEqual(metrics["accuracy"], 0.9968246275673597, places=6)
+        self.assertAlmostEqual(metrics["precision"], 0.7483056590986107, places=6)
+        self.assertAlmostEqual(metrics["recall"], 0.9542999135695764, places=6)
+        self.assertAlmostEqual(metrics["f1"], 0.8388414055080721, places=6)
+        self.assertAlmostEqual(metrics["auc_roc"], 0.9983353366617713, places=6)
+        self.assertAlmostEqual(metrics["auc_pr"], 0.7065217473247929, places=6)
+        self.assertEqual(metrics["confusion_matrix"], {"tn": 1056624, "fp": 2971, "fn": 423, "tp": 8833})
         # Honest timestamps: no fabricated timestamps
         self.assertIsNone(data["started_at"])
         self.assertIsNone(data["ended_at"])
@@ -121,8 +100,9 @@ class TestApiIntegration(unittest.TestCase):
         self.assertEqual(r_ds.status_code, 200)
         ds = r_ds.json()
         self.assertEqual(len(ds), 1)
-        self.assertEqual(ds[0]["kind"], "synthetic_demo")
-        self.assertEqual(ds[0]["num_raw_events"], 1219)
+        self.assertEqual(ds[0]["id"], "ctu13_c47")
+        self.assertEqual(ds[0]["kind"], "ctu13")
+        self.assertEqual(ds[0]["num_raw_events"], 1068851)
 
         r_jobs = client.get("/api/jobs")
         self.assertEqual(r_jobs.status_code, 200)
@@ -130,7 +110,7 @@ class TestApiIntegration(unittest.TestCase):
         self.assertEqual(len(jobs), 1)
         self.assertIsNone(jobs[0]["started_at"])
         self.assertIsNone(jobs[0]["completed_at"])
-        self.assertEqual(jobs[0]["elapsed_s"], 1.24)
+        self.assertEqual(jobs[0]["elapsed_s"], 14.82)
 
     def test_artifacts_path_traversal_protection(self):
         resp = client.get("/api/artifacts/../../etc/passwd")
@@ -168,15 +148,15 @@ class TestApiIntegration(unittest.TestCase):
         resp = client.get("/api/model/training")
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertEqual(data["id"], "mordor-mixed-run-01")
+        self.assertEqual(data["id"], "ctu13-ho-c47-run-01")
         self.assertEqual(data["status"], "completed")
-        self.assertEqual(data["epochs_total"], 5)
-        self.assertEqual(data["best_epoch"], 1)
+        self.assertEqual(data["epochs_total"], 15)
+        self.assertEqual(data["best_epoch"], 10)
         self.assertEqual(data["best_metric"], "best_val_f1")
-        self.assertAlmostEqual(data["best_metric_value"], 0.9139796023488205, places=6)
+        self.assertAlmostEqual(data["best_metric_value"], 0.994459528066574, places=6)
         self.assertIn("config", data)
         cfg = data["config"]
-        self.assertEqual(cfg["epochs"], 5)
+        self.assertEqual(cfg["epochs"], 30)
         self.assertEqual(cfg["lr"], 0.001)
         self.assertEqual(cfg["batch_size"], 8)
         self.assertEqual(cfg["window_size"], 10)
@@ -187,20 +167,20 @@ class TestApiIntegration(unittest.TestCase):
         self.assertEqual(cfg["dropout"], 0.3)
         self.assertEqual(cfg["seed"], 42)
         self.assertIsNone(cfg["pos_weight"])
-        self.assertEqual(len(data["history"]), 5)
+        self.assertEqual(len(data["history"]), 15)
 
     def test_graph_stats_normalization_and_labeling(self):
         resp = client.get("/api/graph/stats")
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         norm = data["normalization"]
-        self.assertEqual(norm["seen"], 1219)
-        self.assertEqual(norm["accepted"], 1219)
+        self.assertEqual(norm["seen"], 1068851)
+        self.assertEqual(norm["accepted"], 1068851)
         self.assertEqual(norm["rejected"], 0)
         labeling = data["labeling"]
-        self.assertEqual(labeling["benign_events"], 1200)
-        self.assertEqual(labeling["malicious_events"], 19)
-        self.assertEqual(labeling["total_events"], 1219)
+        self.assertEqual(labeling["benign_events"], 1059595)
+        self.assertEqual(labeling["malicious_events"], 9256)
+        self.assertEqual(labeling["total_events"], 1068851)
 
 if __name__ == "__main__":
     unittest.main()

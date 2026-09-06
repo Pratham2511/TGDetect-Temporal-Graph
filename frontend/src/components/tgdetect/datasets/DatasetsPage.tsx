@@ -48,7 +48,13 @@ import type { Dataset, DatasetKind, ProcessingConfig, ProcessingJob, ValidationR
 export function DatasetsPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Record<string, unknown>) => void }) {
   const datasetsRes = useDatasets();
   const jobsRes = useJobs();
-  const [selectedDatasetId, setSelectedDatasetId] = useState<string | null>('mordor_empire');
+  const [selectedDatasetId, setSelectedDatasetId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search).get('dataset');
+      if (p) return p;
+    }
+    return 'ctu13_c47';
+  });
   const [showUploadWizard, setShowUploadWizard] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       return new URLSearchParams(window.location.search).get('upload') === 'true';
@@ -459,7 +465,7 @@ function UploadAndValidateWizard({
               Upload & Validate Dataset
             </div>
             <div className="text-[11px] text-[hsl(var(--muted-foreground))] mt-0.5">
-              Production telemetry validation using authentic backend parsers (CTU-13 NetFlow, Mordor Host Logs, Synthetic Streams)
+              Production telemetry validation using authentic backend parsers (CTU-13 NetFlow, Host Telemetry, Synthetic Streams)
             </div>
           </div>
           <button
@@ -520,7 +526,7 @@ function UploadAndValidateWizard({
                 >
                   <option value="auto">Auto-detect from file structure (recommended)</option>
                   <option value="ctu13">CTU-13 NetFlow (Argus 15-field CSV / binetflow)</option>
-                  <option value="mordor">Mordor / Windows Host Logs (Sysmon / Security JSONL)</option>
+                  <option value="mordor">Windows Host Telemetry (Sysmon / Security JSONL)</option>
                   <option value="synthetic">Synthetic TG-Detect Event Stream (JSONL)</option>
                 </select>
               </div>

@@ -23,82 +23,46 @@ class ModelService:
     def _resolve_checkpoint(cls, model_id: Optional[str] = None, ckpt_file: Optional[Path] = None) -> Path:
         if ckpt_file is not None:
             return ckpt_file
-        if model_id and "ctu13" in model_id.lower():
-            ctu_ckpt = BASE_DIR / "models" / "checkpoints" / "ctu13_ho_c47" / "best_model.pt"
-            if ctu_ckpt.exists():
-                return ctu_ckpt
+        ctu_ckpt = BASE_DIR / "models" / "checkpoints" / "ctu13_ho_c47" / "best_model.pt"
+        if ctu_ckpt.exists():
+            return ctu_ckpt
         return MODELS_CHECKPOINTS_DIR / "best_model.pt"
 
     @classmethod
     def list_models(cls) -> List[Dict[str, Any]]:
-        models = []
-        # 1. mordor_mixed (Host Threat Detection)
-        mordor_ckpt = MODELS_CHECKPOINTS_DIR / "best_model.pt"
-        if mordor_ckpt.exists():
-            m_info = cls._inspect_checkpoint(mordor_ckpt)
-            m_meta = m_info.get("meta", {})
-            models.append({
-                "id": "mordor_mixed",
-                "name": "Mordor Mixed (Host Threat)",
-                "description": "TemporalGNN (GraphSAGE + GRU) trained on Mordor multi-stage cyber range host telemetry",
-                "target": "node",
-                "dataset_id": "mordor_empire",
-                "dataset_name": "Mordor Empire (Synthetic Demo)",
-                "checkpoint": "best_model.pt",
-                "checkpoint_path": str(mordor_ckpt),
-                "trainable_parameters": m_info.get("trainable_parameters") or 36098,
-                "total_parameters": m_info.get("total_parameters") or 36098,
-                "in_channels": m_meta.get("node_feature_dim", 10),
-                "edge_dim": m_meta.get("edge_feature_dim", 8),
-                "output_heads": ["node_classifier", "snapshot_classifier"],
-                "has_edge_classifier": False,
-                "evaluation_run_id": "eval_test_mordor_mixed",
-                "evaluation_status": "evaluated",
-                "metrics": {
-                    "roc_auc": 0.7447,
-                    "pr_auc": 0.2363,
-                    "f1": 0.1004,
-                    "precision": 0.0528,
-                    "recall": 1.0,
-                    "accuracy": 0.0528,
-                    "samples": 20290,
-                    "positives": 1072
-                }
-            })
-        # 2. ctu13_ho_c47 (Held-Out Flow Anomaly Detection)
         ctu_ckpt = BASE_DIR / "models" / "checkpoints" / "ctu13_ho_c47" / "best_model.pt"
-        if ctu_ckpt.exists():
-            c_info = cls._inspect_checkpoint(ctu_ckpt)
-            models.append({
-                "id": "ctu13_ho_c47",
-                "name": "CTU-13 Held-Out (Scenario 47)",
-                "description": "TemporalGNN (GraphSAGE + GRU + EdgeHead) trained on CTU-13 botnet captures and evaluated on held-out Scenario 47",
-                "target": "edge",
-                "dataset_id": "ctu13_c47",
-                "dataset_name": "CTU-13 Scenario 47 (NetFlow)",
-                "checkpoint": "best_model.pt",
-                "checkpoint_path": str(ctu_ckpt),
-                "trainable_parameters": c_info.get("trainable_parameters") or 38787,
-                "total_parameters": c_info.get("total_parameters") or 38787,
-                "in_channels": 1,
-                "edge_dim": 37,
-                "output_heads": ["node_classifier", "snapshot_classifier", "edge_classifier"],
-                "has_edge_classifier": True,
-                "evaluation_run_id": "eval_test_ctu13_ho_c47",
-                "evaluation_status": "evaluated",
-                "metrics": {
-                    "roc_auc": 0.9983,
-                    "pr_auc": 0.7065,
-                    "f1": 0.8388,
-                    "precision": 0.7483,
-                    "recall": 0.9543,
-                    "accuracy": 0.9968,
-                    "recall_1pct_fpr": 0.9958,
-                    "samples": 1068851,
-                    "positives": 9256
-                }
-            })
-        return models
+        if not ctu_ckpt.exists():
+            return []
+        c_info = cls._inspect_checkpoint(ctu_ckpt)
+        return [{
+            "id": "ctu13_ho_c47",
+            "name": "CTU-13 Held-Out (Scenario 47)",
+            "description": "TemporalGNN (GraphSAGE + GRU + EdgeHead) trained on CTU-13 botnet captures and evaluated on held-out Scenario 47",
+            "target": "edge",
+            "dataset_id": "ctu13_c47",
+            "dataset_name": "CTU-13 Scenario 47 (NetFlow)",
+            "checkpoint": "best_model.pt",
+            "checkpoint_path": str(ctu_ckpt),
+            "trainable_parameters": c_info.get("trainable_parameters") or 38787,
+            "total_parameters": c_info.get("total_parameters") or 38787,
+            "in_channels": 1,
+            "edge_dim": 37,
+            "output_heads": ["node_classifier", "snapshot_classifier", "edge_classifier"],
+            "has_edge_classifier": True,
+            "evaluation_run_id": "eval_test_ctu13_ho_c47",
+            "evaluation_status": "evaluated",
+            "metrics": {
+                "roc_auc": 0.9983,
+                "pr_auc": 0.7065,
+                "f1": 0.8388,
+                "precision": 0.7483,
+                "recall": 0.9543,
+                "accuracy": 0.9968,
+                "recall_1pct_fpr": 0.9958,
+                "samples": 1068851,
+                "positives": 9256
+            }
+        }]
 
     @classmethod
     def _inspect_checkpoint(cls, ckpt_file: Optional[Path] = None) -> Dict[str, Any]:
@@ -388,15 +352,9 @@ class ModelService:
 
     @classmethod
     def get_training_run(cls, run_id: Optional[str] = None, model_id: Optional[str] = None) -> Dict[str, Any]:
-        target = run_id or model_id or ""
-        if target and "ctu13" in target.lower():
-            ckpt_dir = BASE_DIR / "models" / "checkpoints" / "ctu13_ho_c47"
-            dataset_name = "ctu13_ho_c47"
-            run_identifier = "ctu13-ho-c47-run-01"
-        else:
-            ckpt_dir = MODELS_CHECKPOINTS_DIR
-            dataset_name = "mordor_mixed"
-            run_identifier = "mordor-mixed-run-01"
+        ckpt_dir = BASE_DIR / "models" / "checkpoints" / "ctu13_ho_c47"
+        dataset_name = "ctu13_ho_c47"
+        run_identifier = "ctu13-ho-c47-run-01"
 
         history_path = ckpt_dir / "history.json"
         history = []
@@ -559,22 +517,6 @@ class ModelService:
     @classmethod
     def get_evaluation_runs(cls) -> List[Dict[str, Any]]:
         runs: List[Dict[str, Any]] = []
-
-        # 1. Mordor Mixed (default baseline)
-        mordor_eval_dir = MODELS_CHECKPOINTS_DIR / "eval"
-        if not (mordor_eval_dir / "metrics_test.json").exists():
-            mordor_eval_dir = RESULTS_DIR / "checkpoints" / "mordor_mixed" / "eval_test"
-        mordor_run = cls._build_eval_run(
-            run_id="eval_test_mordor_mixed",
-            training_run_id="mordor-mixed-run-01",
-            split="test",
-            eval_dir=mordor_eval_dir,
-            ckpt_file=MODELS_CHECKPOINTS_DIR / "best_model.pt",
-        )
-        if mordor_run:
-            runs.append(mordor_run)
-
-        # 2. CTU-13 Held-out (ctu13_ho_c47)
         ctu13_eval_dir = BASE_DIR / "models" / "checkpoints" / "ctu13_ho_c47" / "eval_test"
         ctu13_run = cls._build_eval_run(
             run_id="eval_test_ctu13_ho_c47",
@@ -585,22 +527,16 @@ class ModelService:
         )
         if ctu13_run:
             runs.append(ctu13_run)
-
         return [sanitize_json(r) for r in runs]
 
     @classmethod
     def get_evaluation_run(cls, split: str = "test", run_id: Optional[str] = None, model_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         runs = cls.get_evaluation_runs()
-        target_run_id = run_id
-        if not target_run_id and model_id:
-            if "ctu13" in model_id.lower():
-                target_run_id = f"eval_{split}_ctu13_ho_c47"
-            else:
-                target_run_id = f"eval_{split}_mordor_mixed"
+        target_run_id = run_id or f"eval_{split}_ctu13_ho_c47"
         for r in runs:
             if target_run_id and r.get("id") == target_run_id:
                 return r
-            if not target_run_id and r.get("split") == split:
+            if not run_id and r.get("split") == split:
                 return r
         return None
 
@@ -612,18 +548,7 @@ class ModelService:
         run_id: Optional[str] = None,
         model_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
-        target_id = run_id or model_id or ""
-        preds_path = None
-        if target_id and "ctu13" in target_id.lower():
-            ctu_preds = BASE_DIR / "models" / "checkpoints" / "ctu13_ho_c47" / "eval_test" / f"predictions_{split}.parquet"
-            if ctu_preds.exists():
-                preds_path = ctu_preds
-
-        if preds_path is None:
-            preds_path = MODELS_CHECKPOINTS_DIR / "eval" / f"predictions_{split}.parquet"
-            if not preds_path.exists():
-                preds_path = RESULTS_DIR / "checkpoints" / "mordor_mixed" / "eval_test" / f"predictions_{split}.parquet"
-
+        preds_path = BASE_DIR / "models" / "checkpoints" / "ctu13_ho_c47" / "eval_test" / f"predictions_{split}.parquet"
         if not preds_path.exists():
             return []
 

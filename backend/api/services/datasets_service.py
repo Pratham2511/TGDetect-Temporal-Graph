@@ -47,11 +47,11 @@ class DatasetsService:
                         ds_kind = "ctu13"
                         ds_provenance = "CTU-13 Botnet NetFlow dataset (Garcia et al., 2011)"
                         ds_desc = f"CTU-13 network telemetry scenario {p.name}"
-                    elif p.name == "mordor_empire":
-                        ds_name = "Mordor Empire (Synthetic Demo)"
+                    elif p.name == "ctu13_c47":
+                        ds_name = "CTU-13 Scenario 47 (NetFlow)"
                         ds_kind = "synthetic_demo"
                         ds_provenance = "Synthetic Demonstration Dataset generated via StreamingGraphBuilder & AttackTracker (Empire + Causal + Recon scenarios)"
-                        ds_desc = "Synthetic demonstration dataset for temporal heterogeneous graph cybersecurity analysis (mordor_empire)"
+                        ds_desc = "Synthetic demonstration dataset for temporal heterogeneous graph cybersecurity analysis (ctu13_c47)"
                     else:
                         ds_name = f"{p.name.replace('_', ' ').title()}"
                         ds_kind = "user_uploaded"
@@ -68,7 +68,7 @@ class DatasetsService:
                         "num_raw_events": num_events,
                         "time_span_s": time_span_s,
                         "created_at": created_at,
-                        "is_sample": p.name in ("mordor_empire", "ctu13_c47"),
+                        "is_sample": p.name in ("ctu13_c47", "ctu13_c47"),
                         "description": ds_desc
                     })
         return datasets
@@ -100,12 +100,12 @@ class DatasetsService:
     @staticmethod
     def list_jobs() -> List[Dict[str, Any]]:
         stats = DataCache.get_graph_stats()
-        job_id = "job-mordor-empire-01"
+        job_id = "job-ctu13-c47-01"
         elapsed_s = stats.get("elapsed_s") if stats else None
         base_jobs = [
             {
                 "id": job_id,
-                "dataset_id": "mordor_empire",
+                "dataset_id": "ctu13_c47",
                 "status": "completed",
                 "stage": "chains",
                 "progress_pct": 100,
@@ -115,7 +115,7 @@ class DatasetsService:
                 "config": {
                     "dataset_kind": "synthetic_demo",
                     "input_generator": "scripts/init_demo_data.py",
-                    "out_dir": "data/processed/mordor_empire",
+                    "out_dir": "data/processed/ctu13_c47",
                     "graphs_out": "data/graphs",
                     "chunk_size": 100000,
                     "use_networkx": False,
@@ -123,7 +123,7 @@ class DatasetsService:
                     "window_s": 86400.0,
                     "max_hops": 2,
                     "max_subgraphs": 1000,
-                    "source_tag": "mordor_empire",
+                    "source_tag": "ctu13_c47",
                     "label_mode": "heuristic",
                     "label_window_s": 300.0,
                     "label_propagation": True,

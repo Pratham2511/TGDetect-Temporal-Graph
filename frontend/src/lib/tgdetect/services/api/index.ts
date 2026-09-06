@@ -55,8 +55,8 @@ export class ApiDatasetService implements DatasetService {
       size_bytes: d.raw_bytes || d.size_bytes || 0,
       estimated_events: d.num_raw_events ?? d.estimated_events ?? null,
       created_at: d.created_at ?? null,
-      last_job_id: 'job-mordor-empire-01',
-      tags: d.id.startsWith('ctu13') ? ['ctu13', 'netflow'] : ['synthetic_demo', 'mordor_empire'],
+      last_job_id: d.last_job_id ?? null,
+      tags: d.tags ?? (d.id && d.id.startsWith('ctu13') ? ['ctu13', 'netflow'] : ['telemetry']),
     }));
   }
 
@@ -73,8 +73,8 @@ export class ApiDatasetService implements DatasetService {
         size_bytes: d.raw_bytes || d.size_bytes || 0,
         estimated_events: d.num_raw_events ?? d.estimated_events ?? null,
         created_at: d.created_at ?? null,
-        last_job_id: 'job-mordor-empire-01',
-        tags: d.id.startsWith('ctu13') ? ['ctu13', 'netflow'] : ['synthetic_demo', 'mordor_empire'],
+        last_job_id: d.last_job_id ?? null,
+        tags: d.tags ?? (d.id && d.id.startsWith('ctu13') ? ['ctu13', 'netflow'] : ['telemetry']),
       };
     } catch {
       return null;
@@ -333,9 +333,9 @@ export class ApiTrainingService implements TrainingService {
     const bestEpochMetric = history.find((h: any) => h.epoch === raw.best_epoch) || history[0] || {};
     const cfg = raw.config || {};
     return {
-      id: raw.id || raw.run_id || 'mordor-mixed-run-01',
-      name: raw.model_type || 'TemporalGNN (GraphSAGE + GRU)',
-      dataset_id: raw.dataset || raw.dataset_id || 'mordor_mixed',
+      id: raw.id || raw.run_id || 'ctu13-ho-c47-run-01',
+      name: raw.model_type || 'TemporalGNN (GraphSAGE + GRU + EdgeClassifier)',
+      dataset_id: raw.dataset || raw.dataset_id || 'ctu13_c47',
       config: {
         snapshots_dir: cfg.snapshots ?? null,
         out_dir: cfg.out ?? null,
@@ -436,11 +436,11 @@ export class ApiProcessingService implements ProcessingService {
       return {
         id: j.id,
         dataset_id: j.dataset_id,
-        dataset_name: j.dataset_name || j.dataset_id || 'mordor_empire',
+        dataset_name: j.dataset_name || j.dataset_id || 'CTU-13 Benchmark',
         config: {
-          kind: (cfg.dataset_kind as DatasetKind) || 'synthetic_demo',
-          source_tag: cfg.source_tag || 'mordor_empire',
-          label_mode: cfg.label_mode || 'heuristic',
+          kind: (cfg.dataset_kind as DatasetKind) || (cfg.dataset as DatasetKind) || 'ctu13',
+          source_tag: cfg.source_tag || j.dataset_id || 'ctu13',
+          label_mode: cfg.label_mode || 'parser',
           force_label: cfg.force_label ?? null,
           label_window_s: cfg.label_window_s ?? 300,
           no_label_propagation: !cfg.label_propagation,
@@ -454,13 +454,13 @@ export class ApiProcessingService implements ProcessingService {
         },
         state: (j.status === 'completed' ? 'completed' : j.status) as any,
         progress: (j.progress_pct ?? 100) / 100,
-        current_step: j.description || 'Completed historical batch processing',
-        output_dir: cfg.out_dir || 'data/processed/mordor_empire',
+        current_step: j.description || 'Completed batch processing',
+        output_dir: cfg.out_dir || `data/processed/${j.dataset_id}`,
         graphs_dir: cfg.graphs_out || 'data/graphs',
         started_at: j.started_at ?? null,
         ended_at: j.completed_at ?? null,
         elapsed_s: j.elapsed_s ?? (j.completed_at && j.started_at ? j.completed_at - j.started_at : (j.stats?.elapsed_s ?? null)),
-        stats_path: 'data/processed/mordor_empire/graph_stats.json',
+        stats_path: `data/processed/${j.dataset_id}/graph_stats.json`,
         error: j.error ?? null,
       };
     });

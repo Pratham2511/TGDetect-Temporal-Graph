@@ -8,7 +8,7 @@ interface ThemeContextType {
   toggleTheme: () => void;
 }
 
-const ThemeContext = createContext<ThemeContextType>({ theme: 'light', toggleTheme: () => {} });
+const ThemeContext = createContext<ThemeContextType>({ theme: 'dark', toggleTheme: () => {} });
 
 function subscribe(callback: () => void) {
   window.addEventListener('storage', callback);
@@ -16,11 +16,11 @@ function subscribe(callback: () => void) {
 }
 
 function getSnapshot(): Theme {
-  return (localStorage.getItem('tgdetect-theme') as Theme) || 'light';
+  return (localStorage.getItem('tgdetect-theme') as Theme) || 'dark';
 }
 
 function getServerSnapshot(): Theme {
-  return 'light';
+  return 'dark';
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

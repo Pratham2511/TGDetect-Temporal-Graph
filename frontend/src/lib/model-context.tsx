@@ -18,71 +18,43 @@ export interface ModelContextType {
   isLoadingModels: boolean;
 }
 
-// Canonical fallback models based on verified repository checkpoints
-const DEFAULT_MODELS: ModelMeta[] = [
-  {
-    id: 'mordor_mixed',
-    name: 'Mordor Mixed (Host Threat)',
-    description: 'TemporalGNN (GraphSAGE + GRU) trained on Mordor multi-stage cyber range host telemetry',
-    target: 'node',
-    dataset_id: 'mordor_empire',
-    dataset_name: 'Mordor Empire (Synthetic Demo)',
-    checkpoint: 'best_model.pt',
-    checkpoint_path: 'backend/models/checkpoints/mordor_mixed/best_model.pt',
-    trainable_parameters: 36098,
-    total_parameters: 36098,
-    in_channels: 10,
-    edge_dim: 8,
-    output_heads: ['node_classifier', 'snapshot_classifier'],
-    has_edge_classifier: false,
-    evaluation_run_id: 'eval_test_mordor_mixed',
-    evaluation_status: 'evaluated',
-    metrics: {
-      roc_auc: 0.7447,
-      pr_auc: 0.2363,
-      f1: 0.1004,
-      precision: 0.0528,
-      recall: 1.0,
-      accuracy: 0.0528,
-      samples: 20290,
-      positives: 1072,
-    },
+// Authoritative production model: CTU-13 Held-Out Benchmark (Scenario 47)
+const PRODUCTION_MODEL: ModelMeta = {
+  id: 'ctu13_ho_c47',
+  name: 'CTU-13 Held-Out (Scenario 47)',
+  description: 'TemporalGNN (GraphSAGE + GRU + EdgeHead) trained on CTU-13 botnet captures and evaluated on held-out Scenario 47',
+  target: 'edge',
+  dataset_id: 'ctu13_c47',
+  dataset_name: 'CTU-13 Scenario 47 (NetFlow)',
+  checkpoint: 'best_model.pt',
+  checkpoint_path: 'backend/models/checkpoints/ctu13_ho_c47/best_model.pt',
+  trainable_parameters: 38787,
+  total_parameters: 38787,
+  in_channels: 1,
+  edge_dim: 37,
+  output_heads: ['node_classifier', 'snapshot_classifier', 'edge_classifier'],
+  has_edge_classifier: true,
+  evaluation_run_id: 'eval_test_ctu13_ho_c47',
+  evaluation_status: 'evaluated',
+  metrics: {
+    roc_auc: 0.9983,
+    pr_auc: 0.7065,
+    f1: 0.8388,
+    precision: 0.7483,
+    recall: 0.9543,
+    accuracy: 0.9968,
+    recall_1pct_fpr: 0.9958,
+    samples: 1068851,
+    positives: 9256,
   },
-  {
-    id: 'ctu13_ho_c47',
-    name: 'CTU-13 Held-Out (Scenario 47)',
-    description: 'TemporalGNN (GraphSAGE + GRU + EdgeHead) trained on CTU-13 botnet captures and evaluated on held-out Scenario 47',
-    target: 'edge',
-    dataset_id: 'ctu13_c47',
-    dataset_name: 'CTU-13 Scenario 47 (NetFlow)',
-    checkpoint: 'best_model.pt',
-    checkpoint_path: 'backend/models/checkpoints/ctu13_ho_c47/best_model.pt',
-    trainable_parameters: 38787,
-    total_parameters: 38787,
-    in_channels: 1,
-    edge_dim: 37,
-    output_heads: ['node_classifier', 'snapshot_classifier', 'edge_classifier'],
-    has_edge_classifier: true,
-    evaluation_run_id: 'eval_test_ctu13_ho_c47',
-    evaluation_status: 'evaluated',
-    metrics: {
-      roc_auc: 0.9983,
-      pr_auc: 0.7065,
-      f1: 0.8388,
-      precision: 0.7483,
-      recall: 0.9543,
-      accuracy: 0.9968,
-      recall_1pct_fpr: 0.9958,
-      samples: 1068851,
-      positives: 9256,
-    },
-  },
-];
+};
+
+const DEFAULT_MODELS: ModelMeta[] = [PRODUCTION_MODEL];
 
 const ModelContext = createContext<ModelContextType>({
   models: DEFAULT_MODELS,
-  activeModelId: 'mordor_mixed',
-  activeModel: DEFAULT_MODELS[0],
+  activeModelId: 'ctu13_ho_c47',
+  activeModel: PRODUCTION_MODEL,
   setActiveModelId: () => {},
   apiHealth: 'checking',
   healthError: null,
@@ -92,27 +64,24 @@ const ModelContext = createContext<ModelContextType>({
 
 export function ModelProvider({ children }: { children: React.ReactNode }) {
   const [models, setModels] = useState<ModelMeta[]>(DEFAULT_MODELS);
-  const [activeModelId, setActiveModelIdState] = useState<string>('mordor_mixed');
+  const [activeModelId, setActiveModelIdState] = useState<string>('ctu13_ho_c47');
   const [apiHealth, setApiHealth] = useState<ApiHealthState>('checking');
   const [healthError, setHealthError] = useState<string | null>(null);
   const [isLoadingModels, setIsLoadingModels] = useState<boolean>(false);
 
-  // Load saved model preference from URL searchParams or localStorage on client mount
+  // Synchronize model preference from URL searchParams
   useEffect(() => {
     try {
       if (typeof window !== 'undefined') {
         const urlModel = new URLSearchParams(window.location.search).get('model');
-        if (urlModel && (urlModel === 'mordor_mixed' || urlModel === 'ctu13_ho_c47')) {
+        if (urlModel && urlModel === 'ctu13_ho_c47') {
           setActiveModelIdState(urlModel);
           return;
         }
       }
-      const saved = localStorage.getItem('tgdetect_active_model');
-      if (saved && (saved === 'mordor_mixed' || saved === 'ctu13_ho_c47')) {
-        setActiveModelIdState(saved);
-      }
+      setActiveModelIdState('ctu13_ho_c47');
     } catch {
-      // ignore localStorage errors
+      // ignore
     }
   }, []);
 
@@ -132,15 +101,18 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
       setApiHealth('connected');
       setHealthError(null);
 
-      // Fetch live models from backend
+      // Fetch live models from authoritative backend
       setIsLoadingModels(true);
       try {
         const liveModels = await modelService.models();
         if (liveModels && liveModels.length > 0) {
           setModels(liveModels);
+          if (liveModels[0]?.id) {
+            setActiveModelIdState(liveModels[0].id);
+          }
         }
       } catch (err: any) {
-        console.warn('Could not fetch live models, using default metadata:', err);
+        console.warn('Could not fetch live models from backend:', err);
       } finally {
         setIsLoadingModels(false);
       }
@@ -158,7 +130,7 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
   }, [refreshHealth]);
 
   const activeModel = useMemo(() => {
-    return models.find((m) => m.id === activeModelId) ?? models[0] ?? DEFAULT_MODELS[0];
+    return models.find((m) => m.id === activeModelId) ?? models[0] ?? PRODUCTION_MODEL;
   }, [models, activeModelId]);
 
   const value = useMemo(

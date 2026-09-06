@@ -122,7 +122,7 @@ function SystemOverviewBanner({ activeModel, apiHealth }: { activeModel: any; ap
             <div className="text-[11px] text-[hsl(var(--muted-foreground))] mt-0.5 font-mono flex items-center gap-3">
               <span>Checkpoint: <span className="text-[hsl(var(--foreground))]">{activeModel?.checkpoint ?? 'best_model.pt'}</span></span>
               <span>•</span>
-              <span>Dataset: <span className="text-[hsl(var(--foreground))]">{activeModel?.dataset_name ?? 'mordor_empire'}</span></span>
+              <span>Dataset: <span className="text-[hsl(var(--foreground))]">{activeModel?.dataset_name ?? 'CTU-13 Scenario 47 (NetFlow)'}</span></span>
               <span>•</span>
               <span>API Status: <span className={apiHealth === 'connected' ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>{apiHealth.toUpperCase()}</span></span>
             </div>
@@ -253,7 +253,7 @@ function DatasetAndModelSummaryRow({ activeModel, summaryData, stats }: { active
           </div>
         </div>
         <div className="text-[11px] font-mono text-[hsl(var(--muted-foreground))] border-t border-[hsl(var(--border))] pt-2 flex items-center justify-between">
-          <span>Type: <strong className="text-[hsl(var(--foreground))]">{isCTU ? 'CTU-13 NetFlow Capture 47' : 'Mordor Host Telemetry'}</strong></span>
+          <span>Type: <strong className="text-[hsl(var(--foreground))]">CTU-13 NetFlow Scenario 47</strong></span>
           <span>Target: <strong className="text-[hsl(var(--foreground))]">{activeModel?.target?.toUpperCase() ?? 'EDGE'}</strong></span>
         </div>
       </div>
@@ -296,15 +296,10 @@ function DatasetAndModelSummaryRow({ activeModel, summaryData, stats }: { active
 
 function PipelineHeader({ stats, activeModel }: { stats: GraphStats; activeModel?: any }) {
   const isCtu13 = stats.dataset.toLowerCase().includes('ctu13');
-  const isMordor = stats.dataset.toLowerCase().includes('mordor');
   const badgeLabel = isCtu13
     ? 'CTU-13 NetFlow Benchmark'
-    : isMordor
-    ? 'Mordor Cyber Range Telemetry'
-    : 'Normalized Telemetry Stream';
+    : 'Live Cybersecurity Telemetry';
   const badgeClass = isCtu13
-    ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-400'
-    : isMordor
     ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400'
     : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400';
 
@@ -524,7 +519,7 @@ function SourceTagCard({ stats }: { stats: GraphStats }) {
   return (
     <div className="tg-card p-4">
       <SectionTitle>Source Tag Distribution</SectionTitle>
-      <div className="text-[10px] text-[hsl(var(--muted-foreground))] mb-2">Parsers in registry: synthetic, mordor</div>
+      <div className="text-[10px] text-[hsl(var(--muted-foreground))] mb-2 font-mono">Telemetry sources & scenarios</div>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
           <CartesianGrid {...CHART_GRID_STYLE} />

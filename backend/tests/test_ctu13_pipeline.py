@@ -212,20 +212,17 @@ class TestCTU13Pipeline(unittest.TestCase):
         self.assertIn("edge_classifier", summary["output_heads"])
         self.assertTrue(any(l["name"] == "edge_classifier" for l in summary["layers"]))
 
-    def test_evaluation_runs_ctu13_and_mordor_coexistence(self):
+    def test_evaluation_runs_ctu13_single_production_model(self):
         runs = ModelService.get_evaluation_runs()
         run_ids = [r["id"] for r in runs]
-        self.assertIn("eval_test_mordor_mixed", run_ids)
-
-        ctu13_eval = BASE_DIR / "models" / "checkpoints" / "ctu13_ho_c47" / "eval_test" / "metrics_test.json"
-        if ctu13_eval.exists():
-            self.assertIn("eval_test_ctu13_ho_c47", run_ids)
-            ctu_run = next(r for r in runs if r["id"] == "eval_test_ctu13_ho_c47")
-            m = ctu_run["metrics"]
-            self.assertAlmostEqual(m["f1"], 0.8388, places=2)
-            self.assertAlmostEqual(m["accuracy"], 0.9968, places=2)
-            self.assertAlmostEqual(m["recall_at_1pct_fpr"], 0.9957, places=2)
-            self.assertIsNotNone(m["confusion_matrix"])
+        self.assertEqual(len(runs), 1)
+        self.assertIn("eval_test_ctu13_ho_c47", run_ids)
+        ctu_run = runs[0]
+        m = ctu_run["metrics"]
+        self.assertAlmostEqual(m["f1"], 0.8388, places=2)
+        self.assertAlmostEqual(m["accuracy"], 0.9968, places=2)
+        self.assertAlmostEqual(m["recall_at_1pct_fpr"], 0.9957, places=2)
+        self.assertIsNotNone(m["confusion_matrix"])
 
 
 if __name__ == "__main__":

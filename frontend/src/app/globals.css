@@ -133,72 +133,72 @@
    Text: warm blue-white — NOT pure white
    ──────────────────────────────────────────────────────────── */
 .dark {
-  /* Surfaces — 4-layer depth system */
-  --background: 222 100% 6%;     /* #020C1B — deepest navy layer */
-  --card: 222 80% 9%;            /* #071525 — card surface */
-  --popover: 222 80% 9%;
-  --card-hover: 217 60% 12%;     /* #0D1D35 — card hover state */
-  --elevated: 217 60% 14%;       /* #0F2240 — modals/tooltips */
+  /* Surfaces — Obsidian / Carbon tactical command center matching tgdetect.vercel.app */
+  --background: 224 71% 4%;      /* #030712 — deep obsidian canvas */
+  --card: 224 60% 7%;            /* #070d1a — elevated carbon panel */
+  --popover: 224 60% 7%;
+  --card-hover: 224 50% 11%;     /* #0e172a — hover depth */
+  --elevated: 224 45% 13%;       /* #111c33 — modals / elevated HUD panels */
 
-  /* Text — warm blue-white, never pure #FFF */
-  --foreground: 213 30% 90%;     /* #D8E5F2 — primary text */
-  --card-foreground: 213 30% 90%;
-  --popover-foreground: 213 30% 90%;
-  --muted-foreground: 215 20% 58%; /* #7D95AE — readable muted text */
+  /* Text — high-contrast warm cybersecurity text */
+  --foreground: 213 35% 92%;     /* #e2ecf7 — crisp primary text */
+  --card-foreground: 213 35% 92%;
+  --popover-foreground: 213 35% 92%;
+  --muted-foreground: 215 20% 62%; /* #859db7 — readable technical muted text */
 
-  /* Brand / Primary — electric sky blue, pops on dark */
-  --primary: 199 89% 60%;        /* #38BDF8 sky-400 — bright, distinctive */
-  --primary-foreground: 222 100% 6%; /* dark text on cyan button */
-  --primary-dim: 199 70% 45%;    /* #24A0C5 — dimmer interactive */
+  /* Brand / Primary — electric luminous cyan (#00f2fe / #38bdf8) */
+  --primary: 189 94% 54%;        /* #00f2fe — cyber cyan */
+  --primary-foreground: 224 71% 4%; /* dark text on primary button */
+  --primary-dim: 199 89% 48%;    /* #0ea5e9 — dimmer interactive */
 
   /* Interactive surfaces */
-  --secondary: 217 45% 14%;      /* #0D1E30 */
-  --secondary-foreground: 213 30% 90%;
-  --muted: 217 45% 14%;
-  --accent: 217 45% 16%;
-  --accent-foreground: 213 30% 90%;
+  --secondary: 224 45% 10%;      /* #091222 */
+  --secondary-foreground: 213 35% 92%;
+  --muted: 224 45% 10%;
+  --accent: 224 45% 14%;
+  --accent-foreground: 213 35% 92%;
 
   /* State */
-  --destructive: 0 72% 55%;      /* #E04040 */
+  --destructive: 347 87% 55%;    /* #f43f5e crimson */
   --destructive-foreground: 0 0% 98%;
 
-  /* Structure */
-  --border: 217 40% 17%;         /* #142234 — visible but subtle */
-  --border-light: 217 40% 13%;   /* #0E1A28 — inner borders */
-  --input: 217 40% 17%;
-  --ring: 199 89% 60%;
-  --radius: 0.5rem;
+  /* Structure — luminous thin borders */
+  --border: 217 33% 17%;         /* #182438 — visible technical border */
+  --border-light: 217 33% 13%;   /* #111a29 */
+  --input: 217 33% 17%;
+  --ring: 189 94% 54%;
+  --radius: 0.375rem;
 
-  /* ── Semantic status (dark-optimised for visibility) ── */
-  --success: 142 70% 48%;         /* #24C75F */
-  --success-bg: 142 70% 8%;
-  --warning: 38 92% 55%;          /* #F6A320 */
+  /* ── Semantic status (luminous cyber accents) ── */
+  --success: 151 68% 46%;         /* #10b981 emerald */
+  --success-bg: 151 68% 8%;
+  --warning: 38 92% 55%;          /* #f59e0b amber */
   --warning-bg: 38 92% 8%;
-  --danger: 0 84% 62%;            /* #F24040 */
-  --danger-bg: 0 84% 8%;
-  --info: 199 89% 60%;            /* cyan = primary */
-  --info-bg: 199 89% 8%;
-  --purple: 263 70% 72%;          /* #A78BFA */
-  --purple-bg: 263 70% 8%;
-  --teal: 173 58% 52%;            /* #35C9B8 */
+  --danger: 347 87% 60%;          /* #f43f5e crimson */
+  --danger-bg: 347 87% 8%;
+  --info: 189 94% 54%;            /* #00f2fe cyan */
+  --info-bg: 189 94% 8%;
+  --purple: 243 75% 68%;          /* #818cf8 indigo/violet */
+  --purple-bg: 243 75% 8%;
+  --teal: 173 80% 45%;            /* #14b8a6 */
 
-  /* ── Sidebar — dark navy in dark mode ── */
-  --sidebar-bg: 222 100% 5%;     /* #020A17 — even darker than --background */
-  --sidebar-border: 217 40% 12%;  /* #0C1929 */
-  --sidebar-item-hover: 217 40% 11%;
-  --sidebar-item-active: 217 40% 16%; /* #102030 */
-  --sidebar-text: 213 25% 60%;    /* #7C98B0 */
-  --sidebar-text-active: 199 89% 70%; /* #72D4F7 */
-  --sidebar-logo-sub: 213 25% 48%; /* #607A8E */
-  --sidebar-logo-text: 213 30% 90%;    /* #D8E5F2 — light text in dark sidebar */
+  /* ── Sidebar — obsidian command rail ── */
+  --sidebar-bg: 224 75% 3%;      /* #02050e — deepest obsidian */
+  --sidebar-border: 217 33% 14%;  /* #111b2d */
+  --sidebar-item-hover: 217 33% 10%;
+  --sidebar-item-active: 189 94% 12%; /* #022432 */
+  --sidebar-text: 213 25% 62%;    /* #829cb4 */
+  --sidebar-text-active: 189 94% 70%; /* #67e8f9 */
+  --sidebar-logo-sub: 213 25% 45%;
+  --sidebar-logo-text: 213 35% 92%;
 
-  /* ── Chart palette (slightly brighter in dark mode) ── */
-  --chart-1: 199 89% 60%;         /* #38BDF8 cyan */
-  --chart-2: 263 70% 72%;         /* #A78BFA violet */
-  --chart-3: 142 70% 52%;         /* #28D966 green */
-  --chart-4: 38 92% 60%;          /* #F9AF30 amber */
-  --chart-5: 0 84% 65%;           /* #F55050 red */
-  --chart-6: 173 58% 55%;          /* #38CFBE teal */
+  /* ── Chart palette ── */
+  --chart-1: 189 94% 54%;         /* cyan */
+  --chart-2: 243 75% 68%;         /* indigo/violet */
+  --chart-3: 151 68% 46%;         /* emerald */
+  --chart-4: 38 92% 55%;          /* amber */
+  --chart-5: 347 87% 60%;         /* crimson */
+  --chart-6: 173 80% 45%;         /* teal */
 }
 
 @layer base {
@@ -304,3 +304,60 @@
 .metric-value { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .metric-value-sm { font-size: 1.1875rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .mono { font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace; }
+
+/* ── Tactical Cybersecurity HUD Styling & Grids ───────────────────────────── */
+.cyber-grid {
+  background-image: radial-gradient(circle, rgba(56, 189, 248, 0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.radar-sweep-bg {
+  background: radial-gradient(circle at center, rgba(0, 242, 254, 0.04) 0%, transparent 70%);
+}
+
+.luminous-card {
+  position: relative;
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.375rem;
+  transition: all 200ms ease;
+}
+.dark .luminous-card:hover {
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.06);
+}
+
+.hud-panel-header {
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid hsl(var(--border));
+  background: linear-gradient(90deg, hsl(var(--card)) 0%, rgba(56, 189, 248, 0.02) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hud-bracket {
+  position: relative;
+}
+.hud-bracket::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 6px;
+  height: 6px;
+  border-top: 2px solid hsl(var(--primary));
+  border-left: 2px solid hsl(var(--primary));
+  pointer-events: none;
+}
+.hud-bracket::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 6px;
+  height: 6px;
+  border-bottom: 2px solid hsl(var(--primary));
+  border-right: 2px solid hsl(var(--primary));
+  pointer-events: none;
+}

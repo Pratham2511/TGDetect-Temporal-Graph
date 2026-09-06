@@ -253,6 +253,35 @@ export function TemporalGraphViz({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, size.w, size.h);
 
+    // Tactical cybersecurity canvas background: radar circles & subtle grid
+    if (isDark) {
+      ctx.save();
+      const cx = size.w / 2;
+      const cy = size.h / 2;
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.035)";
+      ctx.lineWidth = 1;
+      for (let r = 70; r < Math.max(size.w, size.h); r += 90) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.02)";
+      const gs = 36;
+      for (let x = 0; x < size.w; x += gs) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, size.h);
+        ctx.stroke();
+      }
+      for (let y = 0; y < size.h; y += gs) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(size.w, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     const { nodeMap, edgeArr } = vis;
     const selected = selectedNodeId ?? null;
     const highlightSet = new Set<string>();
@@ -279,7 +308,11 @@ export function TemporalGraphViz({
       let strokeWidth = 1;
       if (isMalicious) {
         strokeColor = colorHex('red', isDark);
-        strokeWidth = isAttack ? 2 : 1.5;
+        strokeWidth = isAttack ? 2.5 : 2;
+        if (isDark) {
+          ctx.shadowColor = "rgba(244, 63, 94, 0.7)";
+          ctx.shadowBlur = 6;
+        }
       }
       if (isHighlighted) {
         strokeColor = colorHex('teal', isDark);
@@ -336,11 +369,16 @@ export function TemporalGraphViz({
       const isHighlighted = highlightSet.has(n.id);
       // Stroke ring for selection/hover
       if (isSelected) {
+        if (isDark) {
+          ctx.shadowColor = "rgba(0, 242, 254, 0.8)";
+          ctx.shadowBlur = 12;
+        }
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.radius + 5, 0, Math.PI * 2);
         ctx.strokeStyle = colorHex('cyan', isDark);
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2.5;
         ctx.stroke();
+        ctx.shadowBlur = 0;
       } else if (isHovered) {
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.radius + 3, 0, Math.PI * 2);
