@@ -96,7 +96,7 @@ export function ModelPage() {
               <span>•</span>
               <span>checkpoint: <span className="text-[hsl(var(--foreground))]">best_model.pt</span></span>
               <span>•</span>
-              <span>trainable_parameters: <strong className="text-cyan-400 font-semibold">38,787</strong></span>
+              <span>trainable_parameters: <strong className="text-cyan-400 font-semibold">{formatInt(activeModel?.trainable_parameters ?? 0)}</strong></span>
               <span>•</span>
               <span>benchmark: <span className="text-[hsl(var(--foreground))]">CTU-13 Scenario 47 (NetFlow)</span></span>
             </div>
@@ -213,8 +213,8 @@ function ArchitecturePanel({ modelId }: { modelId: string }) {
             <Hyperparam label="dropout" value={cfg.dropout} />
             <Hyperparam label="node_types" value={cfg.node_types ?? '—'} hint="8 backend types" />
             <Hyperparam label="num_relations" value={cfg.num_relations ?? '—'} hint="14 backend relations" />
-            <Hyperparam label="total_params" value={formatInt(summary.total_parameters ?? 38787)} hint={`${formatInt(summary.total_parameters ?? 38787)} total parameters`} />
-            <Hyperparam label="trainable_params" value={formatInt(summary.trainable_parameters ?? 38787)} hint={`${formatInt(summary.trainable_parameters ?? 38787)} trainable weights & biases`} />
+            <Hyperparam label="total_params" value={formatInt(summary.total_parameters ?? 0)} hint={`${formatInt(summary.total_parameters ?? 0)} total parameters`} />
+            <Hyperparam label="trainable_params" value={formatInt(summary.trainable_parameters ?? 0)} hint={`${formatInt(summary.trainable_parameters ?? 0)} trainable weights & biases`} />
             <Hyperparam label="bn_buffers" value={summary.bn_running_stats ?? 258} hint="BatchNorm running-stat buffers" />
             <Hyperparam label="state_dict_elems" value={formatInt(summary.total_state_dict_elements ?? 39045)} hint={`${formatInt(summary.total_state_dict_elements ?? 39045)} state_dict elements`} />
           </div>

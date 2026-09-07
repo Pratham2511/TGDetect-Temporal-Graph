@@ -740,7 +740,7 @@ function ModelBenchmarkSection({
               </span>
             </div>
             <div className="text-[11px] font-mono text-[hsl(var(--muted-foreground))] mt-0.5">
-              Spatiotemporal Architecture: <strong className="text-[hsl(var(--foreground))]">GraphSAGE + GRU</strong> · Trainable Params: <strong className="text-cyan-400">{formatInt(activeModel?.trainable_parameters ?? 38787)}</strong>
+              Spatiotemporal Architecture: <strong className="text-[hsl(var(--foreground))]">GraphSAGE + GRU</strong> · Trainable Params: <strong className="text-cyan-400">{formatInt(activeModel?.trainable_parameters ?? 0)}</strong>
             </div>
           </div>
         </div>

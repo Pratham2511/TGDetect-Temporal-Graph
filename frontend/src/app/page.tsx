@@ -305,7 +305,7 @@ export default function Home() {
                     </span>
                   </div>
                   <span className="text-[9px] font-mono text-[hsl(var(--muted-foreground))]">
-                    MODEL BENCHMARK · 38,787 params
+                    MODEL BENCHMARK · {activeModel?.trainable_parameters ? `${activeModel.trainable_parameters.toLocaleString()} params` : 'LOADED'}
                   </span>
                 </div>
               </div>

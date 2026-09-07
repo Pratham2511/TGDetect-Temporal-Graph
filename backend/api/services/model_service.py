@@ -34,34 +34,53 @@ class ModelService:
         if not ctu_ckpt.exists():
             return []
         c_info = cls._inspect_checkpoint(ctu_ckpt)
+        cfg = cls.get_config(ckpt_file=ctu_ckpt)
+
+        # Dynamically load evaluation metrics from evaluation artifacts if available
+        metrics: Dict[str, Any] = {}
+        eval_metrics_file = BASE_DIR / "models" / "checkpoints" / "ctu13_ho_c47" / "eval_test" / "metrics_test.json"
+        test_metrics_file = BASE_DIR / "models" / "checkpoints" / "ctu13_ho_c47" / "test_metrics.json"
+
+        target_file = eval_metrics_file if eval_metrics_file.exists() else (test_metrics_file if test_metrics_file.exists() else None)
+        if target_file:
+            try:
+                with open(target_file, "r", encoding="utf-8") as f:
+                    raw = json.load(f)
+                    M = raw.get("overall", raw)
+                    metrics = {
+                        "roc_auc": M.get("auc_roc"),
+                        "pr_auc": M.get("auc_pr"),
+                        "f1": M.get("f1"),
+                        "precision": M.get("precision"),
+                        "recall": M.get("recall"),
+                        "accuracy": M.get("accuracy"),
+                        "recall_1pct_fpr": M.get("recall_at_1pct_fpr"),
+                        "samples": M.get("num_samples"),
+                        "positives": M.get("num_positive"),
+                    }
+            except Exception:
+                pass
+
         return [{
             "id": "ctu13_ho_c47",
             "name": "CTU-13 Held-Out (Scenario 47)",
-            "description": "TemporalGNN (GraphSAGE + GRU + EdgeHead) trained on CTU-13 botnet captures and evaluated on held-out Scenario 47",
-            "target": "edge",
+            "description": f"TemporalGNN ({cfg.get('gnn_type', 'GraphSAGE')} + {cfg.get('rnn_type', 'GRU')}) dynamically inspected from {ctu_ckpt.name}",
+            "target": c_info.get("target") or "edge",
             "dataset_id": "ctu13_c47",
             "dataset_name": "CTU-13 Scenario 47 (NetFlow)",
-            "checkpoint": "best_model.pt",
+            "checkpoint": ctu_ckpt.name,
             "checkpoint_path": str(ctu_ckpt),
-            "trainable_parameters": c_info.get("trainable_parameters") or 38787,
-            "total_parameters": c_info.get("total_parameters") or 38787,
-            "in_channels": 1,
-            "edge_dim": 37,
-            "output_heads": ["node_classifier", "snapshot_classifier", "edge_classifier"],
-            "has_edge_classifier": True,
+            "trainable_parameters": c_info.get("trainable_parameters") or 0,
+            "total_parameters": c_info.get("total_parameters") or 0,
+            "in_channels": cfg.get("in_channels", 1),
+            "edge_dim": cfg.get("edge_dim", 37),
+            "hidden_channels": cfg.get("hidden_channels", 64),
+            "out_channels": cfg.get("out_channels", 64),
+            "output_heads": ["node_classifier", "snapshot_classifier", "edge_classifier"] if c_info.get("has_edge_classifier") else ["node_classifier", "snapshot_classifier"],
+            "has_edge_classifier": c_info.get("has_edge_classifier", True),
             "evaluation_run_id": "eval_test_ctu13_ho_c47",
-            "evaluation_status": "evaluated",
-            "metrics": {
-                "roc_auc": 0.9983,
-                "pr_auc": 0.7065,
-                "f1": 0.8388,
-                "precision": 0.7483,
-                "recall": 0.9543,
-                "accuracy": 0.9968,
-                "recall_1pct_fpr": 0.9958,
-                "samples": 1068851,
-                "positives": 9256
-            }
+            "evaluation_status": "evaluated" if metrics else "ready",
+            "metrics": metrics,
         }]
 
     @classmethod
