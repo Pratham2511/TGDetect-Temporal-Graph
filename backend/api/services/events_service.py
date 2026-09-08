@@ -1,6 +1,30 @@
+import json
 from typing import Any, Dict, List, Optional
+import numpy as np
 import pandas as pd
 from api.dependencies import DATA_GRAPHS_DIR, DataCache, sanitize_json
+
+
+def _format_event_records(records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    items = []
+    for r in records:
+        attrs = r.get("attrs")
+        if isinstance(attrs, str):
+            try:
+                r["attrs"] = json.loads(attrs)
+            except Exception:
+                r["attrs"] = {}
+        elif not isinstance(attrs, dict):
+            r["attrs"] = {}
+        tlist = r.get("tactics")
+        if isinstance(tlist, (list, tuple, set, np.ndarray)):
+            r["tactics"] = [str(t) for t in tlist if t]
+        elif isinstance(tlist, str):
+            r["tactics"] = [tlist] if tlist else []
+        else:
+            r["tactics"] = []
+        items.append(sanitize_json(r))
+    return items
 
 class EventsService:
     @staticmethod
@@ -75,7 +99,7 @@ class EventsService:
         total = len(filtered)
         paged = filtered.iloc[offset : offset + limit]
 
-        items = [sanitize_json(row.to_dict()) for _, row in paged.iterrows()]
+        items = _format_event_records(paged.to_dict(orient="records"))
         return {"items": items, "total": total}
 
     @staticmethod
@@ -86,7 +110,8 @@ class EventsService:
         matches = df[df["event_id"] == event_id]
         if matches.empty:
             return None
-        return sanitize_json(matches.iloc[0].to_dict())
+        res = _format_event_records(matches.head(1).to_dict(orient="records"))
+        return res[0] if res else None
 
     @staticmethod
     def get_by_chain(chain_id: str) -> List[Dict[str, Any]]:
@@ -103,12 +128,12 @@ class EventsService:
                 if isinstance(event_ids, (list, tuple, set)) and len(event_ids) > 0:
                     matches = df[df["event_id"].isin(set(event_ids))].sort_values("ts")
                     if not matches.empty:
-                        return [sanitize_json(row.to_dict()) for _, row in matches.iterrows()]
+                        return _format_event_records(matches.to_dict(orient="records"))
 
         # 2. Try direct column match on chain_id
         matches = df[df["chain_id"] == chain_id].sort_values("ts")
         if not matches.empty:
-            return [sanitize_json(row.to_dict()) for _, row in matches.iterrows()]
+            return _format_event_records(matches.to_dict(orient="records"))
 
         # 3. Check pre-exported subgraph JSON file
         safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in chain_id)
@@ -124,7 +149,7 @@ class EventsService:
                     if e_ids:
                         matches = df[df["event_id"].isin(set(e_ids))].sort_values("ts")
                         if not matches.empty:
-                            return [sanitize_json(row.to_dict()) for _, row in matches.iterrows()]
+                            return _format_event_records(matches.to_dict(orient="records"))
                     return [sanitize_json(e) for e in edges]
             except Exception:
                 pass
@@ -137,7 +162,7 @@ class EventsService:
         if df.empty:
             return []
         matches = df[(df["src_id"] == node_id) | (df["dst_id"] == node_id)]
-        return [sanitize_json(row.to_dict()) for _, row in matches.iterrows()]
+        return _format_event_records(matches.to_dict(orient="records"))
 
     @staticmethod
     def get_recent_malicious(limit: int = 10) -> List[Dict[str, Any]]:
@@ -145,4 +170,4 @@ class EventsService:
         if df.empty:
             return []
         mal = df[df["label"] == 1].sort_values("ts", ascending=False).head(limit)
-        return [sanitize_json(row.to_dict()) for _, row in mal.iterrows()]
+        return _format_event_records(mal.to_dict(orient="records"))

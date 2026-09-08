@@ -65,8 +65,8 @@ export interface EventService {
 }
 
 export interface GraphService {
-  nodes(): Promise<GraphNode[]>;
-  edges(): Promise<GraphEdge[]>;
+  nodes(limit?: number, malicious_only?: boolean): Promise<GraphNode[]>;
+  edges(limit?: number, malicious_only?: boolean): Promise<GraphEdge[]>;
   stats(): Promise<GraphStats>;
 }
 

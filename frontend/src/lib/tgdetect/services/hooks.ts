@@ -120,14 +120,14 @@ export function useRecentMalicious(limit: number) {
   return useAsync(() => eventService.recentMalicious(limit), [limit, datasetVersion]);
 }
 
-export function useGraphNodes() {
+export function useGraphNodes(limit: number = 1000, maliciousOnly: boolean = false) {
   const { datasetVersion } = useDataset();
-  return useAsync<GraphNode[]>(() => graphService.nodes(), [datasetVersion]);
+  return useAsync<GraphNode[]>(() => graphService.nodes(limit, maliciousOnly), [limit, maliciousOnly, datasetVersion]);
 }
 
-export function useGraphEdges() {
+export function useGraphEdges(limit: number = 2000, maliciousOnly: boolean = false) {
   const { datasetVersion } = useDataset();
-  return useAsync<GraphEdge[]>(() => graphService.edges(), [datasetVersion]);
+  return useAsync<GraphEdge[]>(() => graphService.edges(limit, maliciousOnly), [limit, maliciousOnly, datasetVersion]);
 }
 
 export function useGraphStats() {

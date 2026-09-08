@@ -724,6 +724,8 @@ export interface ValidationReport {
   warnings: ValidationDiagnosticWarning[];
   columns_detected: string[];
   missing_required_columns: string[];
+  column_mapping?: Record<string, string>;
+  features_extracted?: string[];
   sample_events: any[];
   saved_path?: string;
   filename?: string;

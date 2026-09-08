@@ -72,17 +72,8 @@ class DataCache:
             path = cls.get_dataset_dir() / "events.parquet"
             if path.exists():
                 df = pd.read_parquet(path)
-                # Parse attrs JSON string into dict
-                def parse_attrs(x):
-                    if isinstance(x, str):
-                        try:
-                            return json.loads(x)
-                        except Exception:
-                            return {}
-                    return x if isinstance(x, dict) else {}
-                df["attrs"] = df["attrs"].apply(parse_attrs)
-                # Ensure tactics is list
-                df["tactics"] = df["tactics"].apply(lambda t: list(t) if hasattr(t, "__iter__") and not isinstance(t, str) else [])
+                # Keep attrs as raw JSON string for high-speed streaming & zero-copy loads.
+                # attrs is parsed lazily on-demand only for requested pages in events_service.
                 cls._events_df = df
             else:
                 cls._events_df = pd.DataFrame()

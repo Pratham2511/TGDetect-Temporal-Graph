@@ -586,7 +586,8 @@ function UploadAndValidateWizard({
                   onChange={(e) => setFormat(e.target.value)}
                   className="w-full px-2.5 py-1.5 text-xs bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded font-mono"
                 >
-                  <option value="auto">Auto-detect from file structure (recommended)</option>
+                  <option value="auto">Auto-detect & Universal Tabular (CSV, TSV, JSON, NetFlow, Zeek, Any Format)</option>
+                  <option value="generic">Universal Tabular / Flow (CSV, TSV, JSON, NetFlow, Zeek)</option>
                   <option value="ctu13">CTU-13 NetFlow (Argus 15-field CSV / binetflow)</option>
                   <option value="mordor">Windows Host Telemetry (Sysmon / Security JSONL)</option>
                   <option value="synthetic">Synthetic TG-Detect Event Stream (JSONL)</option>
@@ -810,6 +811,35 @@ function UploadAndValidateWizard({
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Dynamic Column Mapping & Feature Extraction Diagnostics */}
+            {validationReport.column_mapping && Object.keys(validationReport.column_mapping).length > 0 && (
+              <div className="p-3 rounded border border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary)/0.04)] space-y-2">
+                <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--primary))] font-bold flex items-center gap-1.5">
+                  <span className="size-1.5 rounded-full bg-[hsl(var(--primary))]" />
+                  Dynamic Column Mapping (Universal Ingestion Engine)
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(validationReport.column_mapping).map(([role, colName]) => (
+                    <div
+                      key={role}
+                      className="px-2 py-1 rounded bg-[hsl(var(--card))] border border-[hsl(var(--border))] text-[10px] font-mono flex items-center gap-1.5 shadow-xs"
+                    >
+                      <span className="text-[hsl(var(--muted-foreground))] uppercase font-semibold text-[9px]">{role}:</span>
+                      <span className="font-bold text-[hsl(var(--foreground))]">{colName}</span>
+                    </div>
+                  ))}
+                </div>
+                {validationReport.features_extracted && validationReport.features_extracted.length > 0 && (
+                  <div className="pt-1.5 border-t border-[hsl(var(--border)/0.5)] flex items-center gap-1.5 text-[10px] text-[hsl(var(--muted-foreground))]">
+                    <span className="font-semibold text-[9px] uppercase">Extracted into Edge Attrs:</span>
+                    <span className="font-mono text-[hsl(var(--foreground))]">
+                      {validationReport.features_extracted.join(', ')}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 

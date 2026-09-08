@@ -10,7 +10,7 @@ def get_graph(
     node_type: Optional[str] = Query(None, description="Filter by node type"),
     relation: Optional[str] = Query(None, description="Filter by relation"),
     chain_id: Optional[str] = Query(None, description="Filter by chain ID"),
-    limit: int = Query(1000, ge=1, le=5000)
+    limit: int = Query(1000, ge=1, le=10000)
 ):
     return GraphService.get_graph(
         malicious_only=malicious_only,
@@ -21,12 +21,18 @@ def get_graph(
     )
 
 @router.get("/graph/nodes")
-def get_nodes():
-    return GraphService.get_nodes()
+def get_nodes(
+    limit: int = Query(1000, ge=1, le=10000),
+    malicious_only: bool = Query(False)
+):
+    return GraphService.get_nodes(limit=limit, malicious_only=malicious_only)
 
 @router.get("/graph/edges")
-def get_edges(limit: Optional[int] = Query(None, ge=1)):
-    return GraphService.get_edges(limit=limit)
+def get_edges(
+    limit: int = Query(2000, ge=1, le=25000),
+    malicious_only: bool = Query(False)
+):
+    return GraphService.get_edges(limit=limit, malicious_only=malicious_only)
 
 @router.get("/graph/nodes/{node_id}")
 def get_node_detail(node_id: str):

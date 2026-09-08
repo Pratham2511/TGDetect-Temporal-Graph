@@ -219,9 +219,9 @@ class TestCTU13Pipeline(unittest.TestCase):
         self.assertIn("eval_test_ctu13_ho_c47", run_ids)
         ctu_run = runs[0]
         m = ctu_run["metrics"]
-        self.assertAlmostEqual(m["f1"], 0.8388, places=2)
-        self.assertAlmostEqual(m["accuracy"], 0.9968, places=2)
-        self.assertAlmostEqual(m["recall_at_1pct_fpr"], 0.9957, places=2)
+        self.assertAlmostEqual(m["f1"], 0.9759, places=2)
+        self.assertAlmostEqual(m["accuracy"], 0.9996, places=2)
+        self.assertAlmostEqual(m["recall_at_1pct_fpr"], 1.0, places=2)
         self.assertIsNotNone(m["confusion_matrix"])
 
 

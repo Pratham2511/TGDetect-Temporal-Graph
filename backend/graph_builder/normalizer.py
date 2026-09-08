@@ -80,7 +80,7 @@ def canonical_id(raw_id: str, node_type: str) -> str:
 
 
 def coerce_ts(value: Any) -> Optional[float]:
-    """Coerce epoch seconds/ms, Windows FILETIME or ISO-8601 into epoch seconds."""
+    """Coerce epoch seconds/ms, Windows FILETIME, ISO-8601 or common date formats into epoch seconds."""
     if value is None or value == "":
         return None
 
@@ -94,13 +94,30 @@ def coerce_ts(value: Any) -> Optional[float]:
         try:
             num = float(text)
         except ValueError:
-            iso = text.replace("Z", "+00:00")
+            # Normalize slashes to dashes and Z to UTC offset
+            iso = text.replace("/", "-").replace("Z", "+00:00")
             # Trim sub-microsecond precision that fromisoformat rejects.
             iso = re.sub(r"(\.\d{6})\d+", r"\1", iso)
             try:
                 dt = datetime.fromisoformat(iso)
             except ValueError:
-                return None
+                # Fallback to common date and time formats
+                dt = None
+                for fmt in (
+                    "%Y-%m-%d %H:%M:%S",
+                    "%Y-%m-%d %H:%M:%S.%f",
+                    "%d/%b/%Y:%H:%M:%S %z",
+                    "%Y-%m-%dT%H:%M:%S",
+                    "%m-%d-%Y %H:%M:%S",
+                    "%m/%d/%Y %H:%M:%S",
+                ):
+                    try:
+                        dt = datetime.strptime(text, fmt)
+                        break
+                    except ValueError:
+                        continue
+                if dt is None:
+                    return None
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=timezone.utc)
             return dt.timestamp()

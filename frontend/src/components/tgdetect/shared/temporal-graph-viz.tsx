@@ -106,41 +106,45 @@ export function TemporalGraphViz({
     return () => ro.disconnect();
   }, []);
 
-  // Prepare nodes & edges
+  // Prepare nodes & edges with threat-first priority sampling
   const vis = useMemo(() => {
     const nodeMap = new Map<string, VisNode>();
-    const nodeArr: VisNode[] = [];
     const inDegrees = new Map<string, number>();
     const outDegrees = new Map<string, number>();
-
-    const rawEdges: VisEdge[] = [];
     const edgeList = Array.isArray(edges) ? edges : [];
+
     for (const e of edgeList) {
-      const src = 'src_id' in e ? e.src_id : (e as any).source;
-      const dst = 'dst_id' in e ? e.dst_id : (e as any).target;
+      const src = "src_id" in e ? e.src_id : (e as any).source;
+      const dst = "dst_id" in e ? e.dst_id : (e as any).target;
       if (!src || !dst) continue;
       outDegrees.set(src, (outDegrees.get(src) ?? 0) + 1);
       inDegrees.set(dst, (inDegrees.get(dst) ?? 0) + 1);
-      rawEdges.push({
-        src,
-        dst,
-        relation: 'relation' in e ? e.relation : 'GENERIC',
-        label: 'label' in e ? e.label : 0,
-        ts: 'ts' in e ? e.ts : 0,
-      });
     }
 
-    const nodeList = Array.isArray(nodes) ? nodes : [];
+    const nodeList = Array.isArray(nodes) ? [...nodes] : [];
+    // Sort candidate nodes to prioritize security incidents, malicious activity, and high-connectivity hubs
+    nodeList.sort((a, b) => {
+      const aId = "node_id" in a ? a.node_id : (a as any).id;
+      const bId = "node_id" in b ? b.node_id : (b as any).id;
+      const aMal = ("malicious_events" in a ? (a as any).malicious_events ?? 0 : 0) || (aId.includes("botnet") ? 1000 : 0);
+      const bMal = ("malicious_events" in b ? (b as any).malicious_events ?? 0 : 0) || (bId.includes("botnet") ? 1000 : 0);
+      const aDeg = (inDegrees.get(aId) ?? 0) + (outDegrees.get(aId) ?? 0);
+      const bDeg = (inDegrees.get(bId) ?? 0) + (outDegrees.get(bId) ?? 0);
+      return (bMal * 10000 + bDeg) - (aMal * 10000 + aDeg);
+    });
+
     const sampleNodes = nodeList.slice(0, maxNodes);
+    const nodeArr: VisNode[] = [];
     for (const n of sampleNodes) {
-      const id = 'node_id' in n ? n.node_id : (n as any).id;
-      const type = ('node_type' in n ? n.node_type : (n as any).type) as NodeType;
+      const id = "node_id" in n ? n.node_id : (n as any).id;
+      const type = ("node_type" in n ? n.node_type : (n as any).type) as NodeType;
       const deg = (inDegrees.get(id) ?? 0) + (outDegrees.get(id) ?? 0);
-      const isMaliciousNode = id.includes('botnet') || id.includes('84.165') || id.includes('c2');
+      const malCount = "malicious_events" in n ? (n as any).malicious_events ?? 0 : 0;
+      const isMaliciousNode = malCount > 0 || id.includes("botnet") || id.includes("84.165") || id.includes("c2");
       const baseR = isMaliciousNode ? 14 : Math.min(18, Math.max(8, 7 + Math.log2(deg + 1) * 3));
       const vn: VisNode = {
         id,
-        type,
+        type: type || "IP",
         x: size.w / 2 + (Math.random() - 0.5) * Math.min(size.w * 0.6, 400),
         y: size.h / 2 + (Math.random() - 0.5) * Math.min(size.h * 0.6, 300),
         vx: 0,
@@ -153,103 +157,99 @@ export function TemporalGraphViz({
       nodeArr.push(vn);
     }
 
-    // Connect any missing edge endpoints
-    for (const e of rawEdges) {
-      if (!nodeMap.has(e.src)) {
-        const vn: VisNode = {
-          id: e.src,
-          type: 'IP',
-          x: size.w / 2 + (Math.random() - 0.5) * 300,
-          y: size.h / 2 + (Math.random() - 0.5) * 200,
-          vx: 0,
-          vy: 0,
-          radius: 10,
-          severity: 0.5,
-          degree: 1,
-        };
-        nodeMap.set(e.src, vn);
-        nodeArr.push(vn);
-      }
-      if (!nodeMap.has(e.dst)) {
-        const vn: VisNode = {
-          id: e.dst,
-          type: 'IP',
-          x: size.w / 2 + (Math.random() - 0.5) * 300,
-          y: size.h / 2 + (Math.random() - 0.5) * 200,
-          vx: 0,
-          vy: 0,
-          radius: 10,
-          severity: 0.5,
-          degree: 1,
-        };
-        nodeMap.set(e.dst, vn);
-        nodeArr.push(vn);
+    // Connect edges whose endpoints are both in the sampled node set
+    const candidateEdges: VisEdge[] = [];
+    for (const e of edgeList) {
+      const src = "src_id" in e ? e.src_id : (e as any).source;
+      const dst = "dst_id" in e ? e.dst_id : (e as any).target;
+      if (!src || !dst) continue;
+      if (nodeMap.has(src) && nodeMap.has(dst)) {
+        candidateEdges.push({
+          src,
+          dst,
+          relation: "relation" in e ? e.relation : "GENERIC",
+          label: "label" in e ? e.label : 0,
+          ts: "ts" in e ? e.ts : 0,
+        });
       }
     }
 
-    return { nodeMap, nodeArr, edgeArr: rawEdges };
+    // Sort edges so malicious flows are rendered first, cap at maxEdges to guarantee 60 FPS
+    const maxEdges = Math.min(600, maxNodes * 3);
+    candidateEdges.sort((a, b) => b.label - a.label);
+    const edgeArr = candidateEdges.slice(0, maxEdges);
+
+    return { nodeMap, nodeArr, edgeArr };
   }, [nodes, edges, maxNodes, size.w, size.h]);
 
-  // Force simulation loop
+  // Force simulation loop with cooling schedule & idle optimization
   useEffect(() => {
     let raf: number;
     const arr = vis.nodeArr;
     const edgeArr = vis.edgeArr;
     if (arr.length === 0) return;
 
-    let iterations = 0;
+    let alpha = 1.0;
+    const alphaMin = 0.005;
+    const alphaDecay = 0.985;
+
     const tick = () => {
-      iterations++;
       frameRef.current++;
 
-      // Repulsion between nodes
-      for (let i = 0; i < arr.length; i++) {
-        for (let j = i + 1; j < arr.length; j++) {
-          const a = arr[i];
-          const b = arr[j];
-          const dx = b.x - a.x;
-          const dy = b.y - a.y;
-          const d2 = dx * dx + dy * dy + 0.1;
-          const dist = Math.sqrt(d2);
-          const targetDist = a.radius + b.radius + 100;
-          if (dist < targetDist) {
-            const force = (targetDist - dist) / dist * 0.08;
-            a.vx -= dx * force;
-            a.vy -= dy * force;
-            b.vx += dx * force;
-            b.vy += dy * force;
+      if (alpha > alphaMin) {
+        // Repulsion between nodes
+        for (let i = 0; i < arr.length; i++) {
+          for (let j = i + 1; j < arr.length; j++) {
+            const a = arr[i];
+            const b = arr[j];
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const d2 = dx * dx + dy * dy + 0.1;
+            const dist = Math.sqrt(d2);
+            const targetDist = a.radius + b.radius + 100;
+            if (dist < targetDist) {
+              const force = ((targetDist - dist) / dist) * 0.08 * alpha;
+              a.vx -= dx * force;
+              a.vy -= dy * force;
+              b.vx += dx * force;
+              b.vy += dy * force;
+            }
           }
         }
-      }
 
-      // Spring attraction along edges
-      for (const e of edgeArr) {
-        const a = vis.nodeMap.get(e.src);
-        const b = vis.nodeMap.get(e.dst);
-        if (!a || !b) continue;
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const idealDist = 180;
-        const force = (dist - idealDist) * 0.003;
-        const fx = (dx / dist) * force;
-        const fy = (dy / dist) * force;
-        a.vx += fx;
-        a.vy += fy;
-        b.vx -= fx;
-        b.vy -= fy;
-      }
+        // Spring attraction along edges
+        for (let i = 0; i < edgeArr.length; i++) {
+          const e = edgeArr[i];
+          const a = vis.nodeMap.get(e.src);
+          const b = vis.nodeMap.get(e.dst);
+          if (!a || !b) continue;
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          const idealDist = 180;
+          const force = (dist - idealDist) * 0.003 * alpha;
+          const fx = (dx / dist) * force;
+          const fy = (dy / dist) * force;
+          a.vx += fx;
+          a.vy += fy;
+          b.vx -= fx;
+          b.vy -= fy;
+        }
 
-      // Center gravity & damping
-      const cx = size.w / 2;
-      const cy = size.h / 2;
-      for (const n of arr) {
-        n.vx += (cx - n.x) * 0.003;
-        n.vy += (cy - n.y) * 0.003;
-        n.vx *= 0.85;
-        n.vy *= 0.85;
-        n.x += n.vx;
-        n.y += n.vy;
+        // Center gravity & damping
+        const cx = size.w / 2;
+        const cy = size.h / 2;
+        for (let i = 0; i < arr.length; i++) {
+          const n = arr[i];
+          n.vx += (cx - n.x) * 0.003 * alpha;
+          n.vy += (cy - n.y) * 0.003 * alpha;
+          n.vx *= 0.85;
+          n.vy *= 0.85;
+          n.x += n.vx;
+          n.y += n.vy;
+        }
+
+        alpha *= alphaDecay;
       }
 
       renderCanvas();

@@ -204,12 +204,18 @@ export class ApiEventService implements EventService {
 }
 
 export class ApiGraphService implements GraphService {
-  async nodes(): Promise<GraphNode[]> {
-    return api.get<GraphNode[]>('/api/graph/nodes');
+  async nodes(limit?: number, malicious_only?: boolean): Promise<GraphNode[]> {
+    const params: Record<string, number | boolean> = {};
+    if (limit !== undefined) params.limit = limit;
+    if (malicious_only !== undefined) params.malicious_only = malicious_only;
+    return api.get<GraphNode[]>('/api/graph/nodes', { params });
   }
 
-  async edges(): Promise<GraphEdge[]> {
-    return api.get<GraphEdge[]>('/api/graph/edges');
+  async edges(limit?: number, malicious_only?: boolean): Promise<GraphEdge[]> {
+    const params: Record<string, number | boolean> = {};
+    if (limit !== undefined) params.limit = limit;
+    if (malicious_only !== undefined) params.malicious_only = malicious_only;
+    return api.get<GraphEdge[]>('/api/graph/edges', { params });
   }
 
   async stats(): Promise<GraphStats> {

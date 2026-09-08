@@ -10,7 +10,7 @@ def get_overview(
     model_id: Optional[str] = Query(None, description="Active model ID (ctu13_ho_c47)"),
     dataset_id: Optional[str] = Query(None, description="Active dataset ID"),
 ):
-    active_id = dataset_id or DataCache.get_active_dataset_id()
+    active_id = dataset_id if isinstance(dataset_id, str) and dataset_id else DataCache.get_active_dataset_id()
     ds_meta = DatasetsService.get_dataset(active_id)
     stats = DataCache.get_graph_stats() if active_id == DataCache.get_active_dataset_id() else {}
 

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Eye, EyeOff, Filter, Maximize2, Search } from 'lucide-react';
-import { useGraphEdges, useGraphNodes } from '@/lib/tgdetect/services/hooks';
+import { useGraphEdges, useGraphNodes, useGraphStats } from '@/lib/tgdetect/services/hooks';
 import { useDataset } from '@/lib/dataset-context';
 import { formatInt, shortNodeId } from '@/lib/tgdetect/formatters';
 import type { NodeType, RelationType } from '@/lib/tgdetect/types';
@@ -24,12 +24,13 @@ import { formatEpochTime } from '@/lib/tgdetect/formatters';
 
 export function GraphPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Record<string, unknown>) => void }) {
   const { activeDataset, activeDatasetId } = useDataset();
-  const nodesRes = useGraphNodes();
-  const edgesRes = useGraphEdges();
-  const [activeNodeTypes, setActiveNodeTypes] = useState<Set<NodeType>>(new Set(NODE_TYPES));
-  const [activeRelations, setActiveRelations] = useState<Set<RelationType>>(new Set(RELATION_TYPES));
   const [showEdgeLabels, setShowEdgeLabels] = useState(false);
   const [maliciousOnly, setMaliciousOnly] = useState(false);
+  const statsRes = useGraphStats();
+  const nodesRes = useGraphNodes(1000, maliciousOnly);
+  const edgesRes = useGraphEdges(2000, maliciousOnly);
+  const [activeNodeTypes, setActiveNodeTypes] = useState<Set<NodeType>>(new Set(NODE_TYPES));
+  const [activeRelations, setActiveRelations] = useState<Set<RelationType>>(new Set(RELATION_TYPES));
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [nodeSearch, setNodeSearch] = useState('');
 
@@ -48,18 +49,24 @@ export function GraphPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Re
   }, [edgesRes.data, activeRelations, maliciousOnly]);
 
   const nodeTypeCounts = useMemo(() => {
+    if (statsRes.data?.graph?.node_types && Object.keys(statsRes.data.graph.node_types).length > 0) {
+      return statsRes.data.graph.node_types;
+    }
     const c: Partial<Record<NodeType, number>> = {};
     for (const n of nodesRes.data ?? []) c[n.node_type] = (c[n.node_type] ?? 0) + 1;
     return c;
-  }, [nodesRes.data]);
+  }, [statsRes.data, nodesRes.data]);
 
   const relationCounts = useMemo(() => {
+    if (statsRes.data?.graph?.relation_types && Object.keys(statsRes.data.graph.relation_types).length > 0) {
+      return statsRes.data.graph.relation_types;
+    }
     const c: Partial<Record<RelationType, number>> = {};
     for (const e of edgesRes.data ?? []) {
       if (e.relation in RELATION_TYPES) c[e.relation as RelationType] = (c[e.relation as RelationType] ?? 0) + 1;
     }
     return c;
-  }, [edgesRes.data]);
+  }, [statsRes.data, edgesRes.data]);
 
   if (nodesRes.state === 'loading' || edgesRes.state === 'loading') {
     return <LoadingState label="Loading graph…" />;
@@ -84,7 +91,7 @@ export function GraphPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Re
         </div>
         <div className="flex items-center gap-2 text-[10px]">
           <span className="text-[hsl(var(--muted-foreground))] font-mono">
-            {formatInt(filteredNodes.length)} / {formatInt(nodesRes.data?.length ?? 0)} nodes · {formatInt(filteredEdges.length)} / {formatInt(edgesRes.data?.length ?? 0)} edges
+            {formatInt(filteredNodes.length)} visual / {formatInt(statsRes.data?.graph?.total_nodes ?? nodesRes.data?.length ?? 0)} nodes · {formatInt(filteredEdges.length)} visual / {formatInt(statsRes.data?.graph?.total_edges ?? edgesRes.data?.length ?? 0)} edges
           </span>
         </div>
         <div className="flex items-center gap-1 ml-auto">
@@ -147,7 +154,7 @@ export function GraphPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Re
               />
             </div>
           </div>
-          <NodeInspectorPanel nodeId={selectedNodeId} onNavigate={onNavigate} />
+          <NodeInspectorPanel nodeId={selectedNodeId} nodes={nodesRes.data ?? []} onNavigate={onNavigate} />
         </div>
 
         {/* Canvas - Star of Platform */}
@@ -243,12 +250,13 @@ export function GraphPage({ onNavigate }: { onNavigate?: (page: string, ctx?: Re
 
 function NodeInspectorPanel({
   nodeId,
+  nodes,
   onNavigate,
 }: {
   nodeId: string | null;
+  nodes: any[];
   onNavigate?: (page: string, ctx?: Record<string, unknown>) => void;
 }) {
-  const nodesRes = useGraphNodes();
   const eventsRes = useNodeEvents(nodeId);
   if (!nodeId) {
     return (
@@ -261,7 +269,7 @@ function NodeInspectorPanel({
       </div>
     );
   }
-  const node = nodesRes.data?.find((n) => n.node_id === nodeId);
+  const node = nodes.find((n) => n.node_id === nodeId);
   return (
     <div className="tg-card p-3 space-y-2">
       <SectionTitle>Node Inspector</SectionTitle>

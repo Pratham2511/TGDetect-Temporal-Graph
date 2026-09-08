@@ -27,6 +27,8 @@ from graph_builder.parsers import (
     _loads,
     iter_lines,
     mordor_record_to_events,
+    detect_tabular_schema,
+    parse_generic_tabular,
 )
 from graph_builder.schema import (
     NODE_TYPES,
@@ -36,12 +38,16 @@ from graph_builder.schema import (
     TGEvent,
 )
 
-SUPPORTED_FORMATS = ["ctu13", "mordor", "synthetic"]
+SUPPORTED_FORMATS = ["ctu13", "mordor", "synthetic", "generic", "csv", "tabular", "auto"]
 
 FORMAT_LABELS = {
     "ctu13": "CTU-13 NetFlow (Argus *.binetflow / CSV)",
     "mordor": "Mordor / Windows Host Logs (Sysmon / Security JSONL)",
     "synthetic": "Synthetic TG-Detect Event Stream (JSONL)",
+    "generic": "Universal Tabular / Flow (CSV, TSV, JSON, NetFlow, Zeek, Any Format)",
+    "csv": "Delimited CSV / TSV Flow Telemetry",
+    "tabular": "Generic Tabular Security Telemetry",
+    "auto": "Auto-Detect Structure & Universal Normalization",
 }
 
 CTU13_REQUIRED_COLUMNS = ["StartTime", "SrcAddr", "DstAddr", "Proto", "TotBytes", "TotPkts", "Label"]
@@ -95,16 +101,36 @@ class DatasetValidator:
 
         # Space-separated or headless CTU-13
         if len(stripped) >= 12 or len(first.split()) >= 12:
-            return {"format": "ctu13", "confidence": 0.60, "reason": "Delimited row matches NetFlow column count"}
+            if any(h in stripped for h in ("StartTime", "SrcAddr", "DstAddr")):
+                return {"format": "ctu13", "confidence": 0.90, "reason": "Delimited row matches CTU-13 NetFlow schema"}
 
-        return {"format": "unknown", "confidence": 0.0, "reason": "Could not reliably determine format from file contents"}
+        # Inspect with Universal Tabular Schema Detector
+        try:
+            schema = detect_tabular_schema(file_path, max_sample_rows=10)
+            if schema.get("columns"):
+                mapping = schema.get("column_mapping", {})
+                cols_preview = ", ".join(schema["columns"][:6])
+                return {
+                    "format": "generic",
+                    "confidence": 0.92,
+                    "reason": f"Detected tabular telemetry ({len(schema['columns'])} columns: {cols_preview})",
+                    "column_mapping": mapping,
+                }
+        except Exception:
+            pass
+
+        return {
+            "format": "generic",
+            "confidence": 0.60,
+            "reason": "Defaulting to Universal Tabular / Flow ingestion pipeline"
+        }
 
     @classmethod
     def validate_file(
         cls,
         file_path: str,
         format_name: Optional[str] = None,
-        max_inspect_rows: int = 2000,
+        max_inspect_rows: int = 1000,
     ) -> Dict[str, Any]:
         """Run comprehensive validation and return structured report."""
         p = Path(file_path)
@@ -182,8 +208,93 @@ class DatasetValidator:
             return cls._validate_mordor(file_path, detected_fmt, file_info, max_inspect_rows)
         elif active_fmt == "synthetic":
             return cls._validate_synthetic(file_path, detected_fmt, file_info, max_inspect_rows)
+        elif active_fmt in ("generic", "csv", "tabular", "auto"):
+            return cls._validate_generic(file_path, detected_fmt, file_info, max_inspect_rows)
 
         return cls._error_report("invalid", active_fmt, detected_fmt, file_info, [{"line": 0, "column": None, "message": "Unknown format validation path"}])
+
+    @classmethod
+    def _validate_generic(
+        cls,
+        file_path: str,
+        detected_fmt: str,
+        file_info: Dict[str, Any],
+        max_rows: int,
+    ) -> Dict[str, Any]:
+        errors: List[Dict[str, Any]] = []
+        warnings: List[Dict[str, Any]] = []
+        sample_events: List[Dict[str, Any]] = []
+
+        schema_info = detect_tabular_schema(file_path)
+        columns = schema_info.get("columns", [])
+        mapping = schema_info.get("column_mapping", {})
+        features_extracted = schema_info.get("features_extracted", [])
+
+        if not columns:
+            warnings.append({
+                "line": 1,
+                "column": None,
+                "message": "No explicit column headers found; positional entities will be inferred.",
+            })
+
+        valid_rows = 0
+        invalid_rows = 0
+        total_rows = 0
+
+        try:
+            for event in parse_generic_tabular(file_path, limit=max_rows):
+                total_rows += 1
+                valid_rows += 1
+                if len(sample_events) < 5:
+                    row_dict = event.to_row()
+                    row_dict["attrs"] = event.attrs
+                    sample_events.append(row_dict)
+
+            if total_rows >= max_rows:
+                warnings.append({
+                    "line": total_rows,
+                    "message": f"Sampled first {max_rows:,} records. File structure confirmed valid for universal streaming ingestion.",
+                })
+
+            if valid_rows == 0:
+                errors.append({
+                    "line": 0,
+                    "column": None,
+                    "message": "No valid data rows could be parsed from this file.",
+                })
+
+        except Exception as exc:
+            errors.append({
+                "line": 0,
+                "column": None,
+                "message": f"Universal parser encountered an issue: {type(exc).__name__}: {exc}",
+            })
+
+        status = "valid"
+        if errors or valid_rows == 0:
+            status = "invalid"
+        elif warnings or invalid_rows > 0:
+            status = "valid_with_warnings"
+
+        return {
+            "status": status,
+            "format": "generic",
+            "format_label": FORMAT_LABELS["generic"],
+            "detected_format": detected_fmt,
+            "total_rows_inspected": total_rows,
+            "valid_rows": valid_rows,
+            "invalid_rows": invalid_rows,
+            "error_count": len(errors),
+            "warning_count": len(warnings),
+            "errors": errors,
+            "warnings": warnings,
+            "columns_detected": columns[:40],
+            "missing_required_columns": [],
+            "column_mapping": mapping,
+            "features_extracted": features_extracted[:20],
+            "sample_events": sample_events,
+            "file_info": file_info,
+        }
 
     @classmethod
     def _validate_ctu13(
